@@ -253,5 +253,7 @@
   "remainingReviewLimits": [
     "Task matrix uses intentional horizontal scrolling.",
     "Full accessibility compliance and every drawer/breakpoint are not asserted."
-  ]
+  ],
+  "publicSourceCommit": "cd91b380133e588489016084119772d80e07af01",
+  "publicationScope": "Code tested on Instabox; this subsequent commit updates release evidence only."
 }
