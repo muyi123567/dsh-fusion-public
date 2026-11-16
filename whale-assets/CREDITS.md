@@ -1,0 +1,11 @@
+# Whale dive assets
+- Asset: Grab3D, Humpback Whale, light GLB.
+- Source: https://grab3d.com/models/animals/humpback-whale/
+- Download: https://grab3d.com/dl/humpback-whale/humpback-whale-light.glb
+- Retrieved: 2026-11-16.
+- Original license: CC0-1.0 (LICENSE.txt); publisher's original manifest.json retained.
+- SHA-256: c07b1cec69fb3292165c51d00acf224809476b6d9d899c3a810d6050e9611c58
+- Bytes: 3,705,864.
+- Model unchanged. Runtime shader deforms the tail/flippers; no pre-recorded footage.
+- Three.js 0.187.0: MIT, https://github.com/mrdoob/three.js . Its original license is provided in THREE-LICENSE.txt.
+- No third-party resources are fetched by the deployed animation at runtime.
