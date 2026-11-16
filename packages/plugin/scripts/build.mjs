@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
@@ -50,12 +50,12 @@ const standaloneBuild = await build({
 const vite = resolve(dirname(require.resolve("vite/package.json")), "bin/vite.js");
 const noticeInputs = mkdtempSync(resolve(tmpdir(), "dsh-fusion-notice-inputs-"));
 try {
-  for (const entry of ["launcher", "workspace", "terminal"]) {
+  for (const entry of ["launcher", "workspace", "terminal", "habitat", "ocean-scene"]) {
     run(vite, ["build"], {
       ...process.env, DSH_FUSION_CLIENT_ENTRY: entry, DSH_FUSION_NOTICE_INPUTS: noticeInputs,
     });
   }
-  const manifests = ["launcher", "workspace", "terminal"].map((entry) =>
+  const manifests = ["launcher", "workspace", "terminal", "habitat", "ocean-scene"].map((entry) =>
     JSON.parse(readFileSync(resolve(noticeInputs, entry + ".json"), "utf8")));
   const notices = await writeThirdPartyNotices({
     metafiles: [hostBuild.metafile, standaloneBuild.metafile], manifests,
@@ -65,3 +65,5 @@ try {
 } finally {
   rmSync(noticeInputs, { recursive: true, force: true });
 }
+
+copyFileSync(resolve(packageRoot,"../client/src/features/whale/ambient/assets/LICENSE.txt"),resolve(output,"WHALE_ASSET_LICENSE.txt"));

@@ -86,12 +86,12 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
      if (slowFrames >= 24) { tier = "eco"; scene.setQuality(tier); }
     }
     frames.current++;
-    if(host.current){
-     host.current.dataset.habitatFrames=String(frames.current);
-     host.current.dataset.habitatElapsed=String(elapsed.current);
-     host.current.dataset.habitatQuality=tier;
-    }
     if (now - lastMetrics.current >= 1000) {
+     if(host.current){
+      host.current.dataset.habitatFrames=String(frames.current);
+      host.current.dataset.habitatElapsed=String(elapsed.current);
+      host.current.dataset.habitatQuality=tier;
+     }
      lastMetrics.current = now;
      latest.current.onMetrics?.({ ...scene.getMetrics(), frames: frames.current, elapsed: elapsed.current, tier });
     }
@@ -170,6 +170,6 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
  useEffect(() => { sceneRef.current?.setActivity(props.activity); }, [props.activity]);
  return <div ref={host} className={["whale-habitat", props.className].filter(Boolean).join(" ")} data-habitat-frames={frames.current} data-habitat-elapsed={elapsed.current} data-ready={ready && !policy.poster ? "true" : "false"}>
   <img className="whale-habitat__poster" src={posterAsset} alt="鲸鱼潜入深海的静态画面" />
-  <canvas ref={canvas} className="whale-habitat__canvas" role="img" aria-label="持续巡游的鲸鱼海域" />
+  <canvas key={policy.poster?"poster":"dynamic"} ref={canvas} className="whale-habitat__canvas" role="img" aria-label="持续巡游的鲸鱼海域" />
  </div>;
 }

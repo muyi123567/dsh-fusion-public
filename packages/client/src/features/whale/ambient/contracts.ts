@@ -17,7 +17,13 @@ export interface HabitatMetrics {
  elapsed: number;
  tier: HabitatTier;
 }
+export interface HabitatPod extends HabitatActivity { id: string; name: string; }
+export type HabitatView = "deep" | "surface";
 export interface WhaleHabitatProps {
+ pods?: HabitatPod[];
+ view?: HabitatView;
+ selectedPodId?: string;
+ onSelectPod?: (id:string) => void;
  activity: HabitatActivity;
  quality: HabitatQuality;
  playing: boolean;

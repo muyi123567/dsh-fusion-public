@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "tools": {
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/functions": "4.2.1",
+    "@gltf-transform/extensions": "4.2.1",
+    "meshoptimizer": "0.22.0",
+    "sharp": "0.33.5"
+  },
+  "node": "v24.22.3",
+  "settings": {
+    "targetTriangles": 20000,
+    "error": 0.001,
+    "lockBorder": true,
+    "textureMax": 512
+  },
+  "input": {
+    "path": "packages/client/public/whale-assets/humpback-whale-light.glb",
+    "bytes": 3705864,
+    "sha256": "c07b1cec69fb3292165c51d00acf224809476b6d9d899c3a810d6050e9611c58",
+    "triangles": 109991,
+    "primitives": [
+      {
+        "mesh": "humpback-whale",
+        "triangles": 109991
+      }
+    ],
+    "textures": [
+      {
+        "name": "Image_0",
+        "width": 1024,
+        "height": 1024,
+        "mimeType": "image/jpeg",
+        "bytes": 253690,
+        "sha256": "87c020d7a37ba8c02896af729e2d3bf52c15ab0fd4534d73218d4371366add57"
+      },
+      {
+        "name": "Image_1",
+        "width": 1024,
+        "height": 1024,
+        "mimeType": "image/jpeg",
+        "bytes": 31842,
+        "sha256": "8c6ddfbbd0b3e0bffb8bbdc09bd6aee360d448b5e917f6e2c802362d8e4589fd"
+      }
+    ]
+  },
+  "output": {
+    "path": "packages/client/src/features/whale/ambient/assets/humpback-whale-panel-512.glb",
+    "bytes": 931352,
+    "sha256": "229882ccf3110a551792482ab8e913121238fb44d87b9c1a14c6674ee5fbd7ed",
+    "triangles": 19999,
+    "primitives": [
+      {
+        "mesh": "humpback-whale",
+        "triangles": 19999
+      }
+    ],
+    "textures": [
+      {
+        "name": "Image_0",
+        "width": 512,
+        "height": 512,
+        "mimeType": "image/jpeg",
+        "bytes": 99742,
+        "sha256": "67c39314ba6c41a21fca1ba30425d7af4a5ec4f6139237c02eb97e6498eb93d7"
+      },
+      {
+        "name": "Image_1",
+        "width": 512,
+        "height": 512,
+        "mimeType": "image/png",
+        "bytes": 141391,
+        "sha256": "b1e8be38b388368ce5aaaf43be19b590fbbed7409353cc59b6d711ba46fd3428"
+      }
+    ],
+    "extensions": []
+  },
+  "numericPass": true,
+  "visualAcceptance": "pending Instabox: mouth, throat grooves, flippers, flukes and recognizable texture",
+  "status": "candidate-needs-visual-review"
+}

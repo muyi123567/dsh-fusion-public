@@ -1,4 +1,4 @@
-import type { AmbientMotion, HabitatActivity } from "./contracts";
+import type { AmbientMotion, HabitatActivity } from "./contracts.js";
 
 const smooth = (x: number): number => x * x * x * (10 + x * (-15 + 6 * x));
 const count = (x: number): number => Number.isFinite(x) ? Math.max(0, x) : 0;

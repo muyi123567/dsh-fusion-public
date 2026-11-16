@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { sampleAmbientMotion } from "./motion";
-import type { AmbientMotion, HabitatActivity } from "./contracts";
+import { sampleAmbientMotion } from "./motion.js";
+import type { AmbientMotion, HabitatActivity } from "./contracts.js";
 
 const idle: HabitatActivity = { active: 0, blocked: 0, completed: 0, observed: false };
 const values = (m: AmbientMotion) => [

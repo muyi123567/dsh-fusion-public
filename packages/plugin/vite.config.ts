@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
 const entry = process.env.DSH_FUSION_CLIENT_ENTRY ?? "launcher";
-if (!["launcher", "workspace", "terminal"].includes(entry)) throw new Error("DSH_FUSION_CLIENT_ENTRY_INVALID");
+if (!["launcher", "workspace", "terminal", "habitat", "ocean-scene"].includes(entry)) throw new Error("DSH_FUSION_CLIENT_ENTRY_INVALID");
 const fileName = entry === "launcher" ? "client.js" : `client.${entry}.js`;
 
 function nativeTerminalImport(): Plugin {
@@ -12,6 +12,15 @@ function nativeTerminalImport(): Plugin {
     name: "dsh-fusion-native-terminal-import",
     enforce: "pre",
     transform(code, id) {
+      const normalized=id.replaceAll("\\","/");
+      if(normalized.endsWith("/features/whale/WhalePanel.tsx")){
+        const target='import("./ambient/WhaleLivingPanel.js")';
+        if(!code.includes(target))throw new Error("HABITAT_IMPORT_CHANGED");
+        return code.replace(target,'require.async("./client.habitat.js")');
+      }
+      if(normalized.endsWith("/features/whale/ambient/WhaleHabitat.tsx")){
+        return code.replace(/import\(["']\.\.\/dive\/scene\.js["']\)/g,'require.async("./client.ocean-scene.js")');
+      }
       if (id.replaceAll("\\", "/").endsWith("/features/terminal/TerminalTabs.tsx")) {
         const target = 'import("./TerminalWindow.js")';
         if (!code.includes(target)) throw new Error("DSH_FUSION_TERMINAL_IMPORT_CHANGED");
@@ -63,7 +72,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: false,
-    lib: { entry: entry === "launcher" ? "src/client.tsx" : `src/client.${entry}.tsx`, formats: ["cjs"], fileName: () => fileName },
+    lib: { entry: entry === "launcher" ? "src/client.tsx" : `src/client.${entry}.${entry==="ocean-scene"?"ts":"tsx"}`, formats: ["cjs"], fileName: () => fileName },
     rollupOptions: {
       external: ["react", "react/jsx-runtime", "react-dom", "react-dom/client"],
       output: {
