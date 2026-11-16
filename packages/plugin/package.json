@@ -1,0 +1,113 @@
+{
+  "name": "dsh-fusion",
+  "version": "0.2.0-beta.12",
+  "description": "DSH-native multi-machine operations panel",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muyi123567/dsh-fusion-public.git"
+  },
+  "homepage": "https://github.com/muyi123567/dsh-fusion-public#readme",
+  "bugs": {
+    "url": "https://github.com/muyi123567/dsh-fusion-public/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "multi-machine",
+    "multi-agent",
+    "cordis"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "dsh-fusion-setup": "./scripts/setup.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./standalone": {
+      "types": "./dist/standalone.d.ts",
+      "default": "./dist/standalone.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "scripts/setup.mjs",
+    "scripts/installer.mjs",
+    "scripts/release-contract.mjs",
+    "compatibility.json",
+    "vendor/README.md",
+    "vendor/dsh-agent-team-room-0.7.0.tgz",
+    "vendor/nanmicoder-dsh-agent-teams-0.1.30.tgz",
+    "vendor/dsh-agent-bus-0.1.1-dsh02.tgz",
+    "release.json",
+    "cordis.patch.yml",
+    "package.json"
+  ],
+  "scripts": {
+    "typecheck": "pnpm --filter @dsh-fusion/core build && pnpm --filter @dsh-fusion/config build && pnpm --filter @dsh-fusion/host build && pnpm exec tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "build": "node scripts/build.mjs",
+    "setup": "node scripts/setup.mjs",
+    "test:setup": "node --test tests/setup.contract.mjs",
+    "test:native-client": "node --test tests/native-client.contract.mjs",
+    "test:package": "node --test tests/native-package.contract.mjs tests/setup.contract.mjs && node scripts/verify-release.mjs",
+    "prepack": "pnpm build && node scripts/verify-release.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-api-session-controller"
+      ],
+      "immediately": false
+    },
+    "compatibility": {
+      "dsh": ">=0.2.0-rc.2 <0.3.0"
+    }
+  },
+  "dependencies": {
+    "fastify": "^5.4.0"
+  },
+  "devDependencies": {
+    "@dsh-fusion/core": "workspace:*",
+    "@dsh-fusion/host": "workspace:*",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/ssh2": "^1.15.6",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.28.2",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ssh2": "^1.17.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0",
+    "vitest": "4.1.12",
+    "ws": "^8.22.0"
+  },
+  "engines": {
+    "node": ">=24.9.0",
+    "dsh": ">=0.2.0-rc.2 <0.3.0"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

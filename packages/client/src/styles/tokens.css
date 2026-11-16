@@ -1,0 +1,22 @@
+:root {
+  color-scheme: light;
+  --fusion-bg: #f7f8fa;
+  --fusion-surface: #ffffff;
+  --fusion-sidebar: #f1f3f6;
+  --fusion-text: #16181d;
+  --fusion-muted: #6f7681;
+  --fusion-faint: #a0a6af;
+  --fusion-border: #e1e4e8;
+  --fusion-border-strong: #c9ced5;
+  --fusion-blue: #2f6fed;
+  --fusion-blue-soft: #eaf1ff;
+  --fusion-green: #20a56b;
+  --fusion-green-soft: #e7f7ef;
+  --fusion-amber: #b7791f;
+  --fusion-amber-soft: #fff6df;
+  --fusion-red: #c33d4a;
+  --fusion-red-soft: #fcecef;
+  --fusion-radius: 8px;
+  --fusion-chat: 18px;
+  --fusion-font: Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}

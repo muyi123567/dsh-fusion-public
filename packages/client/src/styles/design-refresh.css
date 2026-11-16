@@ -1,0 +1,436 @@
+:root {
+  --fusion-bg: #f5f7fa;
+  --fusion-sidebar: #f2f4f7;
+  --fusion-border: #dfe3e9;
+  --fusion-border-strong: #c8ced7;
+  --fusion-muted: #68717e;
+  --fusion-faint: #9ba3ae;
+  --fusion-blue: #2563eb;
+  --fusion-blue-soft: #eaf1ff;
+  --fusion-radius: 8px;
+}
+
+body {
+  font-size: 13px;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 45%);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(37 99 235 / 18%);
+}
+
+* {
+  scrollbar-color: #c9d0da transparent;
+  scrollbar-width: thin;
+}
+
+.fusion-sidebar {
+  padding: 15px 10px 10px;
+}
+
+.fusion-brand {
+  padding: 2px 8px 15px;
+  font-size: 16px;
+}
+
+.fusion-brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  box-shadow: 0 5px 14px rgb(37 99 235 / 18%);
+}
+
+.fusion-nav {
+  gap: 3px;
+  padding-bottom: 12px;
+}
+
+.fusion-nav-label {
+  display: block;
+  padding: 10px 9px 4px;
+  color: var(--fusion-faint);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.fusion-nav-label:first-child {
+  padding-top: 2px;
+}
+
+.fusion-nav button,
+.fusion-sidebar-footer button {
+  min-height: 36px;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.fusion-nav button.is-active {
+  background: #e8f0ff;
+  box-shadow: inset 3px 0 0 var(--fusion-blue);
+}
+
+.fusion-side-heading {
+  font-size: 10px;
+}
+
+.fusion-bot-row {
+  min-height: 44px;
+}
+
+.fusion-group-row,
+.fusion-node-row {
+  min-height: 34px;
+}
+
+.fusion-topbar-title strong {
+  font-size: 14px;
+}
+
+.fusion-topbar-title small {
+  font-size: 11px;
+}
+
+.fusion-topbar-actions > button {
+  width: 32px;
+  height: 32px;
+}
+
+.fusion-topbar-actions > button.fusion-config-chip {
+  min-width: 72px;
+  height: 32px;
+}
+
+.fusion-primary-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-weight: 650;
+}
+
+.fusion-ghost-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.fusion-page {
+  line-height: 1.5;
+}
+
+.fusion-page-head h1 {
+  font-size: 24px;
+  font-weight: 760;
+}
+
+.fusion-page-head p {
+  max-width: 760px;
+  font-size: 13px;
+}
+
+.fusion-radar-summary {
+  min-height: 46px;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.fusion-radar-summary b {
+  font-size: 18px;
+}
+
+.fusion-radar-table,
+.fusion-config-list {
+  border-radius: 9px;
+}
+
+.fusion-radar-row {
+  min-height: 60px;
+  font-size: 12px;
+}
+
+.fusion-radar-header {
+  min-height: 38px;
+  font-size: 10px;
+}
+
+.fusion-node-cell strong {
+  font-size: 13px;
+}
+
+.fusion-config-banner {
+  border-radius: 9px;
+}
+
+.fusion-config-banner strong {
+  font-size: 13px;
+}
+
+.fusion-config-banner small {
+  font-size: 10px;
+}
+
+.fusion-config-facts span {
+  min-height: 30px;
+  font-size: 11px;
+}
+
+.fusion-config-row {
+  min-height: 58px;
+  font-size: 12px;
+}
+
+.fusion-setup-check-title strong {
+  font-size: 12px;
+}
+
+.fusion-setup-check p,
+.fusion-setup-next p {
+  font-size: 11px;
+}
+
+.fusion-setup-provider {
+  min-height: 44px;
+}
+
+.fusion-setup-provider strong {
+  font-size: 11px;
+}
+
+.fusion-setup-provider small,
+.fusion-setup-provider-state {
+  font-size: 10px;
+}
+
+.fusion-bridge-head strong,
+.fusion-bridge-source-head strong {
+  font-size: 12px;
+}
+
+.fusion-bridge-head small,
+.fusion-bridge-source small,
+.fusion-bridge-source p {
+  font-size: 10px;
+}
+
+.fusion-bridge-source li {
+  font-size: 11px;
+}
+
+.fusion-room-count,
+.fusion-room-list small,
+.fusion-room-thread-head small,
+.fusion-room-members span {
+  font-size: 10px;
+}
+
+.fusion-room-list strong {
+  font-size: 12px;
+}
+
+.fusion-room-message p {
+  font-size: 12px;
+}
+
+.fusion-room-message header strong,
+.fusion-room-activity header strong {
+  font-size: 11px;
+}
+
+.fusion-room-actions input,
+.fusion-room-actions select,
+.fusion-room-actions button {
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.fusion-room-empty,
+.fusion-pane-empty,
+.fusion-run-list-empty,
+.fusion-terminal-empty {
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 30%, rgb(37 99 235 / 5%), transparent 42%),
+    #fafbfd;
+}
+
+.fusion-fleet-empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 28px;
+  border: 1px dashed var(--fusion-border-strong);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 25%, rgb(37 99 235 / 5%), transparent 40%),
+    #fafbfd;
+  color: var(--fusion-muted);
+  text-align: center;
+}
+
+.fusion-fleet-empty > svg {
+  color: var(--fusion-blue);
+}
+
+.fusion-fleet-empty strong {
+  color: var(--fusion-text);
+  font-size: 14px;
+}
+
+.fusion-fleet-empty span {
+  max-width: 520px;
+  font-size: 11px;
+}
+
+.fusion-fleet-empty .fusion-primary-button {
+  justify-self: center;
+  margin-top: 5px;
+}
+
+.fusion-run-tabs button,
+.fusion-run-list button {
+  font-size: 11px;
+}
+
+.fusion-run-list button strong {
+  font-size: 12px;
+}
+
+.fusion-terminal-servers > button {
+  min-height: 36px;
+  font-size: 12px;
+}
+
+.fusion-terminal-tab [role="tab"] {
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .fusion-nav-label {
+    padding-top: 8px;
+  }
+
+  .fusion-radar-table {
+    display: grid;
+    gap: 8px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .fusion-radar-header {
+    display: none;
+  }
+
+  .fusion-radar-row {
+    width: 100%;
+    min-width: 0 !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "node status"
+      "transport transport"
+      "capabilities capabilities"
+      "config config"
+      "resource resource";
+    gap: 8px 12px;
+    padding: 12px;
+    border: 1px solid var(--fusion-border);
+    border-radius: 9px;
+    background: var(--fusion-surface);
+  }
+
+  .fusion-radar-row > span:nth-child(1) {
+    grid-area: node;
+  }
+
+  .fusion-radar-row > span:nth-child(2) {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .fusion-radar-row > span:nth-child(3) {
+    grid-area: transport;
+  }
+
+  .fusion-radar-row > span:nth-child(4) {
+    grid-area: capabilities;
+  }
+
+  .fusion-radar-row > span:nth-child(5) {
+    grid-area: config;
+  }
+
+  .fusion-radar-row > span:nth-child(6) {
+    grid-area: resource;
+  }
+
+  .fusion-config-list {
+    display: grid;
+    gap: 8px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .fusion-config-row {
+    min-width: 0 !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 12px;
+    border: 1px solid var(--fusion-border);
+    border-radius: 9px;
+    background: var(--fusion-surface);
+  }
+
+  .fusion-config-row > span:nth-child(2) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fusion-config-row > button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .fusion-topbar-title small {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

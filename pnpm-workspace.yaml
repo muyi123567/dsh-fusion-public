@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - apps/*
+
+allowBuilds:
+  cpu-features: false
+  esbuild: true
+  ssh2: false
+overrides:
+  fast-uri: ^4.2.3

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+lib/
+coverage/
+artifacts/qa/
+research/upstreams/
+.worktrees/
+.superpowers/
+.dsh-fusion-backups/
+.chrome-qa-*/
+.env
+.env.*
+!.env.example
+/*.tgz
+packages/plugin/*.tgz
+*.log

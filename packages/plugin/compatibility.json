@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "installRange": ">=0.2.0-rc.2 <0.3.0",
+  "minimum": "0.2.0-rc.2",
+  "maximumExclusive": "0.3.0",
+  "recommended": "0.2.2-rc.1",
+  "tested": [
+    "0.2.0-rc.2",
+    "0.2.2-rc.1"
+  ],
+  "candidates": [
+    "0.2.2-rc.3"
+  ]
+}

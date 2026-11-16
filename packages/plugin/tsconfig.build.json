@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "include": [
+    "src/index.ts",
+    "src/standalone.ts",
+    "src/compatibility.ts",
+    "src/client.tsx"
+  ],
+  "exclude": [
+    "vite.config.ts"
+  ]
+}

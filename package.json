@@ -1,0 +1,22 @@
+{
+  "name": "dsh-fusion-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "DSH-native multi-machine operations panel",
+  "type": "module",
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "typecheck": "pnpm --filter @dsh-fusion/core build && pnpm --filter @dsh-fusion/config build && pnpm --filter @dsh-fusion/host build && pnpm -r typecheck",
+    "test": "pnpm --filter @dsh-fusion/core build && pnpm --filter @dsh-fusion/config build && pnpm --filter @dsh-fusion/host build && pnpm --filter dsh-fusion build && vitest run --config vitest.root.config.ts && node --test tests/plugin-contract.test.mjs && pnpm -r test",
+    "test:e2e": "pnpm --filter @dsh-fusion/core build && pnpm --filter @dsh-fusion/config build && pnpm --filter @dsh-fusion/host build && pnpm --filter dsh-fusion build && vitest run --config vitest.e2e.config.ts",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "@dsh-fusion/core": "workspace:*",
+    "dsh-fusion": "workspace:*",
+    "@types/node": "^24.0.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "^5.9.0",
+    "vitest": "4.1.12"
+  }
+}

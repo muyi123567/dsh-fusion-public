@@ -1,0 +1,182 @@
+diff --git a/lib/client.js b/lib/client.js
+index d94d566..b3ff031 100644
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -234,7 +234,7 @@ function RoomsLauncher({
+     [rooms, selectedId]
+   );
+   const ownsSelected = selected !== void 0 && selected.leaderSessionId === sessionId && selected.status === "open";
+-  const catalog = sessionId ? sessionsState.subagentsByParent[sessionId] : void 0;
++  const catalog = sessionId ? sessionsState.subagentsByParent?.[sessionId] : void 0;
+   const continuableChildren = (catalog?.entries ?? []).filter((entry) => entry.kind === "child" && entry.mode === "continuable");
+   const attachedSessions = new Set(
+     selected?.members.filter((member) => member.status !== "removed").flatMap((member) => member.connection.sessionId ? [member.connection.sessionId] : []) ?? []
+@@ -261,7 +261,9 @@ function RoomsLauncher({
+     const controller = new AbortController();
+     void refresh(controller.signal);
+     sessions.setSubagentCatalogOpen(sessionId, true);
+-    void sessions.refreshSubagents(sessionId).catch(() => void 0);
++    if (typeof sessions.refreshSubagents === "function") {
++      void sessions.refreshSubagents(sessionId).catch(() => void 0);
++    }
+     return () => {
+       controller.abort();
+       sessions.setSubagentCatalogOpen(sessionId, false);
+@@ -318,18 +320,22 @@ function RoomsLauncher({
+       sessions.open(memberSessionId);
+       return;
+     }
+-    const address = sessions.subagentAddress(memberSessionId);
+-    if (address) sessions.openSubagent(address);
+-    else sessions.openSubagent({
+-      parentSessionId: room.leaderSessionId,
+-      childSessionId: memberSessionId,
+-      mode: "continuable"
+-    });
++    const address = typeof sessions.subagentAddress === "function"
++      ? sessions.subagentAddress(memberSessionId)
++      : void 0;
++    if (address && typeof sessions.openSubagent === "function") sessions.openSubagent(address);
++    else if (typeof sessions.openSubagent === "function") {
++      sessions.openSubagent({
++        parentSessionId: room.leaderSessionId,
++        childSessionId: memberSessionId,
++        mode: "continuable"
++      });
++    } else sessions.open(memberSessionId);
+   };
+   const trigger = location === "header" ? (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, {
+     variant: "toolbar",
+     size: "sm",
+-    icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconUserOutline16, { size: 16 }),
++    icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconUserOutlineRegular, { size: 16 }),
+     "aria-label": "Open Rooms",
+     id: "room-header-trigger",
+     disabled: !sessionId,
+@@ -364,7 +370,7 @@ function RoomsLauncher({
+         font: "inherit"
+       },
+       children: [
+-        (0, import_react.createElement)(import_dsh_client_ui_primitives.IconUserOutline16, { key: "icon", size: wide ? 16 : 18 }),
++        (0, import_react.createElement)(import_dsh_client_ui_primitives.IconUserOutlineRegular, { key: "icon", size: wide ? 16 : 18 }),
+         wide ? (0, import_react.createElement)("span", { key: "label", children: "Rooms" }) : null
+       ]
+     })
+@@ -381,7 +387,7 @@ function RoomsLauncher({
+             key: "create",
+             variant: "toolbar",
+             size: "sm",
+-            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconPlusOutline16, { size: 14 }),
++            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconPlusOutlineRegular, { size: 14 }),
+             disabled: !sessionId || busy,
+             onClick: () => setCreating(true),
+             children: "New"
+@@ -477,7 +483,7 @@ function RoomsLauncher({
+               key: "open",
+               variant: "toolbar",
+               size: "sm",
+-              icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconLinkOutline16, { size: 14 }),
++              icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconLinkOutlineRegular, { size: 14 }),
+               "aria-label": `Open ${member.name}`,
+               title: "Open Session",
+               onClick: () => openMemberSession(selected, member)
+@@ -486,7 +492,7 @@ function RoomsLauncher({
+               key: "message",
+               variant: "toolbar",
+               size: "sm",
+-              icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconSendOutline16, { size: 14 }),
++              icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconSendOutlineRegular, { size: 14 }),
+               "aria-label": `Message ${member.name}`,
+               title: "Send message",
+               onClick: () => setDirectTarget(member.memberId)
+@@ -495,7 +501,7 @@ function RoomsLauncher({
+               key: "remove",
+               variant: "toolbar",
+               size: "sm",
+-              icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconCloseOutline16, { size: 14 }),
++              icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 14 }),
+               "aria-label": `Remove ${member.name}`,
+               title: "Remove member",
+               disabled: busy,
+@@ -536,7 +542,7 @@ function RoomsLauncher({
+             key: "refresh",
+             variant: "toolbar",
+             size: "sm",
+-            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconRefreshOutline16, { size: 14 }),
++            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconRefreshOutlineRegular, { size: 14 }),
+             "aria-label": "Refresh Room",
+             title: "Refresh Room",
+             disabled: loading,
+@@ -553,7 +559,7 @@ function RoomsLauncher({
+             key: "attach",
+             variant: "outline",
+             size: "sm",
+-            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconPlusOutline16, { size: 14 }),
++            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconPlusOutlineRegular, { size: 14 }),
+             "aria-expanded": attaching,
+             "aria-controls": `room-attach-${selected.id}`,
+             onClick: () => setAttaching((value) => !value),
+@@ -650,7 +656,7 @@ function RoomsLauncher({
+           (0, import_react.createElement)(import_dsh_client_ui_primitives.Button, {
+             key: "send",
+             variant: "primary",
+-            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconSendOutline16, { size: 14 }),
++            icon: (0, import_react.createElement)(import_dsh_client_ui_primitives.IconSendOutlineRegular, { size: 14 }),
+             "aria-label": "Broadcast message",
+             title: "Broadcast message",
+             disabled: busy || !broadcastText.trim() || selected.members.filter((member) => member.kind === "member" && member.status !== "removed").length === 0,
+diff --git a/lib/index.js b/lib/index.js
+index 9998349..1b7bb48 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -433,10 +433,7 @@ export default class RoomRuntime extends Service {
+             },
+             deliver: async ({ parent, member, message, signal }) => {
+                 const { sessionId } = dshSessionDescriptor(member.connection.address);
+-                const deliveryId = await this.ctx.subagents.followup(parent, SessionId(sessionId), [{ type: 'text', text: message }], {
+-                    source: { kind: 'coordinator', form: 'relay', senderSessionId: parent.id },
+-                    signal,
+-                });
++                const deliveryId = await this.ctx.subagents.sendMessage(parent, SessionId(sessionId), [{ type: 'text', text: message }], { signal });
+                 return { deliveryId };
+             },
+             interrupt: ({ parent, member }) => {
+diff --git a/package.json b/package.json
+index a2633ff..7b84d19 100644
+--- a/package.json
++++ b/package.json
+@@ -95,20 +95,20 @@
+   },
+   "peerDependencies": {
+     "@deepseek-ai/cordis": "^4.0.1",
+-    "@deepseek-ai/dsh-agent": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-commands": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-host-webserver": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-session": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-subagent": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-ui-conversation": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-ui-input-trigger": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-ui-layout": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-ui-sidebar": "0.1.0-rc.6",
+-    "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.6",
++    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-commands": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-subagent": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-runtime": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-ui-conversation": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-ui-input-trigger": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-ui-layout": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-ui-sidebar": "0.2.0-rc.2",
++    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+     "react": "^18.2.0"
+   },
+   "peerDependenciesMeta": {

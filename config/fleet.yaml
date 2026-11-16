@@ -1,0 +1,74 @@
+version: 1
+
+defaults:
+  dshVersion: 0.2.0-rc.2
+  transport: seekfleet
+
+base:
+  paths:
+    aiRoot: /srv/ai
+  capabilities:
+    - dsh
+    - fusion
+
+roles:
+  control:
+    capabilities:
+      - control
+      - session-hub
+  worker:
+    capabilities:
+      - worker
+      - task-executor
+
+nodes:
+  windows-main:
+    platform: windows
+    roles: [control, worker]
+    paths:
+      aiRoot: F:\AI
+      dshHome: C:\Users\example\.dsh
+    workspaceRoots:
+      - F:\AI
+    capabilities:
+      - windows
+      - powershell
+      - browser
+
+  tencent:
+    platform: linux
+    roles: [worker]
+    paths:
+      aiRoot: /home/example/AI
+      dshHome: /home/example/.dsh
+    workspaceRoots:
+      - /home/example/AI
+    capabilities:
+      - linux
+      - build
+      - pytest
+
+  oracle:
+    platform: linux
+    roles: [worker]
+    paths:
+      aiRoot: /srv/projects
+      dshHome: /home/example/.dsh
+    workspaceRoots:
+      - /srv/projects
+    capabilities:
+      - linux
+      - gpu
+
+  ssh-worker.example.invalid:
+    platform: linux
+    transport: ssh
+    roles: [worker]
+    workspaceRoots:
+      - /srv/projects
+    capabilities:
+      - linux
+      - ssh
+      - monitor
+      - hindsight
+      - config

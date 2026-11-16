@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 2,
+  "runtime": {
+    "dsh": ">=0.2.0-rc.2 <0.3.0",
+    "recommendedDsh": "0.2.2-rc.1",
+    "testedDsh": [
+      "0.2.0-rc.2",
+      "0.2.2-rc.1"
+    ],
+    "candidateDsh": [
+      "0.2.2-rc.3"
+    ],
+    "node": ">=24.9.0"
+  },
+  "companions": [
+    {
+      "id": "room",
+      "name": "dsh-agent-team-room",
+      "version": "0.7.0",
+      "path": "vendor/dsh-agent-team-room-0.7.0.tgz",
+      "sha256": "1f72acb964fa0eafdb0d9b69b7872491dcd616f23e4dd2ddba9178633a899475"
+    },
+    {
+      "id": "agent-teams",
+      "name": "@nanmicoder/dsh-agent-teams",
+      "version": "0.1.30",
+      "path": "vendor/nanmicoder-dsh-agent-teams-0.1.30.tgz",
+      "sha256": "23c6f98947319e7d1c49c906d45bd83055679f98cece9308953d8f73dd6d67e3"
+    },
+    {
+      "id": "agent-bus",
+      "name": "dsh-agent-bus",
+      "version": "0.1.1",
+      "path": "vendor/dsh-agent-bus-0.1.1-dsh02.tgz",
+      "sha256": "35c81edb7e67be48472fa705200874ff45f2baecdd45c3035b8dcdb99352bdf5"
+    }
+  ]
+}

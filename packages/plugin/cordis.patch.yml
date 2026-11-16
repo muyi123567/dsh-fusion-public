@@ -1,0 +1,6 @@
+- insert:
+    - id: dsh-fusion
+      name: dsh-fusion
+      config:
+        host: 127.0.0.1
+        port: 8787

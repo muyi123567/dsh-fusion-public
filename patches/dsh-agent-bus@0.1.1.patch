@@ -1,0 +1,35 @@
+diff --git a/lib/tools.js b/lib/tools.js
+index 5bf1471ff724bdaa8408344adb6731177ed7b1ad..a4b7ae00e4c4ce19c1a1a99283e5615c0761b73e 100644
+--- a/lib/tools.js
++++ b/lib/tools.js
+@@ -16,7 +16,7 @@
+  */
+ import { randomUUID } from 'node:crypto';
+ import { defineTool } from '@deepseek-ai/dsh-tools';
+-import { assertNever } from '@deepseek-ai/dsh-llm';
++import { assertNever } from '@deepseek-ai/dsh-util-values';
+ import { authorizeNoteRecipient, authorizePeerOrDormant, authorizeSettlement, resolveWorkspacePath } from "./authorize.js";
+ import { admitContent, buildMessageMessage, buildTaskMessage, deliverTask } from "./delivery.js";
+ import { blockedByOf } from "./ledger.js";
+diff --git a/package.json b/package.json
+index 7ca7f6b7e4d03cd4768a7871cd09ddf9809618c3..e26e3b9ba325532134da359d16c8197e0105c5c0 100644
+--- a/package.json
++++ b/package.json
+@@ -71,6 +71,7 @@
+     "@deepseek-ai/dsh-storage-domain": "^0.1.0-rc.6",
+     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
+     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
++    "@deepseek-ai/dsh-util-values": "^0.2.0-rc.2",
+     "@deepseek-ai/dsh-workspace": "^0.1.0-rc.6",
+     "@deepseek-ai/schemastery": "^3.18.1"
+   },
+@@ -96,6 +97,9 @@
+     "@deepseek-ai/dsh-tools": {
+       "optional": true
+     },
++    "@deepseek-ai/dsh-util-values": {
++      "optional": true
++    },
+     "@deepseek-ai/dsh-workspace": {
+       "optional": true
+     },

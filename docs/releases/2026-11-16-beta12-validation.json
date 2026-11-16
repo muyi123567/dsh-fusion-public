@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0-beta.12",
+  "environment": "isolated Instabox Linux",
+  "node": "24.19.0",
+  "pnpm": "11.21.0",
+  "vitest": "4.1.12",
+  "sourceCodeFileCount": 264,
+  "sourceCodeDigest": "848ede758d3158739ffbfb5d66ebfc6cd6960396ab635513ff60d364a2a1c5ee",
+  "vitestCounts": {
+    "root": 68,
+    "core": 33,
+    "config": 3,
+    "client": 302,
+    "host": 337,
+    "plugin": 337
+  },
+  "vitestTotal": 1080,
+  "nodeContracts": 27,
+  "artifactDoctorChecks": 29,
+  "chromiumE2E": 3,
+  "allCommandExitCodes": 0,
+  "dependencyAudit": {
+    "totalDependencies": 271,
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "nativeTeam": {
+    "realCordis": true,
+    "createdTasks": 2,
+    "durableTaskRecords": 2,
+    "dependencyReadiness": true,
+    "claimCompletionRevision": true,
+    "modelCalls": 0,
+    "httpControllerVerified": false
+  },
+  "fourBundleStartup": {
+    "dshVersions": [
+      "0.2.2-rc.1",
+      "0.2.2-rc.3"
+    ],
+    "agentTeams": "0.1.30",
+    "room": "0.7.0",
+    "agentBus": "0.1.1-patched",
+    "setupChecks": 21,
+    "unauthenticatedHttp": 401,
+    "authenticatedRootHttp": 200,
+    "fusionStateHttp": 200,
+    "agentTeamsStateHttp": 200,
+    "agentBusStateHttp": 200,
+    "roomTeamsBus": "connected",
+    "doctorHttp": 200,
+    "fleetNodesConfigured": 0,
+    "runtimeStopped": true,
+    "modelCalls": 0
+  },
+  "releaseScope": "code and package gates plus empty-profile startup; no model/business task acceptance",
+  "prePublicMetadataArtifactSha256": "899f0003180545f56264f928c16a0273855e0cddd6f1f96bab5301ef7fde7dc3"
+}

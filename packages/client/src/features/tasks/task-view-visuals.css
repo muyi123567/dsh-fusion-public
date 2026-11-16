@@ -1,0 +1,385 @@
+.fusion-task-satellite,
+.fusion-task-radial {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.fusion-task-satellite-scroll,
+.fusion-task-radial-scroll {
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  background:
+    radial-gradient(circle at 1px 1px, rgb(37 99 235 / 9%) 1px, transparent 0) 0 0 / 18px 18px,
+    linear-gradient(180deg, #fafcff 0%, #f6f8fc 100%);
+}
+
+.fusion-task-satellite-stage {
+  position: relative;
+  min-width: 980px;
+  min-height: 560px;
+}
+
+.fusion-task-satellite-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 220px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 18px 16px;
+  border: 1px solid rgb(37 99 235 / 28%);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--fusion-blue);
+  text-align: center;
+  box-shadow: 0 16px 46px rgb(37 99 235 / 13%);
+}
+
+.fusion-task-satellite-core strong {
+  color: var(--fusion-text);
+  font-size: 14px;
+}
+
+.fusion-task-satellite-core small {
+  color: var(--fusion-muted);
+  font-size: 10px;
+}
+
+.fusion-task-satellite-node {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 270px;
+  transform: translate(-50%, -50%) translate(var(--orbit-x), var(--orbit-y));
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--fusion-border);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 10px 28px rgb(24 34 50 / 8%);
+}
+
+.fusion-task-satellite-node.is-linked {
+  border-color: rgb(37 99 235 / 34%);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 8%);
+}
+
+.fusion-task-satellite-node > header {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.fusion-task-satellite-node > header svg {
+  color: var(--fusion-blue);
+}
+
+.fusion-task-satellite-node strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  color: var(--fusion-text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-satellite-node small {
+  display: block;
+  overflow: hidden;
+  color: var(--fusion-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-satellite-metrics {
+  display: flex;
+  gap: 8px;
+  color: var(--fusion-muted);
+  font-size: 10px;
+}
+
+.fusion-task-satellite-metrics span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fusion-task-satellite-node ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.fusion-task-satellite-task {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 1px solid var(--fusion-border);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--fusion-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fusion-task-satellite-task strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-satellite-task.is-selected {
+  border-color: var(--fusion-blue);
+  background: #f1f6ff;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 10%);
+}
+
+.fusion-task-satellite-idle,
+.fusion-task-satellite-empty {
+  padding: 10px;
+  border: 1px dashed var(--fusion-border-strong);
+  border-radius: 8px;
+  color: var(--fusion-muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.fusion-task-satellite-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 280px;
+  transform: translate(-50%, -50%);
+}
+
+.fusion-task-radial-canvas {
+  display: block;
+  width: min(100%, 620px);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.fusion-task-radial-orbit {
+  fill: none;
+  stroke: rgb(37 99 235 / 12%);
+  stroke-dasharray: 4 7;
+}
+
+.fusion-task-radial-orbit.is-outer {
+  stroke: rgb(37 99 235 / 8%);
+}
+
+.fusion-task-radial-edge {
+  fill: none;
+  stroke: #c6d3e5;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.fusion-task-radial-edge.is-root {
+  stroke: #a9c2ee;
+}
+
+.fusion-task-radial-edge.is-owns {
+  stroke: #a7c1ef;
+  stroke-dasharray: 4 3;
+}
+
+.fusion-task-radial-edge.is-executes_on {
+  stroke: #b9c9e6;
+}
+
+.fusion-task-radial-edge.is-produces {
+  stroke: #bccbdd;
+  stroke-dasharray: 2 4;
+}
+
+.fusion-task-radial-node-host {
+  overflow: visible;
+}
+
+.fusion-task-radial-card {
+  width: 100%;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 8px 9px;
+  border: 1px solid var(--fusion-border);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 96%);
+  color: var(--fusion-text);
+  box-shadow: 0 5px 16px rgb(24 34 50 / 7%);
+}
+
+button.fusion-task-radial-card {
+  cursor: pointer;
+  text-align: left;
+}
+
+.fusion-task-radial-card.is-owner {
+  border-color: #c9d9f3;
+  background: #fbfdff;
+}
+
+.fusion-task-radial-card.is-root {
+  border-color: rgb(37 99 235 / 32%);
+  background: #fff;
+  box-shadow: 0 12px 32px rgb(37 99 235 / 12%);
+}
+
+.fusion-task-radial-card.is-linked {
+  border-color: rgb(37 99 235 / 30%);
+}
+
+button.fusion-task-radial-card.is-selected,
+.fusion-task-radial-card.is-selected {
+  border-color: var(--fusion-blue);
+  background: #f1f6ff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+.fusion-task-radial-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--fusion-blue-soft);
+  color: var(--fusion-blue);
+}
+
+.fusion-task-radial-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.fusion-task-radial-copy strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-radial-copy small {
+  overflow: hidden;
+  color: var(--fusion-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-radial-card.is-task {
+  display: grid;
+  gap: 4px;
+}
+
+.fusion-task-radial-task-head {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.fusion-task-radial-task-head strong {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-radial-card.is-task small {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--fusion-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fusion-task-radial-legend {
+  position: sticky;
+  top: 10px;
+  z-index: 4;
+  width: fit-content;
+  margin: -62px 0 0 12px;
+  padding: 7px 9px;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 8px;
+  border: 1px solid var(--fusion-border);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 94%);
+  font-size: 9px;
+}
+
+.fusion-task-radial-legend div {
+  display: grid;
+  gap: 2px;
+}
+
+.fusion-task-radial-legend dt {
+  color: var(--fusion-muted);
+}
+
+.fusion-task-radial-legend dd {
+  margin: 0;
+  color: var(--fusion-text);
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .fusion-task-satellite,
+  .fusion-task-radial {
+    height: auto;
+    overflow: visible;
+  }
+
+  .fusion-task-satellite-scroll,
+  .fusion-task-radial-scroll {
+    height: auto;
+    overflow: visible;
+  }
+
+  .fusion-task-satellite-stage {
+    min-width: 760px;
+    min-height: 480px;
+  }
+
+  .fusion-task-radial-canvas {
+    height: auto;
+    aspect-ratio: 1;
+    min-width: 760px;
+  }
+
+  .fusion-task-radial-legend {
+    margin-top: -44px;
+  }
+}

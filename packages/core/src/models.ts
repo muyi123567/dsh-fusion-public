@@ -1,0 +1,6 @@
+export const FUSION_PLUGIN_VERSION = "0.2.0-beta.12";
+export const FUSION_DEFAULT_MODEL_PROVIDER = "ccs-wb";
+export const FUSION_DEFAULT_MODEL_ID = "cn:deepseek-v4.1-flash";
+export const FUSION_DEFAULT_MODEL_ROUTE =
+  `${FUSION_DEFAULT_MODEL_PROVIDER}/${FUSION_DEFAULT_MODEL_ID}`;
+export const FUSION_DEFAULT_REASONING_EFFORT = "max";
