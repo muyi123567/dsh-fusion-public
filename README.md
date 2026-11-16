@@ -30,6 +30,24 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.13.tgz
 
 安装范围不等于所有组合均已通过业务验收。
 
+## 鲸群场景面板（候选源码）
+
+[打开场景预览](https://whale-panel.whale-muyi123567.workers.dev/whale-habitat.html)。
+按 Magpie 调研→动画提示词→代码实现的顺序开发，研究和提示词均公开保存在 docs/design。
+
+鲸对应团队，海豚对应显式子代理会话，磷虾对应任务，海鸥对应定时任务，航标对应 SSH 主机。
+场景包含深海巡游、海面错相呼吸、团队选择与任务详情。情境演示明确使用合成数据；
+正式投影读取已有任务、主机和 Session Hub，不自行派发或编造工作。
+当前没有统一定时任务来源，正式数据会显示“定时来源未接入”。
+
+面板专用模型 931352 字节 / 19999 三角；同屏最多三鲸共享模型和纹理。
+平衡24fps、节能15fps、隐藏/离屏/暂停停止调度，静态与减动画不创建 WebGL。
+原生工作台按需加载海域UI和场景模块。当前公开安装包仍为 beta.13，候选源码的海域入口尚未替换该发布包。
+
+[Magpie研究](docs/design/2026-11-17-magpie-research.md) ·
+[鲸群提示词](docs/design/2026-11-17-whale-pod-prompt.md) ·
+[中文意象与事件映射](docs/design/2026-11-17-whale-imagery-prompt-v2.md)
+
 ## 鲸入深海 · 动态原型
 
 [打开实时动态预览](https://whale-panel.whale-muyi123567.workers.dev/)。

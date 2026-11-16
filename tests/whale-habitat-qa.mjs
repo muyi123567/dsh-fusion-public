@@ -41,7 +41,7 @@ try {
  browser = await chromium.launch({ executablePath: env.CHROMIUM_PATH ?? '/usr/bin/chromium',
  headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
  report.browser = browser.version();
- for (const viewport of [{width:1536,height:960},{width:1280,height:720},{width:390,height:844}]) {
+ for (const viewport of (env.WHALE_QA_VIEWPORTS?JSON.parse(env.WHALE_QA_VIEWPORTS):[{width:1536,height:960},{width:1280,height:720},{width:390,height:844}])) {
   await run('viewport-' + viewport.width, async entry => {
    const context = await browser.newContext({ viewport, reducedMotion:'no-preference' });
    const page = await context.newPage();
@@ -84,7 +84,7 @@ try {
      await page.locator(selectors.quality).selectOption(quality);
      await page.waitForFunction(({s,q})=>{
       const actual=document.querySelector(s)?.dataset.habitatQuality;
-      return q==='auto' ? ['balanced','eco'].includes(actual) : actual===q;
+      return q==='auto'||q==='balanced' ? ['balanced','eco'].includes(actual) : actual===q;
      },{s:selectors.root,q:quality});
      check(await page.locator(selectors.quality).inputValue()===quality,'Quality selection not retained');
      await advancing();

@@ -4,12 +4,16 @@ import type { HabitatPod, HabitatQuality, HabitatView } from "./contracts.js";
 import { WhaleHabitat } from "./WhaleHabitat.js";
 import "./whale-living-panel.css";
 
-import { projectOceanLife } from "./ocean-director.js";
+import { projectOceanLife } from "./life-director.js";
 import type { WhalePanelModel } from "../types.js";
 type Panel = "teams" | "tasks" | "hosts" | "attention" | "context";
 export function WhaleLivingPanel({model,onOpenTask,onOpenHost,onNavigate}:WhaleDashboardProps) {
- const prev=useRef<WhalePanelModel>();
- const life=useMemo(()=>{const value=projectOceanLife(model,prev.current);prev.current=model;return value;},[model]);
+ const cache=useRef<{model:WhalePanelModel;life:ReturnType<typeof projectOceanLife>}>();
+ const life=useMemo(()=>{
+  if(cache.current?.model===model)return cache.current.life;
+  const value=projectOceanLife(model,cache.current?.model);
+  cache.current={model,life:value};return value;
+ },[model]);
  const [quality,setQuality]=useState<HabitatQuality>(() => {
   const v=typeof window==="undefined"?null:new URLSearchParams(window.location.search).get("quality");
   return v==="balanced"||v==="eco"||v==="still"?v:"auto";
@@ -55,7 +59,7 @@ export function WhaleLivingPanel({model,onOpenTask,onOpenHost,onNavigate}:WhaleD
    <div className="wlp-controls"><div role="group" aria-label="海域视角"><button type="button" aria-label="深海遨游" aria-pressed={view==="deep"} onClick={()=>setView("deep")}>深海</button><button type="button" aria-label="海面呼吸" aria-pressed={view==="surface"} onClick={()=>setView("surface")}>海面</button></div>
    <select aria-label="海域画质" value={quality} onChange={e=>setQuality(e.target.value as HabitatQuality)}><option value="auto">自动</option><option value="balanced">平衡</option><option value="eco">节能</option><option value="still">静态</option></select><button type="button" aria-label={playing?"暂停海域":"继续海域"} aria-pressed={!playing} onClick={()=>setPlaying(v=>!v)}>{playing?"暂停":"继续"}</button></div>
   </header>
-  <div className="wlp-cues" aria-live="polite">{life.cues.map(c=><span key={c.id} data-cue-kind={c.kind}>正在{c.label}</span>)}</div>
+  <div className="wlp-cues" aria-live="polite">{life.cues.map(c=><span key={c.id} data-cue-kind={c.kind} data-entity-id={c.entityId}>{c.label}</span>)}</div>
   {!pods.length&&<div className="wlp-empty"><strong>安静海域，等待鲸群</strong><p>{model.freshness==="unobserved"?"尚未观测到团队来源。":"当前快照没有团队记录。"}</p><button type="button" onClick={()=>onNavigate("setup")}>连接团队来源</button></div>}
   {panel&&<aside className="wlp-panel" aria-label={titles[panel]+"浮层"} onKeyDown={e=>{if(e.key==="Escape"){e.stopPropagation();close();}}}>
    <div className="wlp-panel-head"><div><h2>{titles[panel]}</h2><small>{selected?selected.name:"全部团队"} · {source}</small></div><button ref={closeRef} type="button" aria-label="关闭浮层" onClick={close}>关闭 ×</button></div>
@@ -71,7 +75,7 @@ export function WhaleLivingPanel({model,onOpenTask,onOpenHost,onNavigate}:WhaleD
    </div>
   </aside>}
   <footer className="wlp-bottom"><div className="wlp-state"><span>{state}</span><span>{!observed?"工作提示待来源确认":model.summary.active+" 活动任务 · "+model.summary.online+" 台在线主机"}</span></div>
-   <div className="wlp-team-strip" aria-label="海域团队选择"><button type="button" aria-label="上一组团队" disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>‹</button><div className="wlp-team-names">{visiblePods.map(p=><button key={p.id} type="button" aria-pressed={team===p.id} onClick={e=>selectPod(p.id,e.currentTarget)}>{p.name}</button>)}</div><button type="button" aria-label="下一组团队" disabled={currentPage===lastPage} onClick={()=>setPage(currentPage+1)}>›</button><span>{visiblePods.length} / {pods.length} 团队{pods.length>3?" · 第 "+(currentPage+1)+" 组":""}</span></div>
+   <div className="wlp-team-strip" aria-label="海域团队选择"><button type="button" aria-label="上一组团队" disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>‹</button><div className="wlp-team-names">{visiblePods.map(p=><button key={p.id} data-team-id={p.id} type="button" aria-pressed={team===p.id} onClick={e=>selectPod(p.id,e.currentTarget)}>{p.name}</button>)}</div><button type="button" aria-label="下一组团队" disabled={currentPage===lastPage} onClick={()=>setPage(currentPage+1)}>›</button><span>{visiblePods.length} / {pods.length} 团队{pods.length>3?" · 第 "+(currentPage+1)+" 组":""}</span></div>
    <nav aria-label="海域记录">{(["teams","tasks","hosts","attention","context"] as const).map(id=><button key={id} type="button" aria-label={titles[id]} aria-expanded={panel===id} aria-pressed={panel===id} onClick={e=>panel===id?close():open(id,e.currentTarget)}>{titles[id]} <span>{id==="teams"?model.pods.length:id==="tasks"?model.krill.length:id==="hosts"?model.hosts.length:id==="attention"?model.attention.length:""}</span></button>)}</nav>
   </footer>
  </section>;

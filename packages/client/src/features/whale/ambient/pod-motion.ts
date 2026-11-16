@@ -42,7 +42,7 @@ export function samplePodMotion(
  const surfaceY = 5.4 - 0.8 * scale + 0.10;
  const deepY = -2.4 + lane * 0.85;
  const y = surface ? deepY + (surfaceY - deepY) * exposure
-  : -1.8 + lane * (0.8 + portrait * 1.5) + Math.sin(phase) * 0.18;
+  : -1.8 + lane * (2.6 + portrait * 0.5) + Math.sin(phase) * 0.18;
  // Breath only on the flat surfaced interval, a short smooth mist pulse.
  const spout = surface
   ? smooth((cycle - 7.5) / 0.25) * (1 - smooth((cycle - 8) / 0.7))
@@ -54,7 +54,7 @@ export function samplePodMotion(
    -lane * 3.2 + Math.sin(phase * 0.53) * 0.24,
   ],
   rotation: [
-   0.2 + Math.sin(phase) * 0.025 + (surface ? (rise - exposure) * 0.06 : 0),
+   0.2 + Math.sin(phase) * 0.025 + (surface ? (rise - fall) * 0.06 : 0),
    -0.85 + Math.sin(phase * 0.61) * 0.045,
    -0.06 + Math.sin(phase * 0.83) * 0.02,
   ],

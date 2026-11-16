@@ -424,7 +424,7 @@ describe("session and transport projection", () => {
     expect(model.schedulesObserved).toBe(false);
   });
   it("creates no dolphins from absent origin, absent parents or member counts", () => {
-    expect(projectHub([session({ origin: undefined }), session({ parentNativeId: "" }),
+    expect(projectHub([(({ origin, ...rest }) => rest)(session()), session({ parentNativeId: "" }),
       session({ parentNativeId: "  " })]).subagents).toEqual([]);
     expect(project([], [], [team("large", [], { memberIds: ["a", "b", "c"] })]).subagents).toEqual([]);
   });

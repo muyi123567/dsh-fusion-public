@@ -63,7 +63,7 @@ try {
   check("workspace-styles", workspaceSource.includes(".fusion-topbar") && !workspaceSource.includes("__DSH_FUSION_WORKSPACE_CSS__"), "workspace owns its collected styles");
   check("workspace-self-contained", !/\bimport\s*\(|(?<![.\w])\w+\(["']\.\//.test(workspaceSource), "workspace has no unresolved ESM or relative shared chunks");
   const runtimeFiles = readdirSync(resolve(root, "packages/plugin/dist")).filter((name) => /\.(?:js|cjs|css|map)$/.test(name)).sort();
-  check("clean-runtime-files", JSON.stringify(runtimeFiles) === JSON.stringify(["client.js", "client.terminal.js", "client.workspace.js", "index.js", "standalone.js"]), "runtime output is exactly the launcher, workspace, terminal, host and standalone entries");
+  check("clean-runtime-files", JSON.stringify(runtimeFiles) === JSON.stringify(["client.habitat.js", "client.js", "client.ocean-scene.js", "client.terminal.js", "client.workspace.js", "index.js", "standalone.js"]), "runtime output is exactly the launcher, workspace, terminal, habitat, ocean renderer, host and standalone entries");
   const terminalSource = readFileSync(resolve(root, "packages/plugin/dist/client.terminal.js"), "utf8");
   let terminal;
   runInNewContext(terminalSource, { window: { __ModuleLoader__: { load: (value) => { terminal = value; } } } });

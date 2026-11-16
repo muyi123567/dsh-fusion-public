@@ -27,12 +27,16 @@ try {
  await page.locator(s.scenario).selectOption(value);
  await page.waitForFunction(v=>Array.from(document.querySelectorAll('[data-demo-state]')).some(n=>n.getAttribute('data-demo-state')?.startsWith(v+':event:')),value,{timeout:10000});
  }
- await page.getByText(c.cueText,{exact:false}).first().waitFor({state:'visible'});
+ await page.locator(".wlp").getByText(c.cueText,{exact:false}).first().waitFor({state:'visible'});
  a.cues=await page.locator(s.cue).evaluateAll(ns=>ns.map(n=>({kind:n.dataset.cueKind,entityId:n.dataset.entityId,text:n.textContent})));
  if(c.expectedCue){
  if(!c.expectedCue.entityId||!a.cues.some(x=>x.kind===c.expectedCue.kind&&x.entityId===c.expectedCue.entityId&&x.text.includes(c.cueText))) throw Error('Cue kind/text/entity ID mismatch');
  }else if(!c.noNewCue) throw Error('Independent cue expectation required');
  for(const k of c.forbiddenKinds||[]) if(a.cues.some(x=>x.kind===k)) throw Error('Forbidden cue '+k);
+ await page.waitForFunction(({selector,expected})=>{
+ const raw=document.querySelector(selector)?.getAttribute("data-habitat-metrics");if(!raw)return false;
+ const m=JSON.parse(raw);return Object.entries(expected).every(([k,v])=>m[k]===v);
+ },{selector:s.root,expected:c.entityCounts||{}},{timeout:15000});
  const raw=await page.locator(s.root).getAttribute('data-habitat-metrics');a.metrics=raw?JSON.parse(raw):null;
  for(const [key,value] of Object.entries(c.entityCounts||{})){
  if(!a.metrics||!Object.hasOwn(a.metrics,key))r.gaps.push(name+': count unavailable '+key);

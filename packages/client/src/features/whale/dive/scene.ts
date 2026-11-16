@@ -1,3 +1,5 @@
+import {createLifeLayer} from "../ambient/life-scene.js";
+import type {OceanLife} from "../ambient/life-types.js";
 import panelAssetUrl from "../ambient/assets/whale-panel.glb?url";
 import * as THREE from "three";
 import { samplePodMotion } from "../ambient/pod-motion.js";
@@ -5,14 +7,14 @@ import type { HabitatActivity, HabitatTier, HabitatPod, HabitatView } from "../a
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 export const DIVE_DURATION = 36;
-export type DiveScene = { setPods:(pods:HabitatPod[])=>void; setView:(view:HabitatView)=>void; setSelected:(id:string|undefined)=>void; hitTest:(x:number,y:number)=>string|undefined; getMetrics:()=>import("../ambient/contracts.js").HabitatMetrics; setQuality:(quality:HabitatTier)=>void; setActivity:(activity:HabitatActivity)=>void; render: (seconds:number) => void; resize:()=>void; metrics:()=>{calls:number;triangles:number;geometries:number;textures:number;programs:number}; dispose:()=>void; };
-type Options = { pods?:HabitatPod[]; view?:HabitatView; selectedPodId?:string; mode?: "dive" | "ambient"; quality?: HabitatTier; activity?: HabitatActivity; canvas:HTMLCanvasElement; assetUrl:string; onReady:()=>void; onError:(error:Error)=>void; };
+export type DiveScene = { setLife:(life:OceanLife)=>void; setPods:(pods:HabitatPod[])=>void; setView:(view:HabitatView)=>void; setSelected:(id:string|undefined)=>void; hitTest:(x:number,y:number)=>string|undefined; getMetrics:()=>import("../ambient/contracts.js").HabitatMetrics; setQuality:(quality:HabitatTier)=>void; setActivity:(activity:HabitatActivity)=>void; render: (seconds:number) => boolean; resize:()=>void; metrics:()=>{calls:number;triangles:number;geometries:number;textures:number;programs:number}; dispose:()=>void; };
+type Options = { life?:OceanLife; pods?:HabitatPod[]; view?:HabitatView; selectedPodId?:string; mode?: "dive" | "ambient"; quality?: HabitatTier; activity?: HabitatActivity; canvas:HTMLCanvasElement; assetUrl:string; onReady:()=>void; onError:(error:Error)=>void; };
 const clamp=THREE.MathUtils.clamp;
 const smooth=(a:number,b:number,x:number)=>THREE.MathUtils.smoothstep(x,a,b);
 const WATER_Y=5.4;
 
 /** Real mesh + procedural deformation. Visual simulation, not a fluid solver. */
-export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",quality="balanced",pods=[],view="deep",selectedPodId}:Options):DiveScene {
+export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",quality="balanced",pods=[],view="deep",selectedPodId,life}:Options):DiveScene {
  const ambient = mode === "ambient";
  let currentPods = pods.filter((pod,index,list)=>pod.id&&list.findIndex(p=>p.id===pod.id)===index).slice(0,3);
  let currentView = view;
@@ -26,7 +28,7 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
  const breathLocal=new THREE.Vector3(), breathWorld=new THREE.Vector3();
  let modelRadius=8;
  const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
- const skyColor=new THREE.Color("#6999b5"), deepColor=new THREE.Color("#032333");
+ const skyColor=new THREE.Color("#668b9f"), deepColor=new THREE.Color("#032333");
 
  let currentQuality = quality;
  let renderedFrames = 0, renderedTime = 0;
@@ -35,7 +37,11 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.1;
+ const gl=renderer.getContext() as WebGL2RenderingContext;
+ let gpuFence:WebGLSync|null=null, gpuSubmittedAt=0;
  const scene = new THREE.Scene();
+ const lifeLayer=ambient?createLifeLayer(scene):undefined;
+ let currentLife=life;
  scene.background = new THREE.Color("#032333");
  scene.fog = new THREE.FogExp2("#06405a",0.022);
  const camera=new THREE.PerspectiveCamera(42,1,0.1,250);
@@ -234,7 +240,11 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
     object.material=Array.isArray(object.material)?object.material.map(copy):copy(object.material);
    });
    root.userData.teamId=pod.id;root.add(model);deformModel(model,swimClock);
-   const spout=new THREE.Points(sprayGeometry,new THREE.PointsMaterial({color:"#e1f3f3",size:.16,transparent:true,opacity:0,depthWrite:false}));
+   const spout=new THREE.Points(sprayGeometry,new THREE.PointsMaterial({color:"#e1f3f3",size:.22,transparent:true,opacity:0,depthWrite:false}));
+   spout.material.onBeforeCompile=shader=>{
+    shader.fragmentShader=shader.fragmentShader.replace("#include <opaque_fragment>",
+      "float mist=1.0-smoothstep(0.1,0.5,length(gl_PointCoord-vec2(0.5)));diffuseColor.a*=mist;\n#include <opaque_fragment>");
+   };
    const krill=new THREE.Points(krillGeometry,new THREE.PointsMaterial({color:"#a6ced3",size:.045,transparent:true,opacity:.35,depthWrite:false}));
    const ripple=new THREE.Mesh(rippleGeometry,new THREE.MeshBasicMaterial({color:"#b5dfe1",transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
    ripple.rotation.x=-Math.PI/2;spout.visible=false;krill.visible=false;ripple.visible=false;
@@ -315,11 +325,21 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   if(disposed)return;
   const width=canvas.clientWidth,height=canvas.clientHeight;
   if(width===0||height===0)return;
+  const ratio=ambient?Math.min(window.devicePixelRatio,currentQuality==="eco"?.75:1,Math.sqrt((currentQuality==="eco"?500000:1000000)/(width*height))):Math.min(window.devicePixelRatio,1.5);
+  renderer.setPixelRatio(Math.max(.35,ratio));
   renderer.setSize(width,height,false);camera.aspect=width/height;
   camera.fov=camera.aspect<.75?57:42;camera.updateProjectionMatrix();
  }
  function render(seconds:number){
-  if(disposed)return;
+  if(disposed)return false;
+  if(gpuFence){
+   const status=gl.clientWaitSync(gpuFence,0,0);
+   if(status===gl.TIMEOUT_EXPIRED){
+    if(ambient&&currentQuality==="balanced"&&performance.now()-gpuSubmittedAt>160)setQuality("eco");
+    return false;
+   }
+   gl.deleteSync(gpuFence);gpuFence=null;
+  }
   const t=ambient ? 18 : clamp(seconds,0,DIVE_DURATION);clock.value=ambient ? seconds : t;
   const descend=smooth(0,13,t);
   const deep=smooth(12,36,t);
@@ -336,6 +356,7 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
    ring.material.opacity=age<0?0:Math.exp(-age*.45)*.22;
   }
   if(ambient){
+   renderer.toneMappingExposure=.4+.7*smooth(0,3,seconds);
    const surface=currentView==="surface";
    whaleRoot.visible=false;bubbles.visible=false;
    volume.visible=!surface;dust.visible=!surface;
@@ -393,13 +414,18 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
    // A shared immutable mist distribution; each team has its own transform/material.
    for(let i=0;i<rings.length;i++)rings[i]!.visible=false;
   }
+  if(currentLife)lifeLayer?.update(currentLife,seconds,currentView);
   renderer.render(scene,camera);
+  gpuFence=gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE,0);gl.flush();gpuSubmittedAt=performance.now();
   renderedFrames++;renderedTime=seconds;
+  return true;
  }
  const contextLost=(event:Event)=>{event.preventDefault();if(!disposed)onError(new Error("3D 画面连接中断，请重新载入。"));};
  canvas.addEventListener("webglcontextlost",contextLost);
  resize();
  const getMetrics=()=>({
+  ...(lifeLayer?.getMetrics()??{}),
+  whales:podWhales.length,renderers:1,spouts:podWhales.filter(w=>w.spout.visible).length,
   frames:renderedFrames, elapsed:renderedTime, tier:currentQuality,
   calls:renderer.info.render.calls, triangles:renderer.info.render.triangles,
   geometries:renderer.info.memory.geometries, textures:renderer.info.memory.textures,
@@ -443,7 +469,7 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   const hit=raycaster.intersectObjects(podWhales.map(w=>w.root),true)[0];
   return hit?.object.userData.teamId as string|undefined;
  };
- return {render,resize,getMetrics,setQuality,setPods,
+ return {setLife:(next:OceanLife)=>{currentLife=next;},render,resize,getMetrics,setQuality,setPods,
  setView:(next:HabitatView)=>{currentView=next;},
  setSelected:(id:string|undefined)=>{selectedId=id;},hitTest,setActivity:(_next:HabitatActivity)=>{},metrics:()=>({
   calls:renderer.info.render.calls, triangles:renderer.info.render.triangles,
@@ -456,6 +482,8 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   podWhales.length=0;
   if(whale)releaseModel(whale);
   for(const resource of resources)resource.dispose();
+  lifeLayer?.dispose();
+  if(gpuFence){gl.deleteSync(gpuFence);gpuFence=null;}
   scene.clear();renderer.dispose();renderer.forceContextLoss();
  }};
 }

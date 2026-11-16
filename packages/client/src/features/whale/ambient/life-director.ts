@@ -4,15 +4,15 @@ const bound = <T extends {id:string}>(xs: T[]) => [...new Map(xs.map(x=>[x.id,x]
 export function projectOceanLife(model:WhalePanelModel, previous?:WhalePanelModel):OceanLife {
  const cues:OceanCue[]=[];
  const emit=(kind:OceanCue["kind"],entityId:string,label:string,state:unknown,teamId?:string)=>{
-  if(cues.length<8)cues.push({id:JSON.stringify([kind,entityId,state]),kind,entityId,label,teamId});
+  if(cues.length<8)cues.push({id:JSON.stringify([kind,entityId,state]),kind,entityId,label,...(teamId===undefined?{}:{teamId})});
  };
- const tasks=bound(model.krill).map(t=>({id:t.id,teamId:t.teamId,status:t.status,blocked:!!t.blocked||t.status==="failed"}));
- const hosts=bound(model.hosts).map(h=>({id:h.id,name:h.name,status:h.status,ssh:!!h.transports?.some(t=>t.toLowerCase().includes("ssh"))}));
+ const tasks=bound(model.krill).map(t=>({id:t.id,...(t.teamId===undefined?{}:{teamId:t.teamId}),status:t.status,blocked:!!t.blocked||t.status==="failed"}));
+ const hosts=bound(model.hosts).map(h=>({id:h.id,name:h.name,status:h.status,ssh:!!h.transports?.some(t=>t.toLowerCase()==="ssh")}));
  const subagents=bound(model.subagents??[]).map(s=>({...s}));
  const schedulesObserved=model.schedulesObserved===true;
  const schedules=schedulesObserved?bound(model.schedules??[]).map(s=>({...s})):[];
  const phase=model.freshness==="stale"?"stale":model.freshness==="unobserved"?"starting":"ready";
- if(!previous)emit("startup","ocean","海域缓入 · 等待来源",model.freshness);
+ if(!previous)emit("startup","ocean",model.freshness==="current"?"雾开见鲸 · 按当前快照就位":"海域缓入 · 等待来源",model.freshness);
  else if(model.freshness==="stale"&&previous.freshness!=="stale")emit("source-stale","ocean","失去观测","stale");
  else if(model.freshness==="current"&&previous.freshness==="current"){
   const oldTasks=new Map(previous.krill.map(t=>[t.id,t]));
@@ -29,7 +29,7 @@ export function projectOceanLife(model:WhalePanelModel, previous?:WhalePanelMode
   const oldHosts=new Map(previous.hosts.map(h=>[h.id,h]));
   for(const h of hosts){
    const old=oldHosts.get(h.id);
-   if(!h.ssh||!old?.transports?.some(t=>t.toLowerCase().includes("ssh")))continue;
+   if(!h.ssh||!old?.transports?.some(t=>t.toLowerCase()==="ssh"))continue;
    if(old.status==="offline"&&h.status==="online")emit("host-online",h.id,"SSH主机可达",h.status);
    if(old.status==="online"&&h.status==="offline")emit("host-offline",h.id,"SSH主机不可达",h.status);
   }

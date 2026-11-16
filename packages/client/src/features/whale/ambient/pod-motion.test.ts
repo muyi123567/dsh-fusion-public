@@ -16,7 +16,7 @@ describe("pod life motion", () => {
     expect(values(m).every(Number.isFinite)).toBe(true);
     expect(Math.abs(m.position[0])).toBeLessThan(4);
     expect(Math.abs(m.position[2])).toBeLessThan(3.5);
-    expect(m.position[1]).toBeGreaterThan(-4.5);
+    expect(m.position[1]).toBeGreaterThan(-5.2);
     expect(m.position[1]).toBeLessThan(5.1);
     expect(Math.abs(m.rotation[1] + 0.85)).toBeLessThan(0.046);
     expect(m.scale).toBeGreaterThanOrEqual(0.6);

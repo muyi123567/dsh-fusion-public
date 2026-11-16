@@ -88,13 +88,14 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
    try {
     const begin = performance.now();
     if (needsResize) { scene.resize(); needsResize = false; }
-    scene.render(elapsed.current);
+    const rendered=scene.render(elapsed.current);
     const cost = performance.now() - begin;
     if (tier === "balanced") {
      slowFrames = cost > 1000 / 24 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
      if (slowFrames >= 24) { tier = "eco"; scene.setQuality(tier); }
     }
-    frames.current++;
+    if(rendered)frames.current++;
+    tier=scene.getMetrics().tier;
     if (now - lastMetrics.current >= 1000) {
      if(host.current){
       host.current.dataset.habitatFrames=String(frames.current);
@@ -106,7 +107,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
       host.current.dataset.habitatMetrics=JSON.stringify(m);
      }
      lastMetrics.current = now;
-     latest.current.onMetrics?.({ ...scene.getMetrics(), frames: frames.current, elapsed: elapsed.current, tier });
+     latest.current.onMetrics?.(scene.getMetrics());
     }
     if (active()) timer = setTimeout(tick, frameDelay(tier, performance.now() - now));
    } catch { fail(); }
@@ -136,6 +137,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
       mode: "ambient",
       quality: tier,
       activity: latest.current.activity,
+      ...(latest.current.life===undefined?{}:{life:latest.current.life}),
       pods: latest.current.pods ?? [],
       view: latest.current.view ?? "deep",
       ...(latest.current.selectedPodId===undefined?{}:{selectedPodId:latest.current.selectedPodId}),
@@ -145,6 +147,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
        queueMicrotask(() => {
         if(disposed || failed || !scene) return;
         scene.setPods(latest.current.pods ?? []);
+        if(latest.current.life)scene.setLife(latest.current.life);
         scene.setActivity(latest.current.activity);
         scene.setView(latest.current.view ?? "deep");
         scene.setSelected(latest.current.selectedPodId);
@@ -188,6 +191,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
  }, [policy.poster]);
  useEffect(() => { qualityUpdate.current(policy.tier); }, [policy.tier]);
  useEffect(() => { resume.current(); }, [props.playing]);
+ useEffect(() => { if(props.life)sceneRef.current?.setLife(props.life); }, [props.life]);
  useEffect(() => { sceneRef.current?.setActivity(props.activity); }, [props.activity]);
  useEffect(() => { sceneRef.current?.setPods(props.pods ?? []); }, [props.pods]);
  useEffect(() => { sceneRef.current?.setView(props.view ?? "deep"); }, [props.view]);

@@ -25,7 +25,7 @@ function boot() {
   let registration;
   dom.window.__ModuleLoader__ = { load: (value) => { registration = value; } };
   const source = readFileSync(new URL("client.js", dist), "utf8");
-  runInNewContext(source, { window: dom.window, document: dom.window.document, CustomEvent: dom.window.CustomEvent, console });
+  runInNewContext(source, { window: dom.window, document: dom.window.document, CustomEvent: dom.window.CustomEvent, HTMLElement: dom.window.HTMLElement, console });
   assert.equal(registration.id, "dsh-fusion");
   const arrivals = [];
   const require = (id) => clientRequire(id);
@@ -60,7 +60,7 @@ function boot() {
       try {
         runInNewContext(source, {
           window: dom.window, self: dom.window, document: dom.window.document,
-          navigator: dom.window.navigator, localStorage: dom.window.localStorage,
+          HTMLElement: dom.window.HTMLElement, navigator: dom.window.navigator, localStorage: dom.window.localStorage,
           AbortController, DOMException, URL, TextDecoder, TextEncoder, console,
           setTimeout, clearTimeout, queueMicrotask,
           fetch: async () => ({ ok: false, status: 503 }),

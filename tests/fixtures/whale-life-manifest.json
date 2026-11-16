@@ -1,0 +1,138 @@
+{
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "startup",
+      "steps": [
+        "startup"
+      ],
+      "cueText": "自然巡游",
+      "noNewCue": true,
+      "forbiddenKinds": [
+        "host-online",
+        "task-complete",
+        "task-start"
+      ],
+      "entityCounts": {
+        "dolphins": 0,
+        "gulls": 0
+      }
+    },
+    {
+      "name": "ssh-online",
+      "steps": [
+        "ssh"
+      ],
+      "cueText": "SSH主机可达",
+      "expectedCue": {
+        "kind": "host-online",
+        "entityId": "demo-north"
+      }
+    },
+    {
+      "name": "task-running",
+      "steps": [
+        "start"
+      ],
+      "cueText": "起航执行",
+      "expectedCue": {
+        "kind": "task-start",
+        "entityId": "demo-voyage-1"
+      }
+    },
+    {
+      "name": "task-verifying",
+      "steps": [
+        "verify"
+      ],
+      "cueText": "待验收",
+      "expectedCue": {
+        "kind": "task-verify",
+        "entityId": "demo-voyage-1"
+      },
+      "forbiddenKinds": [
+        "task-complete"
+      ]
+    },
+    {
+      "name": "task-completed",
+      "steps": [
+        "complete"
+      ],
+      "cueText": "新完成",
+      "expectedCue": {
+        "kind": "task-complete",
+        "entityId": "demo-voyage-1"
+      }
+    },
+    {
+      "name": "subagent",
+      "steps": [
+        "subagent"
+      ],
+      "cueText": "子代理协作中",
+      "expectedCue": {
+        "kind": "subagent-start",
+        "entityId": "demo-dolphin"
+      },
+      "entityCounts": {
+        "dolphins": 1,
+        "gulls": 0
+      }
+    },
+    {
+      "name": "schedule",
+      "steps": [
+        "schedule"
+      ],
+      "cueText": "定时任务触发",
+      "expectedCue": {
+        "kind": "schedule-trigger",
+        "entityId": "demo-gull"
+      },
+      "entityCounts": {
+        "dolphins": 0,
+        "gulls": 1
+      }
+    },
+    {
+      "name": "stale",
+      "steps": [
+        "stale"
+      ],
+      "cueText": "失去观测",
+      "expectedCue": {
+        "kind": "source-stale",
+        "entityId": "ocean"
+      },
+      "forbiddenKinds": [
+        "task-complete",
+        "host-offline"
+      ]
+    },
+    {
+      "name": "no-subagents",
+      "steps": [
+        "subagent",
+        "startup"
+      ],
+      "cueText": "自然巡游",
+      "noNewCue": true,
+      "entityCounts": {
+        "dolphins": 0
+      }
+    },
+    {
+      "name": "no-schedules",
+      "steps": [
+        "schedule",
+        "startup"
+      ],
+      "cueText": "自然巡游",
+      "noNewCue": true,
+      "entityCounts": {
+        "gulls": 0
+      }
+    }
+  ]
+}

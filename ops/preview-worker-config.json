@@ -1,7 +1,7 @@
 {
   "name": "whale-panel",
   "compatibility_date": "2026-11-16",
-  "sourceGitCommit": "e8d7a19c13e5c0b4bb975ce7f21cc9d4be668487",
+  "sourceGitCommit": "584b783eefc4cfaf4f8eb5dba24ba511343759b2",
   "syntheticDataOnly": true,
   "noExecutionBackend": true,
   "observability": {
@@ -14,5 +14,5 @@
     }
   },
   "url": "https://whale-panel.whale-muyi123567.workers.dev",
-  "visualPrototype": "whale-dive-v1"
+  "visualPrototype": "whale-habitat-imagery-v2"
 }
