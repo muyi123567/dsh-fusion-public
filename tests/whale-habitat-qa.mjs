@@ -9,7 +9,7 @@ const selectors = {
  poster: 'img.whale-habitat__poster',
  task: 'button[aria-label^="打开任务"][data-task-id]',
  tasksTab: 'role=button[name=/^任务(?:\\s|$)/]',
- team: 'select[aria-label="筛选团队"]',
+ team: '.wlp-team-names button[data-team-id]',
  deep: 'role=button[name=/深海遨游/]', surface: 'role=button[name=/海面呼吸/]',
  preview: 'select[aria-label="预览状态"]',
  detail: 'dialog[aria-label="预览详情"]',
@@ -49,6 +49,12 @@ try {
    page.on('pageerror', error => errors.push(error.message));
    page.on('console', message => { if(message.type()==='error') errors.push(message.text()); });
    const root = page.locator(selectors.root);
+   const screenshot=async options=>{
+    const running=await page.locator(selectors.pause).isVisible();
+    if(running) await page.locator(selectors.pause).click();
+    try {await page.screenshot(options);}
+    finally {if(running) await page.locator(selectors.resume).click();}
+   };
    const sample = async () => {
     const s = await root.evaluate(el => ({
      frames:Number(el.dataset.habitatFrames), elapsed:Number(el.dataset.habitatElapsed),
@@ -73,7 +79,7 @@ try {
     await advancing();
     check(await root.locator('canvas').count()===1,'Expected single Canvas');
     check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Horizontal overflow');
-    await page.screenshot({path:join(output,viewport.width+'-running.png'),fullPage:true});
+    await screenshot({path:join(output,viewport.width+'-running.png'),fullPage:true});
     for(const quality of ['eco','auto','balanced']) {
      await page.locator(selectors.quality).selectOption(quality);
      await page.waitForFunction(({s,q})=>{
@@ -84,31 +90,31 @@ try {
      await advancing();
     }
     await page.locator(selectors.pause).click(); await stopped();
-    await page.screenshot({path:join(output,viewport.width+'-paused.png')});
+    await screenshot({path:join(output,viewport.width+'-paused.png')});
     await page.locator(selectors.resume).click(); await advancing();
-    await page.locator(selectors.tasksTab).click();
-    const team=page.locator(selectors.team);
-    const teamId=await team.locator('option').evaluateAll(options=>options.find(o=>o.value)?.value);
+    const teamId='demo-voyage';
+    const selectedTeam=page.locator('.wlp-team-names button[data-team-id="'+teamId+'"]');
     check(Boolean(teamId),'Fixture must contain a selectable team');
-    await team.selectOption(teamId);
-    check(await team.inputValue()===teamId,'Team selection identity mismatch');
+    await selectedTeam.click();
+    check(await selectedTeam.getAttribute('aria-pressed')==='true','Team selection identity mismatch');
     const task=page.locator(selectors.task).first();
     await task.waitFor({state:'visible'});
     const id=await task.getAttribute('data-task-id');
     check(Boolean(id),'Fixture task needs data-task-id');
-    const teamTaskIds=JSON.parse(env.WHALE_QA_TEAM_TASK_IDS ?? '{}')[teamId];
-    if(Array.isArray(teamTaskIds)) {
+    const teamTaskIds=['demo-voyage-1','demo-voyage-2','demo-voyage-3','demo-voyage-4'];
+    {
      const shown=await page.locator(selectors.task).evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-task-id')));
      check(shown.length>0 && shown.every(taskId=>teamTaskIds.includes(taskId)),'Displayed task IDs do not belong to selected fixture team');
-    } else report.gaps.push('Independent fixture team/task identity map missing: '+teamId);
+    }
     await task.click();
     const detail=page.locator(selectors.detail);
     await detail.waitFor({state:'visible'});
     check(await detail.getAttribute('data-task-id')===id,'Wrong fixture task details opened');
     entry.taskInteraction={teamId,source:'synthetic-public-fixture',taskId:id,assertion:'detail identity only; no remote execution'};
-    await page.screenshot({path:join(output,viewport.width+'-task.png'),fullPage:true});
     await page.keyboard.press('Escape');
     await detail.waitFor({state:'hidden'});
+    await page.getByRole('button',{name:'关闭浮层',exact:true}).click();
+    await screenshot({path:join(output,viewport.width+'-task.png'),fullPage:true});
     await root.scrollIntoViewIfNeeded();
     entry.views=[];
     for(const view of ['deep','surface']) {
@@ -118,27 +124,23 @@ try {
      const after=await sample();
      check(after.elapsed>=before.elapsed,'Scene switch reset elapsed');
      check(await root.locator('canvas').count()===1,'Scene switch must retain one Canvas');
-     await page.locator(selectors.tasksTab).click();
-     check(await team.inputValue()===teamId,'Scene switch lost selected team ID');
+     check(await selectedTeam.getAttribute('aria-pressed')==='true','Scene switch lost selected team ID');
+     await selectedTeam.click();
      const ids=await page.locator(selectors.task).evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-task-id')));
      check(ids.includes(id),'Selected team task lost across scene switch');
+     await page.getByRole('button',{name:'关闭浮层',exact:true}).click();
      await root.scrollIntoViewIfNeeded(); await advancing();
-     await page.screenshot({path:join(output,viewport.width+'-'+view+'.png'),fullPage:true});
+     await screenshot({path:join(output,viewport.width+'-'+view+'.png'),fullPage:true});
      entry.views.push({view,teamId,taskIds:ids});
     }
     // Renderer metrics must come from actual implementation, never a synthetic counter.
-    const metricAttrs=JSON.parse(env.WHALE_QA_METRIC_ATTRS ?? '{}');
-    if(metricAttrs.whales && metricAttrs.renderers) {
-     const metrics=await root.evaluate((el,attrs)=>Object.fromEntries(
-      Object.entries(attrs).map(([key,attr])=>[key,el.getAttribute(attr)])),metricAttrs);
-     check(metrics.whales!==null && metrics.renderers!==null,'Missing renderer metrics');
-     check(Number(metrics.whales)===3,'Three-team fixture must render three whales (maximum 3)');
-     check(Number(metrics.renderers)===1,'Expected exactly one WebGLRenderer');
-     entry.rendererMetrics=metrics;
-    } else report.gaps.push('Renderer/whale metrics attributes pending parent integration: '+viewport.width);
+    const metrics=JSON.parse(await root.getAttribute('data-habitat-metrics'));
+    check(metrics && metrics.whales===3,'Expected three rendered whales');
+    check(metrics.renderers===1,'Expected one renderer');
+    entry.rendererMetrics=metrics;
     await page.locator(selectors.quality).selectOption('still'); await stopped();
     await page.locator(selectors.poster).waitFor({state:'visible'});
-    await page.screenshot({path:join(output,viewport.width+'-still.png')});
+    await screenshot({path:join(output,viewport.width+'-still.png')});
     await page.locator(selectors.quality).selectOption('balanced'); await advancing();
     await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});
      Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});
@@ -167,7 +169,7 @@ try {
       previous=current;
      }
      entry.durationMs=Date.now()-start;
-     await page.screenshot({path:join(output,'long-run.png')});
+     await screenshot({path:join(output,'long-run.png')});
     }
     await page.locator(selectors.quality).selectOption('still');
     entry.previewStates=[];
@@ -183,7 +185,7 @@ try {
       check(state==='empty'?/没有任务|尚无团队|安静海域|连接/.test(text):state==='stale'?/陈旧|上次观测/.test(text):/未观测/.test(text),'Missing preview state explanation');
       if(state==='empty') check(await page.locator(selectors.task).count()===0,'Empty state contains tasks');
       check(requests.length===0,'Preview state caused web data requests');
-      await page.screenshot({path:join(output,viewport.width+'-'+state+'.png'),fullPage:true});
+      await screenshot({path:join(output,viewport.width+'-'+state+'.png'),fullPage:true});
       entry.previewStates.push({state,requests});
      } finally {page.off('request',track);}
     }
