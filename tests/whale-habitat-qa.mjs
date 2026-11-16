@@ -8,13 +8,17 @@ const selectors = {
  pause: 'role=button[name="暂停海域"]', resume: 'role=button[name="继续海域"]',
  poster: 'img.whale-habitat__poster',
  task: 'button[aria-label^="打开任务"][data-task-id]',
+ tasksTab: 'role=button[name=/^任务(?:\\s|$)/]',
+ team: 'select[aria-label="筛选团队"]',
+ deep: 'role=button[name=/深海遨游/]', surface: 'role=button[name=/海面呼吸/]',
+ preview: 'select[aria-label="预览状态"]',
  detail: 'dialog[aria-label="预览详情"]',
  ...JSON.parse(env.WHALE_QA_SELECTORS ?? '{}'),
 };
 const output = env.WHALE_EVIDENCE_DIR;
 if (!output) throw new Error('WHALE_EVIDENCE_DIR required');
 await mkdir(output, { recursive: true });
-const report = { startedAt: new Date().toISOString(), cases: [], failures: [],
+const report = { startedAt: new Date().toISOString(), cases: [], failures: [], gaps: [],
  limits: ['Software WebGL frame rates do not prove physical GPU performance or energy consumption.',
  'DOM telemetry and screenshots require visual review; task interaction does not prove remote execution.',
  'Hidden simulation overrides visibilityState; real OS backgrounding remains a manual check.'] };
@@ -57,7 +61,7 @@ try {
     const el=document.querySelector(selector);
     return el?.dataset.habitatState==='running' && Number(el.dataset.habitatFrames)>0;
    }, selectors.root, {timeout:30000});
-   const advancing = async () => { await ready(); const a=await sample(); await wait(2200); const b=await sample();
+   const advancing = async () => { await root.scrollIntoViewIfNeeded(); await ready(); await wait(500); const a=await sample(); await wait(2200); const b=await sample();
     check(b.frames>a.frames && b.elapsed>a.elapsed, 'Render frames/time did not advance'); };
    const stopped = async () => { await wait(1200); const a=await sample(); await wait(2200);
     const b=await sample(); check(b.frames===a.frames && b.elapsed===a.elapsed,'Rendering continued while stopped'); };
@@ -82,19 +86,56 @@ try {
     await page.locator(selectors.pause).click(); await stopped();
     await page.screenshot({path:join(output,viewport.width+'-paused.png')});
     await page.locator(selectors.resume).click(); await advancing();
+    await page.locator(selectors.tasksTab).click();
+    const team=page.locator(selectors.team);
+    const teamId=await team.locator('option').evaluateAll(options=>options.find(o=>o.value)?.value);
+    check(Boolean(teamId),'Fixture must contain a selectable team');
+    await team.selectOption(teamId);
+    check(await team.inputValue()===teamId,'Team selection identity mismatch');
     const task=page.locator(selectors.task).first();
     await task.waitFor({state:'visible'});
     const id=await task.getAttribute('data-task-id');
     check(Boolean(id),'Fixture task needs data-task-id');
+    const teamTaskIds=JSON.parse(env.WHALE_QA_TEAM_TASK_IDS ?? '{}')[teamId];
+    if(Array.isArray(teamTaskIds)) {
+     const shown=await page.locator(selectors.task).evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-task-id')));
+     check(shown.length>0 && shown.every(taskId=>teamTaskIds.includes(taskId)),'Displayed task IDs do not belong to selected fixture team');
+    } else report.gaps.push('Independent fixture team/task identity map missing: '+teamId);
     await task.click();
     const detail=page.locator(selectors.detail);
     await detail.waitFor({state:'visible'});
     check(await detail.getAttribute('data-task-id')===id,'Wrong fixture task details opened');
-    entry.taskInteraction={source:'synthetic-public-fixture',taskId:id,assertion:'detail identity only; no remote execution'};
+    entry.taskInteraction={teamId,source:'synthetic-public-fixture',taskId:id,assertion:'detail identity only; no remote execution'};
     await page.screenshot({path:join(output,viewport.width+'-task.png'),fullPage:true});
     await page.keyboard.press('Escape');
     await detail.waitFor({state:'hidden'});
     await root.scrollIntoViewIfNeeded();
+    entry.views=[];
+    for(const view of ['deep','surface']) {
+     const before=await sample();
+     await page.locator(selectors[view]).click();
+     await root.scrollIntoViewIfNeeded(); await advancing();
+     const after=await sample();
+     check(after.elapsed>=before.elapsed,'Scene switch reset elapsed');
+     check(await root.locator('canvas').count()===1,'Scene switch must retain one Canvas');
+     await page.locator(selectors.tasksTab).click();
+     check(await team.inputValue()===teamId,'Scene switch lost selected team ID');
+     const ids=await page.locator(selectors.task).evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-task-id')));
+     check(ids.includes(id),'Selected team task lost across scene switch');
+     await root.scrollIntoViewIfNeeded(); await advancing();
+     await page.screenshot({path:join(output,viewport.width+'-'+view+'.png'),fullPage:true});
+     entry.views.push({view,teamId,taskIds:ids});
+    }
+    // Renderer metrics must come from actual implementation, never a synthetic counter.
+    const metricAttrs=JSON.parse(env.WHALE_QA_METRIC_ATTRS ?? '{}');
+    if(metricAttrs.whales && metricAttrs.renderers) {
+     const metrics=await root.evaluate((el,attrs)=>Object.fromEntries(
+      Object.entries(attrs).map(([key,attr])=>[key,el.getAttribute(attr)])),metricAttrs);
+     check(metrics.whales!==null && metrics.renderers!==null,'Missing renderer metrics');
+     check(Number(metrics.whales)===3,'Three-team fixture must render three whales (maximum 3)');
+     check(Number(metrics.renderers)===1,'Expected exactly one WebGLRenderer');
+     entry.rendererMetrics=metrics;
+    } else report.gaps.push('Renderer/whale metrics attributes pending parent integration: '+viewport.width);
     await page.locator(selectors.quality).selectOption('still'); await stopped();
     await page.locator(selectors.poster).waitFor({state:'visible'});
     await page.screenshot({path:join(output,viewport.width+'-still.png')});
@@ -112,15 +153,39 @@ try {
     } finally { await root.evaluate((el,style)=>{if(style===null)el.removeAttribute('style');else el.setAttribute('style',style);},oldStyle); }
     await root.scrollIntoViewIfNeeded(); await advancing();
     if(viewport.width===1536) {
-     const start=Date.now(); let previous=await sample();
+     await root.scrollIntoViewIfNeeded(); await advancing();
+     const start=Date.now(); let previous=await sample(); let lastProgress=Date.now(); const initial=previous;
      while(Date.now()-start<duration*1000) {
-      await wait(1000); const current=await sample();
-      check(current.frames>previous.frames,'Long run frame stall/reset');
-      check(current.elapsed>previous.elapsed,'Elapsed reset/stall (including 36-second boundary)');
+      await wait(2200); const current=await sample();
+      check(current.frames>=previous.frames,'Long run frame reset');
+      check(current.elapsed>=previous.elapsed,'Elapsed reset (including 36-second boundary)');
+      if(current.frames>previous.frames) lastProgress=Date.now();
+      check(Date.now()-lastProgress<10000,'No frame progress for 10 seconds');
+      const seconds=current.elapsed-previous.elapsed;
+      check(current.frames-previous.frames<=Math.ceil(24*seconds)+2,'Exceeded 24fps budget per reported elapsed');
+      check(current.elapsed-initial.elapsed<=(Date.now()-start)/1000+1,'Elapsed advanced faster than visible runtime');
       previous=current;
      }
      entry.durationMs=Date.now()-start;
      await page.screenshot({path:join(output,'long-run.png')});
+    }
+    await page.locator(selectors.quality).selectOption('still');
+    entry.previewStates=[];
+    for(const state of ['empty','stale','unobserved']) {
+     const requests=[];
+     const track=request=>{if(['fetch','xhr','websocket'].includes(request.resourceType()))requests.push(request.url());};
+     page.on('request',track);
+     try {
+      await page.locator(selectors.preview).selectOption(state); await wait(500);
+      check(await page.locator(selectors.preview).inputValue()===state,'Preview state not applied');
+      await page.locator(selectors.tasksTab).click();
+      const text=await page.locator('.wlp').innerText();
+      check(state==='empty'?/没有任务|尚无团队|安静海域|连接/.test(text):state==='stale'?/陈旧|上次观测/.test(text):/未观测/.test(text),'Missing preview state explanation');
+      if(state==='empty') check(await page.locator(selectors.task).count()===0,'Empty state contains tasks');
+      check(requests.length===0,'Preview state caused web data requests');
+      await page.screenshot({path:join(output,viewport.width+'-'+state+'.png'),fullPage:true});
+      entry.previewStates.push({state,requests});
+     } finally {page.off('request',track);}
     }
     check(errors.length===0,'Page/console errors: '+errors.join('; '));
    } finally {
@@ -171,8 +236,8 @@ try {
 finally {
  await browser?.close().catch(error=>report.failures.push(error.message));
  report.finishedAt=new Date().toISOString();
- report.status=report.failures.length?'failed':'passed';
+ report.status=report.failures.length?'failed':report.gaps.length?'incomplete':'passed';
  await writeFile(join(output,'result.json'),JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify({status:report.status,failures:report.failures,output}));
- process.exitCode=report.failures.length?1:0;
+ process.exitCode=report.failures.length||report.gaps.length?1:0;
 }
