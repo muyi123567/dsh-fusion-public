@@ -1,15 +1,16 @@
 import * as THREE from "three";
+import type { HabitatActivity } from "../ambient/contracts.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 export const DIVE_DURATION = 36;
-export type DiveScene = { render: (seconds:number) => void; resize:()=>void; dispose:()=>void; };
-type Options = { canvas:HTMLCanvasElement; assetUrl:string; onReady:()=>void; onError:(error:Error)=>void; };
+export type DiveScene = { render: (seconds:number) => void; resize:()=>void; metrics:()=>{calls:number;triangles:number;geometries:number;textures:number;programs:number}; dispose:()=>void; };
+type Options = { ambient?: boolean; canvas:HTMLCanvasElement; assetUrl:string; onReady:()=>void; onError:(error:Error)=>void; };
 const clamp=THREE.MathUtils.clamp;
 const smooth=(a:number,b:number,x:number)=>THREE.MathUtils.smoothstep(x,a,b);
 const WATER_Y=5.4;
 
 /** Real mesh + procedural deformation. Visual simulation, not a fluid solver. */
-export function createDiveScene({canvas,assetUrl,onReady,onError}:Options):DiveScene {
+export function createDiveScene({canvas,assetUrl,onReady,onError,ambient=false}:Options):DiveScene {
  const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"low-power"});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
  renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -225,7 +226,7 @@ export function createDiveScene({canvas,assetUrl,onReady,onError}:Options):DiveS
  }
  function render(seconds:number){
   if(disposed)return;
-  const t=clamp(seconds,0,DIVE_DURATION);clock.value=t;
+  const t=ambient ? 18 : clamp(seconds,0,DIVE_DURATION);clock.value=ambient ? seconds : t;
   const descend=smooth(0,13,t);
   const deep=smooth(12,36,t);
   whaleRoot.position.set(2.0-descend*2.3-deep*5,3.05-descend*5.5-deep*3.7+Math.sin(t*1.36)*.07,1-deep*5);
@@ -240,16 +241,45 @@ export function createDiveScene({canvas,assetUrl,onReady,onError}:Options):DiveS
    ring.scale.setScalar(radius);
    ring.material.opacity=age<0?0:Math.exp(-age*.45)*.22;
   }
+  if(ambient){
+   whaleRoot.position.x+=Math.sin(seconds*.075)*1.1;
+   whaleRoot.position.y+=Math.sin(seconds*.13)*.16;
+   whaleRoot.rotation.y+=Math.sin(seconds*.075)*.08;
+  }
   renderer.render(scene,camera);
  }
  const contextLost=(event:Event)=>{event.preventDefault();if(!disposed)onError(new Error("3D 画面连接中断，请重新载入。"));};
  canvas.addEventListener("webglcontextlost",contextLost);
  resize();
- return {render,resize,dispose(){
+ return {render,resize,metrics:()=>({
+  calls:renderer.info.render.calls, triangles:renderer.info.render.triangles,
+  geometries:renderer.info.memory.geometries, textures:renderer.info.memory.textures,
+  programs:renderer.info.programs?.length ?? 0
+ }),dispose(){
   if(disposed)return;disposed=true;
   canvas.removeEventListener("webglcontextlost",contextLost);
   if(whale)releaseModel(whale);
   for(const resource of resources)resource.dispose();
   scene.clear();renderer.dispose();renderer.forceContextLoss();
  }};
+}
+
+
+// Ambient lifecycle adapter shares the existing renderer and asset disposal.
+export type AmbientScene = DiveScene & { setActivity: (activity: HabitatActivity) => void };
+export function createAmbientScene(options: Options & { activity: HabitatActivity }): AmbientScene {
+ let activity = options.activity;
+ let previous = 0, swimTime = 0;
+ const scene = createDiveScene({ ...options, ambient: true });
+ return {
+  ...scene,
+  setActivity(next) { activity = next; },
+  render(seconds) {
+   // Integrate activity speed rather than rescaling absolute time (which jumps).
+   const speed = activity.observed && activity.active > 0 ? 1.08 : 1;
+   swimTime += Math.max(0, seconds - previous) * speed;
+   previous = seconds;
+   scene.render(swimTime);
+  },
+ };
 }
