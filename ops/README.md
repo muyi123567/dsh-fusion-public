@@ -13,3 +13,5 @@ preview-worker.mjs保存实际Worker代码；preview-worker-config.json记录兼
 
 2026-11-16 已通过HTTPS200读回，并在Instabox浏览器实际打开公开HTTP入口，
 完成三版导航切换且无页面异常。页面均为显式合成数据，不代表实际机器在线。
+
+鲸入深海预览更新：根路径与whale-dive.html展示实时3D动画，design-gallery.html保留三版合成数据面板。模型与纹理只从固定Git提交的白名单分发。CSP仅增加同源和blob以允许GLB纹理解码，不连接执行后端。模型使用Grab3D CC0，Three.js使用MIT，许可随静态资源分发。旧静态提交1e2d9d93a525499e17c1d6aef2dd4c9305414de4可用于回滚。

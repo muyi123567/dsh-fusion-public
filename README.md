@@ -30,6 +30,16 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.13.tgz
 
 安装范围不等于所有组合均已通过业务验收。
 
+## 鲸入深海 · 动态原型
+
+[打开实时动态预览](https://whale-panel.whale-muyi123567.workers.dev/)。
+使用 Grab3D CC0 纹理座头鲸与 Three.js，实时呈现摆尾、头先下潜、水面波光、光束和气泡。
+支持播放、暂停、重播、进度拖动、手机取景与减动画；素材随项目分发，不依赖第三方运行时下载。
+
+这是独立的视觉原型，保留返回舰桥入口；安装包仍为 beta.13，原有插件不会加载 3D 场景。
+[实现与检查记录](docs/design/2026-11-16-whale-dive.md) ·
+[模型来源与许可](packages/client/public/whale-assets/CREDITS.md)
+
 ## 深海面板
 
 鲸群代表团队；一项项细任务与子代理像磷虾，支撑团队前进。团队与主机各自保留
@@ -42,7 +52,7 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.13.tgz
 - 深海舰桥：日常多机运维。
 - 洋流矩阵：跨团队的任务状态扫描。
 
-[打开三版交互展厅](https://whale-panel.whale-muyi123567.workers.dev/) ·
+[打开三版交互展厅](https://whale-panel.whale-muyi123567.workers.dev/design-gallery.html) ·
 [比选与审查记录](docs/design/2026-11-16-whale-comparison.md)
 
 本版统一鲸品牌与深海配色，保留原有任务、会话、配置、终端和安全边界。

@@ -30,7 +30,7 @@ export function WhaleGallery(){
   <header className="whale-gallery-header">
    <a className="whale-gallery-brand" href="https://github.com/muyi123567/dsh-fusion-public" aria-label="鲸插件源码"><WhaleGlyph size={54}/><span>鲸<span>WHΛLE</span></span></a>
    <nav aria-label="设计方案">{WHALE_DESIGNS.map(d=><button type="button" key={d.id} aria-pressed={design===d.id} onClick={()=>{setDesign(d.id);setDetail(undefined);const url=new URL(window.location.href);url.searchParams.set("whaleDesign",d.id);window.history.replaceState({},"",url);}}><b>{d.name}</b><small>{d.description}</small></button>)}</nav>
-   <a className="whale-gallery-repo" href="https://github.com/muyi123567/dsh-fusion-public">查看源码<ArrowUpRight size={14}/></a>
+   <a className="whale-gallery-repo" href="./whale-dive.html">鲸入深海<ArrowUpRight size={14}/></a>
   </header>
   <div className="whale-gallery-control"><span><Waves size={15}/>同一份合成数据 · 三种工作方式</span><div><label><input type="checkbox" checked={empty} onChange={e=>setEmpty(e.target.checked)}/>空海域</label><label><input type="checkbox" checked={stale} onChange={e=>setStale(e.target.checked)}/>连接中断</label><label><input type="checkbox" checked={unobserved} onChange={e=>setUnobserved(e.target.checked)}/>未观测</label></div></div>
   <script type="application/json" data-whale-model>{JSON.stringify(model).replaceAll("<","\\u003c")}</script>

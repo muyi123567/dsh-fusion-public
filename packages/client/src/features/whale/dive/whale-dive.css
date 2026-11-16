@@ -1,0 +1,49 @@
+html:has(.whale-dive),body:has(.whale-dive){margin:0;background:#032333}
+.whale-dive{position:relative;isolation:isolate;width:100%;height:100svh;min-height:540px;overflow:hidden;background:#032333;color:#e9f4f3;font:14px/1.5 Inter,"Segoe UI","Microsoft YaHei",sans-serif}
+.whale-dive *{box-sizing:border-box}
+.whale-dive .wd-canvas,.whale-dive .wd-poster{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.whale-dive .wd-vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#0019233d 0%,transparent 22%,transparent 54%,#00111cb3 100%)}
+.whale-dive .wd-header{position:absolute;left:clamp(24px,4.2vw,72px);right:clamp(24px,4.2vw,72px);top:32px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.whale-dive a{color:inherit;text-decoration:none}
+.whale-dive button,.whale-dive input{font:inherit}
+.whale-dive button{color:inherit;cursor:pointer}
+.whale-dive :is(button,a,input):focus-visible{outline:2px solid #c4fff5;outline-offset:6px}
+.whale-dive .wd-brand{display:flex;align-items:center;gap:18px;min-height:44px}
+.whale-dive .wd-brand>span:first-child{font-size:34px;font-weight:400;line-height:1}
+.whale-dive .wd-brand>span:last-child{letter-spacing:.32em;font:500 12px/1.5 Inter,system-ui}
+.whale-dive .wd-back{display:flex;align-items:center;gap:10px;color:#d6e9ed;font-size:13px;min-height:44px}
+.whale-dive .wd-back:hover,.whale-dive .wd-credits-button:hover{color:white}
+.whale-dive .wd-chapter{position:absolute;top:142px;right:clamp(24px,4.2vw,72px);display:flex;align-items:center;gap:16px;font-size:12px;letter-spacing:.12em;color:#d0e5e9}
+.whale-dive .wd-chapter>span:first-child{font:11px/1.5 ui-monospace,monospace;letter-spacing:.05em;opacity:.68}
+.whale-dive .wd-title{position:absolute;left:clamp(24px,4.2vw,72px);bottom:152px;pointer-events:none}
+.whale-dive .wd-title p{margin:0 0 18px;font-size:13px;font-weight:400;color:#bfdadd;letter-spacing:.14em}
+.whale-dive .wd-title h1{margin:0;font-family:"Noto Serif SC","Songti SC","SimSun",serif;font-weight:400;font-size:clamp(40px,4.7vw,72px);line-height:1.2;letter-spacing:.08em;text-shadow:0 2px 24px #00151b55}
+.whale-dive .wd-title h1>span{display:block;font:300 clamp(16px,1.5vw,22px)/1.5 Inter,system-ui;letter-spacing:.07em;margin-top:16px;color:#c0dadc}
+.whale-dive .wd-footer{position:absolute;left:clamp(24px,4.2vw,72px);right:clamp(24px,4.2vw,72px);bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #b6e4e42b;padding-top:20px}
+.whale-dive .wd-playback{display:flex;align-items:center;gap:14px;width:min(420px,75%)}
+.whale-dive .wd-playback button{width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;background:transparent;border:1px solid #b6e4e436;border-radius:50%;transition:background .2s}
+.whale-dive .wd-playback button:hover{background:#b6e4e41a}
+.whale-dive .wd-playback button:disabled{opacity:.3;cursor:default}
+.whale-dive .wd-playback input{width:100%;min-width:50px;height:44px;margin:0;accent-color:#c6e6e7;cursor:pointer}
+.whale-dive .wd-time{font:11px/1.4 ui-monospace,monospace;white-space:nowrap;color:#b6d2d5}
+.whale-dive .wd-credits-button{display:flex;align-items:center;gap:10px;min-height:44px;background:transparent;border:0;color:#c1dbde;font-size:12px;white-space:nowrap}
+.whale-dive .wd-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;color:#c4dcdf;letter-spacing:.14em;font-size:13px;pointer-events:none}
+.whale-dive .wd-loading span{width:24px;height:24px;border:1px solid #a2c9cf44;border-top-color:#b4e4e5;border-radius:50%;animation:wd-spin 1.4s linear infinite}
+.whale-dive .wd-fallback{position:absolute;top:110px;left:clamp(24px,4.2vw,72px);right:24px;font-size:13px;color:#c9e2e3}
+.whale-dive .wd-fallback button{background:transparent;border:0;border-bottom:1px solid #c9e2e3;padding:8px;margin-left:8px}
+.whale-dive .wd-credits{position:fixed;max-width:460px;width:calc(100vw - 40px);padding:38px 32px;border:1px solid #406472;border-radius:8px;background:#072735;color:#e0eff0;font:14px/1.8 Inter,"Segoe UI","Microsoft YaHei",sans-serif;box-shadow:0 24px 90px #0008}
+.whale-dive .wd-credits::backdrop{background:#00131bb3;backdrop-filter:blur(12px)}
+.whale-dive .wd-credits h2{font-weight:450;font-size:21px;line-height:1.5;margin:0 0 20px}
+.whale-dive .wd-credits p{color:#bdd2d8;font-size:14px}
+.whale-dive .wd-credits .wd-credits-note{font-size:12px;color:#94b1bc}
+.whale-dive .wd-credits a{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 0;border-bottom:1px solid #a9d7df22;color:#c1e5e6;font-size:13px}
+.whale-dive .wd-close{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:44px;height:44px;background:transparent;border:0;color:#c1d9de}
+@keyframes wd-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){
+ .whale-dive .wd-header{top:20px}.whale-dive .wd-brand{gap:12px}.whale-dive .wd-brand>span:first-child{font-size:28px}.whale-dive .wd-brand>span:last-child{font-size:10px;letter-spacing:.24em}
+ .whale-dive .wd-back{font-size:12px;gap:7px}.whale-dive .wd-chapter{top:100px}
+ .whale-dive .wd-title{bottom:186px}.whale-dive .wd-title p{font-size:12px;margin-bottom:16px}.whale-dive .wd-title h1{font-size:40px}.whale-dive .wd-title h1>span{font-size:16px;margin-top:12px}
+ .whale-dive .wd-footer{bottom:18px;padding-top:14px;gap:6px;flex-wrap:wrap}
+ .whale-dive .wd-playback{width:100%;gap:12px}.whale-dive .wd-credits-button{margin-left:auto}
+}
+@media(prefers-reduced-motion:reduce){.whale-dive .wd-loading span{animation:none}.whale-dive *{transition:none!important}}
