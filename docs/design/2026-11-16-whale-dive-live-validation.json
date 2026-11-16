@@ -1,0 +1,70 @@
+{
+  "url": "https://whale-panel.whale-muyi123567.workers.dev/whale-dive.html",
+  "viewports": [
+    "1536x960",
+    "390x844",
+    "1280x720"
+  ],
+  "checks": {
+    "reducedMotionPaused": true,
+    "title": true,
+    "seekPhases": true,
+    "distinctFrames": true,
+    "replayFromEnd": true,
+    "pauseStable": true,
+    "restart": true,
+    "creditsOpen": true,
+    "creditsClosed": true,
+    "creditsFocus": true,
+    "mobileOverflow": true,
+    "mobileControls": true,
+    "noOverflow1280": true
+  },
+  "frames": [
+    {
+      "seconds": 0,
+      "sha256": "488f7f36fa6544f05d8c1acb0e49fe7d8f84e05a4c31494843e38fc6c5ebe6b6",
+      "phase": "破水"
+    },
+    {
+      "seconds": 5,
+      "sha256": "9eee18840d6cfd389d9626c951a64219f77e9a8ef78473ecd33f7cb40af71990",
+      "phase": "下潜"
+    },
+    {
+      "seconds": 10,
+      "sha256": "649b1aec09bf0f5c0a842735cabc00e20e115bda016a1ae2273c08d605c4846f",
+      "phase": "下潜"
+    },
+    {
+      "seconds": 22,
+      "sha256": "ee8116e10c450e194f7f12bd4e7986740c148f6cab148b71256762ddacb497a7",
+      "phase": "深游"
+    },
+    {
+      "seconds": 36,
+      "sha256": "527f052ee3fb23b2cee8bf5f51bc09edc373e28c83168767cc6544680646361e",
+      "phase": "深游"
+    }
+  ],
+  "errors": [],
+  "badResponses": [],
+  "license": "CC0-1.0, model publisher Grab3D",
+  "tested": "Chromium, Instabox; software WebGL",
+  "date": "2026-11-16",
+  "builtCodeCommit": "38841fd9431d77e78bb49ef77c49019429c8b42c",
+  "staticCommit": "e8d7a19c13e5c0b4bb975ce7f21cc9d4be668487",
+  "httpChecks": {
+    "root": 200,
+    "whale-dive.html": 200,
+    "design-gallery.html": 200,
+    "model": 200,
+    "modelMime": "model/gltf-binary",
+    "modelBytes": 3705864,
+    "modelSha256": "c07b1cec69fb3292165c51d00acf224809476b6d9d899c3a810d6050e9611c58",
+    "license": 200,
+    "buildReceipt": 200,
+    "POST": 405,
+    "unknownPath": 404
+  }
+}
