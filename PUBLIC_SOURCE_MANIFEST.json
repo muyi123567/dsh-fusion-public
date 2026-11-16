@@ -5,7 +5,7 @@
   "basePublicCommit": "04e71c4b6e7d0451f61a3df7d3ab9431c8c702df",
   "staticPreviewCommit": "584b783eefc4cfaf4f8eb5dba24ba511343759b2",
   "codeDigestScheme": "SHA256 of sorted path + NUL + file SHA256 + LF; manifest excluded",
-  "codeDigest": "3e14111264f8fbf32f4b594d77f0ee51fff21b20553270f806acb37ff90da34a",
+  "codeDigest": "07f27bd40672746044892bc7cbb61522c92b1b2ba1ff8b242c55f3c86369efa9",
   "files": {
     ".gitignore": "f95790414c1a802af077b09c39d6f047b53a72861b7e7a0f02cd046624f401c8",
     "AGENTS.md": "684daf3be630666a92ccebd82f263b849730ab4bbd4f1a58903e96f71c24faac",
@@ -24,7 +24,7 @@
     "docs/design/2026-11-16-whale-plan.md": "7078097041f4eac2bc0370632d6dba399dd13e8e81e1fa1d8e1a1a5d45dc1496",
     "docs/design/2026-11-16-whale-review-checklist.md": "8813cd658959216a3c834cca3da81e03e3d4f969883c350112dcfe34aba4c91c",
     "docs/design/2026-11-17-magpie-research.md": "3d8486682604fabd9ea086c9d6cf2ee769b67bff8a3b20aeddf812f6f61d58e5",
-    "docs/design/2026-11-17-whale-habitat-closeout.md": "665d79aec3c888fe8679cbc5396d7bbe99d7c8e0e1838b9d478f293fae3b466d",
+    "docs/design/2026-11-17-whale-habitat-closeout.md": "d33578238005eedabaebe4d24c9b3b533a511c047ad0f3b2975b35f108325418",
     "docs/design/2026-11-17-whale-habitat-validation.json": "3b1e5ddbf851fbcbf61cf9aa70d165bc95fcb311b26934a5e52aef03004ac4b1",
     "docs/design/2026-11-17-whale-imagery-prompt-v2.md": "4221cbff864650fdb442dd91792b7d5ddba22eaa75132928451e43372089be83",
     "docs/design/2026-11-17-whale-pod-prompt.md": "30f552b282e60bb84c4d18a0691eaa661eda52c69278ddbbf6db65485f1a6581",
