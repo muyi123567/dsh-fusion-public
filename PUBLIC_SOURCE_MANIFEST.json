@@ -6,7 +6,7 @@
     "CONTRIBUTING.md": "2bc1305bb0e1a4380894113489994fd8b09e23d9f4ed868fc0c7e20f6d80a82d",
     "LICENSE": "4490fe1939aa67dac4283ed4280127492a81d324c3ad44e357704b570661a27f",
     "PUBLICATION.md": "12fbf6bdfda636fbb4c3d0c6776427e6a43d9985f7177a59141ce102011b9f61",
-    "README.md": "2dc2e8d23486c237eff98f814c05d1006cd8056971c55a29073149738f9c1592",
+    "README.md": "90aad733bd13fe538e8922921a2c872d5455315d173f55d91566a86d8d5a3f8b",
     "SECURITY.md": "81869e8a1721401f8855134c905238e071648613ab7655f6634bf78e76b21233",
     "config/fleet.yaml": "9310c68da6264bb3a94e1e40e752e82ad4210e2156986db5922328c90eba79ef",
     "docs/extensions/task-views.md": "8ae3c881cdcdc57678563546be2171a191217607b10689c49088afbb3ec18baa",
@@ -15,7 +15,9 @@
     "docs/project/directives.md": "3c1da422a7ff5bb617c3b4dc03dc072d54c062b80680be049f4cf8596673f1dc",
     "docs/project/status.md": "1dfb604070564e0785699c0db9a00d821d6c9566b463ee7e83dd5c963ffca3b5",
     "docs/releases/2026-11-16-beta12-validation.json": "2d10d83dd6fb9add33cea068cc94b757da8ad06b32b85be2b96630084d7c55b6",
-    "docs/releases/2026-11-16-beta12.md": "abfe46a358a849b43d15a02f3b6b5dee99f4c2c70b88cb9dfd607bf70fa0a6bb",
+    "docs/releases/2026-11-16-beta12.md": "b8bcfa4a0b74baa5313aaacbf5c66ef5c95c73cc12b5a8f52dfe2dec58ede96d",
+    "docs/releases/2026-11-16-public-runtime-validation.json": "0cc2a51aa620efb3409f781b129ede340d7dc26d54a1c717eaa9d2cb038adbdb",
+    "docs/releases/2026-11-16-public-source-validation.json": "caaec134d46ee3529e66eff659ef82c296ef8d6739e9fd269dc8c27adb0ba951",
     "package.json": "d2b9735030bef8e440d80a52ad03cb7c706c3a7db6e39810091f2ab85860c124",
     "packages/client/index.html": "fb866892c9b310e736afdb2d3062be3c843135761119f1f01d937d772f97c8ed",
     "packages/client/package.json": "3cf4b9741c5c4cce1c747670154231205b5f2868025cfd5bdce389b0459e5399",
@@ -280,5 +282,6 @@
     "tsconfig.base.json": "ced39d1281bf5a4e8ed3cd2a5b652ed2cd067cbd5666a8c101be2d98441d1c66",
     "vitest.e2e.config.ts": "6e3a67d211af647437232f1191881f94d5450b98915c8df2c5aaeb9ca7c01633",
     "vitest.root.config.ts": "ccd4a566c368aef659723f7db61e0d2708da3d38bebab2b7db1e951f3d516e14"
-  }
+  },
+  "validatedSourceCommit": "65a69a3fe2867e4d540ba0d44c9c4bad1989028c"
 }

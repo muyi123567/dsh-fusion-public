@@ -5,6 +5,8 @@ DSH 原生多机操作插件：在一个工作区管理 SSH/容器和 Instabox H
 
 当前公开版本：**0.2.0-beta.12**，MIT。
 
+[下载预构建包与校验值](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.12)。
+
 ## 安装
 
 从本仓库 Releases 下载预构建包与 SHA256SUMS，校验后安装到 Web profile：

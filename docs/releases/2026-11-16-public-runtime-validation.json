@@ -1,0 +1,118 @@
+{
+  "version": "0.2.0-beta.12",
+  "publicSourceCommit": "65a69a3fe2867e4d540ba0d44c9c4bad1989028c",
+  "tarballSha256": "6cbf70ece6932ec6bcae591db3c90af07255a149e8738d1709f440160f6b3136",
+  "status": "PASS",
+  "environment": "isolated Instabox Linux",
+  "modelCalls": 0,
+  "hosts": {
+    "rc3": {
+      "version": "0.2.2-rc.3",
+      "status": "PASS",
+      "installedVersions": {
+        "dsh-fusion": "0.2.0-beta.12",
+        "@nanmicoder/dsh-agent-teams": "0.1.30",
+        "dsh-agent-bus": "0.1.1",
+        "dsh-agent-team-room": "0.7.0"
+      },
+      "rootHttp": 200,
+      "stateHttp": 200,
+      "unauthenticatedRootHttp": 401,
+      "unauthenticatedStateHttp": 401,
+      "providers": {
+        "nodes": {
+          "state": "unknown"
+        },
+        "agentTeams": {
+          "state": "connected"
+        },
+        "agentBus": {
+          "state": "connected"
+        },
+        "room": {
+          "state": "connected"
+        },
+        "huawei": {
+          "state": "unknown"
+        }
+      },
+      "upstream": {
+        "agentTeams": {
+          "http": 200,
+          "json": true
+        },
+        "agentBus": {
+          "http": 200,
+          "json": true
+        }
+      },
+      "doctorHttp": 200,
+      "nodesConfigured": 0,
+      "runtimeStopped": true,
+      "modelCalls": 0,
+      "startupMarkers": {
+        "retiredGuardUnsupported": false,
+        "treeGuardUnsupported": false,
+        "harnessContractUnsupported": false,
+        "moduleMissing": false,
+        "schemaMismatch": false,
+        "activationFailed": false,
+        "processUncaught": false
+      }
+    },
+    "rc1": {
+      "version": "0.2.2-rc.1",
+      "status": "PASS",
+      "installedVersions": {
+        "dsh-fusion": "0.2.0-beta.12",
+        "@nanmicoder/dsh-agent-teams": "0.1.30",
+        "dsh-agent-bus": "0.1.1",
+        "dsh-agent-team-room": "0.7.0"
+      },
+      "rootHttp": 200,
+      "stateHttp": 200,
+      "unauthenticatedRootHttp": 401,
+      "unauthenticatedStateHttp": 401,
+      "providers": {
+        "nodes": {
+          "state": "unknown"
+        },
+        "agentTeams": {
+          "state": "connected"
+        },
+        "agentBus": {
+          "state": "connected"
+        },
+        "room": {
+          "state": "connected"
+        },
+        "huawei": {
+          "state": "unknown"
+        }
+      },
+      "upstream": {
+        "agentTeams": {
+          "http": 200,
+          "json": true
+        },
+        "agentBus": {
+          "http": 200,
+          "json": true
+        }
+      },
+      "doctorHttp": 200,
+      "nodesConfigured": 0,
+      "runtimeStopped": true,
+      "modelCalls": 0,
+      "startupMarkers": {
+        "retiredGuardUnsupported": false,
+        "treeGuardUnsupported": false,
+        "harnessContractUnsupported": false,
+        "moduleMissing": false,
+        "schemaMismatch": false,
+        "activationFailed": false,
+        "processUncaught": false
+      }
+    }
+  }
+}

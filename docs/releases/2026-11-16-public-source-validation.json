@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0-beta.12",
+  "publicCommit": "65a69a3fe2867e4d540ba0d44c9c4bad1989028c",
+  "source": "anonymous clean GitHub clone",
+  "environment": "isolated Linux Instabox",
+  "node": "24.19.0",
+  "pnpm": "11.21.0",
+  "vitest": "4.1.12",
+  "vitestCounts": [
+    68,
+    33,
+    3,
+    302,
+    337,
+    337
+  ],
+  "vitestTotal": 1080,
+  "nodeContracts": 27,
+  "chromiumE2E": 3,
+  "artifactDoctorChecks": 29,
+  "commandsExit": 0,
+  "audit": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 57,
+    "devDependencies": 214,
+    "optionalDependencies": 56,
+    "totalDependencies": 271
+  },
+  "modelCalls": 0,
+  "tarballSha256": "6cbf70ece6932ec6bcae591db3c90af07255a149e8738d1709f440160f6b3136"
+}
