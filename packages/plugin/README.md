@@ -1,6 +1,6 @@
-# DSH Fusion
+# 🐋 鲸 · Whale
 
-DSH 原生多机操作插件，包含节点、任务证据、会话、Room/Teams/Bus 桥接、配置诊断和可选远程终端。
+鲸是 DSH 原生多机协作插件，包含节点、任务证据、会话、Room/Teams/Bus 桥接、配置诊断和可选远程终端。
 
 ## 安装预构建包
 
@@ -11,7 +11,7 @@ DSH 原生多机操作插件，包含节点、任务证据、会话、Room/Teams
 安装检查通过不等于完整运行矩阵通过。将预构建 tarball 安装进已有的 Web profile：
 
 ~~~sh
-dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.12.tgz
+dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.13.tgz
 ~~~
 
 profile 名称可替换为自己的名字。重启或重新加载对应 profile 后，从侧栏的 Fusion 入口打开。
@@ -114,7 +114,7 @@ dsh plugin --profile web remove dsh-fusion
 
 移除插件不代表删除上游会话、Room、Teams 或 Bus 数据。远端持久 job 的保留和清理应按节点策略处理。
 
-当前 beta.12 的验证范围与包哈希见 [发布说明](../../docs/releases/2026-11-16-beta12.md)。
+当前 beta.13 的验证范围与包哈希见 [发布说明](../../docs/releases/2026-11-16-beta13.md)。
 包内 dist/THIRD_PARTY_NOTICES.txt 与 vendor 许可说明保留第三方来源。
 
 ## License

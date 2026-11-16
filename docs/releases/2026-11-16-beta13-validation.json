@@ -1,0 +1,257 @@
+{
+  "version": "0.2.0-beta.13",
+  "brand": "鲸 · Whale",
+  "environment": "isolated Linux Instabox",
+  "node": "24.19.0",
+  "pnpm": "11.21.0",
+  "vitest": "4.1.12",
+  "sourceTests": 1103,
+  "testBatches": [
+    68,
+    33,
+    3,
+    325,
+    337,
+    337
+  ],
+  "nodeContracts": 27,
+  "artifactDoctor": 29,
+  "chromiumE2E": 3,
+  "dependencyAudit": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 57,
+    "devDependencies": 214,
+    "optionalDependencies": 56,
+    "totalDependencies": 271
+  },
+  "galleryCases": 9,
+  "galleryAutomaticFailures": 0,
+  "galleryViews": [
+    {
+      "design": "atlas",
+      "viewport": {
+        "name": "desktop",
+        "width": 1536,
+        "height": 1024
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "atlas",
+      "viewport": {
+        "name": "narrow",
+        "width": 1280,
+        "height": 900
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "atlas",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "bridge",
+      "viewport": {
+        "name": "desktop",
+        "width": 1536,
+        "height": 1024
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "bridge",
+      "viewport": {
+        "name": "narrow",
+        "width": 1280,
+        "height": 900
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "bridge",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "current",
+      "viewport": {
+        "name": "desktop",
+        "width": 1536,
+        "height": 1024
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "current",
+      "viewport": {
+        "name": "narrow",
+        "width": 1280,
+        "height": 900
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    },
+    {
+      "design": "current",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "modelHash": "9e31b1747a659b230e245c69e9766e5c7fd9562090364a7eb6b0becb41e0dcd1",
+      "interactionChecks": 7
+    }
+  ],
+  "galleryReviewLimits": [
+    "Intentional horizontal task-matrix scrolling reviewed; full accessibility compliance is not asserted."
+  ],
+  "designSelection": "bridge",
+  "reviewers": 2,
+  "nativeHosts": {
+    "rc3": {
+      "version": "0.2.2-rc.3",
+      "installedVersions": {
+        "dsh-fusion": "0.2.0-beta.13",
+        "@nanmicoder/dsh-agent-teams": "0.1.30",
+        "dsh-agent-bus": "0.1.1",
+        "dsh-agent-team-room": "0.7.0"
+      },
+      "status": "PASS",
+      "rootHttp": 200,
+      "stateHttp": 200,
+      "doctorHttp": 200,
+      "providers": {
+        "nodes": {
+          "state": "unknown"
+        },
+        "agentTeams": {
+          "state": "connected"
+        },
+        "agentBus": {
+          "state": "connected"
+        },
+        "room": {
+          "state": "connected"
+        },
+        "huawei": {
+          "state": "unknown"
+        }
+      },
+      "runtimeStopped": true,
+      "nativePreviewNoticeAcknowledged": true,
+      "nativeModelOnboardingDismissed": true,
+      "styleUnchangedOnOpen": true,
+      "styleUnchangedOnClose": true,
+      "focusRestored": true,
+      "mobileScroll": {
+        "height": 844,
+        "total": 1650,
+        "top": 806,
+        "atBottom": true
+      },
+      "mobileEscape": {
+        "workspaceRetained": true,
+        "sidebarClosed": true
+      },
+      "uiFailures": 0,
+      "uiCoverageLimit": [
+        "Mobile sidebar Escape/scroll verified; full drawer and every breakpoint remain separate workflow coverage."
+      ],
+      "modelCalls": 0
+    },
+    "rc1": {
+      "version": "0.2.2-rc.1",
+      "installedVersions": {
+        "dsh-fusion": "0.2.0-beta.13",
+        "@nanmicoder/dsh-agent-teams": "0.1.30",
+        "dsh-agent-bus": "0.1.1",
+        "dsh-agent-team-room": "0.7.0"
+      },
+      "status": "PASS",
+      "rootHttp": 200,
+      "stateHttp": 200,
+      "doctorHttp": 200,
+      "providers": {
+        "nodes": {
+          "state": "unknown"
+        },
+        "agentTeams": {
+          "state": "connected"
+        },
+        "agentBus": {
+          "state": "connected"
+        },
+        "room": {
+          "state": "connected"
+        },
+        "huawei": {
+          "state": "unknown"
+        }
+      },
+      "runtimeStopped": true,
+      "nativePreviewNoticeAcknowledged": true,
+      "nativeModelOnboardingDismissed": true,
+      "styleUnchangedOnOpen": true,
+      "styleUnchangedOnClose": true,
+      "focusRestored": true,
+      "mobileScroll": {
+        "height": 844,
+        "total": 1650,
+        "top": 806,
+        "atBottom": true
+      },
+      "mobileEscape": {
+        "workspaceRetained": true,
+        "sidebarClosed": true
+      },
+      "uiFailures": 0,
+      "uiCoverageLimit": [
+        "Mobile sidebar Escape/scroll verified; full drawer and every breakpoint remain separate workflow coverage."
+      ],
+      "modelCalls": 0
+    }
+  },
+  "modelCalls": 0,
+  "packageSha256": "18ff92f14cc2d2c71991806dfe58de0c1ce9138538bbff6c3dfdaa11376392bc",
+  "packageBytes": 3622558,
+  "notImplemented": [
+    "host fencing leases",
+    "exact code revision independent review",
+    "self-improvement cluster",
+    "complete real multi-cluster/model-task journey"
+  ],
+  "previewUrl": "https://whale-panel.whale-muyi123567.workers.dev/",
+  "previewSourceCommit": "1e2d9d93a525499e17c1d6aef2dd4c9305414de4",
+  "publicPreviewLiveBrowser": {
+    "http": 200,
+    "threeDesignSwitches": true,
+    "pageErrors": 0,
+    "scope": "static synthetic-data-only gallery"
+  },
+  "remainingReviewLimits": [
+    "Task matrix uses intentional horizontal scrolling.",
+    "Full accessibility compliance and every drawer/breakpoint are not asserted."
+  ]
+}

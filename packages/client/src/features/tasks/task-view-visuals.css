@@ -12,7 +12,7 @@
   overflow: auto;
   background:
     radial-gradient(circle at 1px 1px, rgb(37 99 235 / 9%) 1px, transparent 0) 0 0 / 18px 18px,
-    linear-gradient(180deg, #fafcff 0%, #f6f8fc 100%);
+    linear-gradient(180deg, var(--fusion-blue-soft) 0%, var(--fusion-blue-soft) 100%);
 }
 
 .fusion-task-satellite-stage {
@@ -34,7 +34,7 @@
   padding: 18px 16px;
   border: 1px solid rgb(37 99 235 / 28%);
   border-radius: 16px;
-  background: #fff;
+  background: var(--fusion-surface);
   color: var(--fusion-blue);
   text-align: center;
   box-shadow: 0 16px 46px rgb(37 99 235 / 13%);
@@ -134,7 +134,7 @@
   padding: 7px 8px;
   border: 1px solid var(--fusion-border);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--fusion-blue-soft);
   color: var(--fusion-text);
   text-align: left;
   cursor: pointer;
@@ -149,7 +149,7 @@
 
 .fusion-task-satellite-task.is-selected {
   border-color: var(--fusion-blue);
-  background: #f1f6ff;
+  background: var(--fusion-blue-soft);
   box-shadow: 0 0 0 2px rgb(37 99 235 / 10%);
 }
 
@@ -233,19 +233,19 @@
   box-shadow: 0 5px 16px rgb(24 34 50 / 7%);
 }
 
-button.fusion-task-radial-card {
+.fusion-shell button.fusion-task-radial-card {
   cursor: pointer;
   text-align: left;
 }
 
 .fusion-task-radial-card.is-owner {
-  border-color: #c9d9f3;
-  background: #fbfdff;
+  border-color: var(--fusion-border);
+  background: var(--fusion-blue-soft);
 }
 
 .fusion-task-radial-card.is-root {
   border-color: rgb(37 99 235 / 32%);
-  background: #fff;
+  background: var(--fusion-surface);
   box-shadow: 0 12px 32px rgb(37 99 235 / 12%);
 }
 
@@ -253,10 +253,10 @@ button.fusion-task-radial-card {
   border-color: rgb(37 99 235 / 30%);
 }
 
-button.fusion-task-radial-card.is-selected,
+.fusion-shell button.fusion-task-radial-card.is-selected,
 .fusion-task-radial-card.is-selected {
   border-color: var(--fusion-blue);
-  background: #f1f6ff;
+  background: var(--fusion-blue-soft);
   box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
 }
 

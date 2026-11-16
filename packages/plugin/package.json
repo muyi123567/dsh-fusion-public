@@ -1,7 +1,7 @@
 {
   "name": "dsh-fusion",
-  "version": "0.2.0-beta.12",
-  "description": "DSH-native multi-machine operations panel",
+  "version": "0.2.0-beta.13",
+  "description": "\u9cb8 \u00b7 Whale \u2014 DSH-native multi-host and multi-agent deep-sea workspace",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/muyi123567/dsh-fusion-public.git"

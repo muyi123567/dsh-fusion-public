@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import {
-  Boxes,
+  Waves,
   CircleCheckBig,
   CircleHelp,
   Command,
@@ -17,12 +17,14 @@ import {
   X,
 } from "lucide-react";
 import type { BotRecord, GroupRecord, NodeRecord, SessionRecord } from "@dsh-fusion/core";
+import { WhaleGlyph } from "../features/whale/WhaleGlyph.js";
 import { BotAvatar } from "./BotAvatar.js";
 import { useMediaQuery, useOverlayModal } from "./focus-utils.js";
 
-export type WorkspaceMode = "setup" | "bot" | "fleet" | "tasks" | "sessions" | "rooms" | "runs" | "terminal" | "config";
+export type WorkspaceMode = "ocean" | "setup" | "bot" | "fleet" | "tasks" | "sessions" | "rooms" | "runs" | "terminal" | "config";
 
 const primaryNavigation: Array<{ id: WorkspaceMode; label: string; icon: typeof Command }> = [
+  { id: "ocean", label: "鲸群总览", icon: Waves },
   { id: "bot", label: "对话", icon: Command },
   { id: "tasks", label: "多机任务", icon: FolderKanban },
   { id: "sessions", label: "Mission Control", icon: PanelsTopLeft },
@@ -67,12 +69,12 @@ export function Sidebar(props: {
       ref={asideRef}
       id="fusion-sidebar"
       className={"fusion-sidebar" + (props.mobileOpen ? " is-mobile-open" : "")}
-      aria-label="DSH Fusion 导航"
+      aria-label="鲸 · 工作区导航"
       {...(overlayActive ? { role: "dialog", "aria-modal": true } : {})}
     >
       <div className="fusion-brand">
-        <span className="fusion-brand-mark"><Boxes size={17} /></span>
-        <span>DSH FUSION</span>
+        <span className="fusion-brand-mark"><WhaleGlyph size={42}/></span>
+        <span className="fusion-brand-copy"><strong>鲸</strong><small>WHΛLE</small></span>
         <button type="button" className="fusion-sidebar-close" aria-label="关闭导航" onClick={props.onCloseMobile}><X size={14} /></button>
       </div>
 
@@ -105,7 +107,7 @@ export function Sidebar(props: {
 
       <div className="fusion-side-section">
         <div className="fusion-side-heading">
-          <span>我的 Bot</span>
+          <span>我的 Agent</span>
           <button type="button" aria-label="添加 Bot" onClick={() => setNotice("添加 Bot 需要实时 Bot provider")}><Plus size={14} /></button>
         </div>
         {props.bots.map((bot) => (
@@ -149,7 +151,7 @@ export function Sidebar(props: {
 
       <div className="fusion-side-section fusion-fleet-section">
         <div className="fusion-side-heading">
-          <span>Fleet · 多机任务</span>
+          <span>主机海域</span>
           <button type="button" aria-label="添加节点" onClick={() => props.onModeChange("setup")}><Plus size={14} /></button>
         </div>
         {props.nodes.map((node) => (

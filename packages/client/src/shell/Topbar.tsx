@@ -34,14 +34,14 @@ export function Topbar({
   streamGap?: FusionStreamGap | undefined;
 }) {
   const [notice, setNotice] = useState<string>();
-  const title = mode === "setup" ? "开箱检查" : mode === "bot" ? selectedBot.name : mode === "fleet" ? "节点矩阵" : mode === "tasks" ? "多机任务" : mode === "sessions" ? "Mission Control" : mode === "rooms" ? "会话房间" : mode === "runs" ? "Run Center" : mode === "terminal" ? "SSH Hub" : "配置与版本";
+  const title = mode === "ocean" ? "鲸群总览" : mode === "setup" ? "开箱检查" : mode === "bot" ? selectedBot.name : mode === "fleet" ? "节点矩阵" : mode === "tasks" ? "多机任务" : mode === "sessions" ? "Mission Control" : mode === "rooms" ? "会话房间" : mode === "runs" ? "Run Center" : mode === "terminal" ? "SSH Hub" : "配置与版本";
   return (
     <header className="fusion-topbar">
       <div className="fusion-topbar-title">
         <BotAvatar bot={selectedBot} />
         <div>
           <strong>{title}</strong>
-          <small>{mode === "setup" ? "安装、连接与运行前检查" : mode === "bot" ? selectedBot.role : mode === "fleet" ? selectedNode.name : mode === "sessions" ? "多会话并行控制" : mode === "rooms" ? "成员与真实 timeline" : mode === "runs" ? "DAG 编排与失败归因" : mode === "terminal" ? "多机终端工作区" : "DSH FUSION"}</small>
+          <small>{mode === "ocean" ? "让每一次协作汇成洋流" : mode === "setup" ? "安装、连接与运行前检查" : mode === "bot" ? selectedBot.role : mode === "fleet" ? selectedNode.name : mode === "sessions" ? "多会话并行控制" : mode === "rooms" ? "成员与真实 timeline" : mode === "runs" ? "DAG 编排与失败归因" : mode === "terminal" ? "多机终端工作区" : "鲸 · WHΛLE"}</small>
         </div>
       </div>
       <div className="fusion-topbar-actions">
@@ -75,8 +75,8 @@ export function Topbar({
         >
           <Search size={17} />
         </button>
-        <button type="button" aria-label="通知" onClick={() => setNotice("当前没有新的运行时通知")}><Bell size={17} /></button>
-        {mode === "setup" || mode === "tasks" ? null : <button type="button" className="fusion-details-toggle" aria-label="打开详情" aria-expanded={detailsOpen} aria-controls="fusion-right-drawer" onClick={onToggleDetails}><MoreHorizontal size={17} /></button>}
+        <button type="button" aria-label="通知" onClick={() => setNotice("通知来源尚未接入；待处理事项请查看鲸群总览")}><Bell size={17} /></button>
+        {mode === "ocean" || mode === "setup" || mode === "tasks" ? null : <button type="button" className="fusion-details-toggle" aria-label="打开详情" aria-expanded={detailsOpen} aria-controls="fusion-right-drawer" onClick={onToggleDetails}><MoreHorizontal size={17} /></button>}
         <button type="button" className="fusion-config-chip" aria-label="打开配置" onClick={onOpenConfig}>
           <Settings2 size={13} /> 配置
         </button>

@@ -388,27 +388,27 @@ describe("DSH client slot components", () => {
   it("renders a valid launcher component", async () => {
     render(<FusionLauncher />);
 
-    await userEvent.click(screen.getByRole("button", { name: "打开 DSH Fusion" }));
-    expect(screen.getByRole("button", { name: "打开 DSH Fusion" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "打开鲸插件" }));
+    expect(screen.getByRole("button", { name: "打开鲸插件" })).toBeInTheDocument();
   });
 
   it("mounts and unmounts the overlay on the native toggle event", async () => {
     render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
-    expect(screen.queryByText("DSH FUSION")).not.toBeInTheDocument();
+    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
 
     window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("DSH FUSION")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "关闭 DSH Fusion" }));
-    expect(screen.queryByText("DSH FUSION")).not.toBeInTheDocument();
+    expect(await screen.findByText("鲸")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "关闭鲸插件" }));
+    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
   });
 
   it("closes the overlay with Escape", async () => {
     render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
 
     window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("DSH FUSION")).toBeInTheDocument();
+    expect(await screen.findByText("鲸")).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
-    expect(screen.queryByText("DSH FUSION")).not.toBeInTheDocument();
+    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
   });
 
   it("presents the overlay as a modal dialog and restores focus on close", async () => {
@@ -422,19 +422,19 @@ describe("DSH client slot components", () => {
     hostButton.focus();
     expect(hostButton).toHaveFocus();
     window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("DSH FUSION")).toBeInTheDocument();
+    expect(await screen.findByText("鲸")).toBeInTheDocument();
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(screen.getByRole("button", { name: "关闭 DSH Fusion" })).toHaveFocus();
-    await userEvent.click(screen.getByRole("button", { name: "关闭 DSH Fusion" }));
-    expect(screen.queryByText("DSH FUSION")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "关闭鲸插件" })).toHaveFocus();
+    await userEvent.click(screen.getByRole("button", { name: "关闭鲸插件" }));
+    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
     expect(hostButton).toHaveFocus();
   });
 
   it("keeps Tab focus inside the modal overlay", async () => {
     render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
     window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("DSH FUSION")).toBeInTheDocument();
+    expect(await screen.findByText("鲸")).toBeInTheDocument();
     const dialog = screen.getByRole("dialog");
     const focusables = [...dialog.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")]
       .filter((element) => !element.hasAttribute("disabled"));
@@ -451,7 +451,7 @@ describe("DSH client slot components", () => {
   it("keeps non-tabbable elements out of the overlay trap cycle", async () => {
     render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
     window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("DSH FUSION")).toBeInTheDocument();
+    expect(await screen.findByText("鲸")).toBeInTheDocument();
     const dialog = screen.getByRole("dialog");
     const realFocusables = [...dialog.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")]
       .filter((element) => !element.hasAttribute("disabled"));
@@ -485,5 +485,48 @@ describe("DSH client slot components", () => {
     // not to an injected non-tabbable element.
     expect(fireEvent.keyDown(first, { key: "Tab", shiftKey: true })).toBe(false);
     expect(last).toHaveFocus();
+  });
+});
+
+describe("鲸群总览真实快照", () => {
+  it("保留未配置来源的显式提示，不将HTTP200当作健康空板", async () => {
+    vi.stubEnv("MODE", "development");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      ...state(), agentTeams: [],
+      providers: {nodes:{state:"offline",checkedAt:1}, agentTeams:{state:"not-configured",checkedAt:1}},
+    }))));
+    render(<FusionApp initialMode="ocean" snapshotUrl="/plugins/dsh-fusion/state" />);
+    await screen.findByText("团队来源未配置；请核对来源与权限。");
+    expect(screen.getByText("主机来源不可达；请核对来源与权限。")).toBeInTheDocument();
+    expect(screen.getByText(/来源未就绪/)).toBeInTheDocument();
+  });
+
+  it("从总览打开真实任务并可返回鲸群总览", async () => {
+    vi.stubEnv("MODE", "development");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      ...state(), agentTeams: [],
+      providers: {nodes:{state:"connected",checkedAt:1}, agentTeams:{state:"connected",checkedAt:1}},
+      tasks: [{id:"whale-task-1",goal:"复核跨机证据",targetNodeIds:["node"],transport:"ssh",
+        status:"verifying",evidence:[],expectedEvidence:[],createdAt:"2026-11-16T00:00:00Z",updatedAt:"2026-11-16T00:00:00Z"}],
+    }))));
+    render(<FusionApp initialMode="ocean" snapshotUrl="/plugins/dsh-fusion/state" />);
+    await userEvent.click(await screen.findByRole("button",{name:"打开任务 复核跨机证据"}));
+    const back=await screen.findByRole("button",{name:"← 返回 鲸群总览"});
+    await userEvent.click(back);
+    expect(await screen.findByRole("heading",{name:"深海舰桥"})).toBeInTheDocument();
+  });
+});
+
+describe("鲸工作区嵌套浮层Escape",()=>{
+  it("先保留主工作区供嵌套导航处理，再允许下一次Escape关闭",async()=>{
+    const Workspace=()=> <div className="fusion-sidebar is-mobile-open">嵌套导航</div>;
+    render(<><FusionLauncher/><FusionOverlay loadWorkspace={async()=>({FusionWorkspace:Workspace})}/></>);
+    await userEvent.click(screen.getByRole("button",{name:"打开鲸插件"}));
+    const nested=await screen.findByText("嵌套导航");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("dialog",{name:"鲸 · 深海工作区"})).toBeInTheDocument();
+    nested.classList.remove("is-mobile-open");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog",{name:"鲸 · 深海工作区"})).not.toBeInTheDocument();
   });
 });

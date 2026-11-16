@@ -1,0 +1,17 @@
+{
+  "name": "whale-panel",
+  "compatibility_date": "2026-11-16",
+  "sourceGitCommit": "1e2d9d93a525499e17c1d6aef2dd4c9305414de4",
+  "syntheticDataOnly": true,
+  "noExecutionBackend": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "redact_query_string": true,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    }
+  },
+  "url": "https://whale-panel.whale-muyi123567.workers.dev"
+}

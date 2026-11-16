@@ -1,18 +1,18 @@
-# DSH Fusion
+# 🐋 鲸 · Whale
 
-DSH 原生多机操作插件：在一个工作区管理 SSH/容器和 Instabox Host、任务派发与证据、
+鲸是 DSH 原生多机协作插件：在一个工作区管理 SSH/容器和 Instabox Host、任务派发与证据、
 会话、Room / AgentTeams / AgentBus 桥接、配置检查和可选终端。
 
-当前公开版本：**0.2.0-beta.12**，MIT。
+当前版本：**0.2.0-beta.13**，MIT。
 
-[下载预构建包与校验值](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.12)。
+[下载预构建包与校验值](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)。
 
 ## 安装
 
 从本仓库 Releases 下载预构建包与 SHA256SUMS，校验后安装到 Web profile：
 
 ~~~sh
-dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.12.tgz
+dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.13.tgz
 ~~~
 
 重载 profile 后打开侧栏 Fusion。包已包含 host、客户端与类型声明；
@@ -30,14 +30,27 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.12.tgz
 
 安装范围不等于所有组合均已通过业务验收。
 
-## 本版变化
+## 深海面板
 
-- 每 Host 的资源所有者、共享模式和并发配额，启动中的任务也占用名额。
-- 只读投影原生 AgentTeam 的 revision、负责人、依赖、ready 和写入范围。
-- 幂等恢复、取消与状态刷新的竞态修复，旧账本和聚合子任务的证据重新校验。
-- 完成回执绑定任务/节点，拒绝错配、重复字段、旧证据和兄弟任务证据补位。
-- AgentTeams 0.1.30 兼容升级，测试链修复已知依赖公告。
-- 预构建包附带第三方许可与来源声明。
+鲸群代表团队；一项项细任务与子代理像磷虾，支撑团队前进。团队与主机各自保留
+真实身份，面板只展示已经观测到的关系，不补造跨团队连线或任务。
+
+正式首页采用「深海舰桥」：团队态势、异常优先任务、主机资源与证据入口。
+手机先显示任务，再显示团队卡。连接、权限、来源缺失与陈旧状态明确提示。
+对比展厅保留三个用代码实现的方向：
+- 鲸群航图：团队探索与任务关联。
+- 深海舰桥：日常多机运维。
+- 洋流矩阵：跨团队的任务状态扫描。
+
+[打开三版交互展厅](https://whale-panel.whale-muyi123567.workers.dev/) ·
+[比选与审查记录](docs/design/2026-11-16-whale-comparison.md)
+
+本版统一鲸品牌与深海配色，保留原有任务、会话、配置、终端和安全边界。
+展示模型按真实 ID 关联，保留未观测任务声明，区分父/子任务主机负载，
+并单独表示受阻、待验收与完成。前端样式限定插件内部，支持键盘与减动画。
+npm 包名、工具与路由继续使用 dsh-fusion，既有安装与接入保持兼容。
+
+![鲸 · 深海舰桥](docs/design/previews/bridge-desktop.png)
 
 ## 验收边界
 
@@ -46,7 +59,7 @@ Host owner 声明不能替代系统账号隔离或成员级 ACL；writeScopes �
 跨 Host fencing 租约、独立 reviewer 绑定代码版本和候选补丁自改进仍未交付。
 真实模型任务、完整多 Session 协作、第三台节点和升级恢复矩阵仍待独立验收。
 
-最新结果与包哈希见 [发布说明](docs/releases/2026-11-16-beta12.md)。
+最新结果与包哈希见 [发布说明](docs/releases/2026-11-16-beta13.md)。
 [公开来源](PUBLICATION.md)解释本仓库如何排除私人运维历史。
 
 ## 开发

@@ -44,10 +44,13 @@ import { fusionBrowserUrl } from "./routes.js";
 import { RightDrawer } from "./shell/RightDrawer.js";
 import { Sidebar, type WorkspaceMode } from "./shell/Sidebar.js";
 import { Topbar } from "./shell/Topbar.js";
+import { WhalePanel } from "./features/whale/WhalePanel.js";
+import { buildWhalePanelModel } from "./features/whale/model.js";
 import { useMediaQuery } from "./shell/focus-utils.js";
 import "./styles/tokens.css";
 import "./styles/app.css";
 import "./styles/design-refresh.css";
+import "./styles/whale-theme.css";
 
 const bots: BotRecord[] = [
   { id: "chief", providerId: "demo", name: "Chief", role: "Chief of Staff", model: FUSION_DEFAULT_MODEL_ROUTE, reasoningEffort: FUSION_DEFAULT_REASONING_EFFORT, isMain: true, status: "idle", memoryCount: 12, usageTokens: 69000 },
@@ -79,6 +82,7 @@ const tasks: TaskRecord[] = [
 ];
 
 const WORKSPACE_MODE_LABELS: Record<WorkspaceMode, string> = {
+  ocean: "鲸群总览",
   setup: "开箱检查",
   bot: "对话",
   fleet: "节点",
@@ -173,6 +177,19 @@ export function FusionApp({
   const [runViewState, setRunViewState] = useState<RunViewState>({ tab: "running" });
   const [botDrafts, setBotDrafts] = useState<Record<string, string>>({});
   const [taskOrigin, setTaskOrigin] = useState<WorkspaceMode>();
+  const whaleModel = useMemo(() => buildWhalePanelModel({nodes:nodeData,tasks:taskData,...(agentTeamData===undefined?{}:{agentTeams:agentTeamData}),demo:allowDemo,loaded:snapshotLoaded,stale:snapshotError!==undefined}),[nodeData,taskData,agentTeamData,allowDemo,snapshotLoaded,snapshotError]);
+  const whaleSourceWarnings = useMemo(() => {
+    if (standaloneSnapshot) return [];
+    const warnings: string[] = [];
+    if (agentTeamData === undefined) warnings.push("团队任务来源尚未观测；零团队不代表已确认空板。");
+    for (const [key,label] of [["agentTeams","团队"],["nodes","主机"]] as const) {
+      const source=providerStatuses[key];
+      if(source===undefined) { if(key==="nodes") warnings.push("主机来源状态尚未提供。"); continue; }
+      if(source.state!=="connected") warnings.push(label+"来源"+(source.state==="offline"?"不可达":source.state==="not-configured"?"未配置":"降级")+"；请核对来源与权限。");
+    }
+    return warnings;
+  },[standaloneSnapshot,agentTeamData,providerStatuses]);
+
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -474,7 +491,7 @@ export function FusionApp({
   };
 
   return (
-    <div ref={shellRef} className={"fusion-shell" + (mode === "setup" ? " is-setup" : "") + (mode === "tasks" ? " is-tasks" : "")}>
+    <div ref={shellRef} className={"fusion-shell" + (mode === "setup" ? " is-setup" : "") + (mode === "tasks" ? " is-tasks" : "") + (mode === "ocean" ? " is-ocean" : "")}>
       <Sidebar
         mode={mode}
         onModeChange={(nextMode) => {
@@ -579,12 +596,17 @@ export function FusionApp({
           >
             <CircleAlert size={16} aria-hidden="true" />
             <span>
-              <strong>完成 Fusion 开箱检查</strong>
+              <strong>完成鲸插件开箱检查</strong>
               <small>当前缺少 Bot 或执行节点，先确认版本、连接和权限。</small>
             </span>
             <ArrowRight size={15} aria-hidden="true" />
           </button>
         ) : null}
+        {mode === "ocean" && <WhalePanel model={whaleModel} sourceWarnings={whaleSourceWarnings}
+          onOpenTask={openTask}
+          onOpenHost={(id)=>{setSelectedNodeId(id);setMode("fleet");}}
+          onNavigate={(destination)=>{setMode(destination);setMobileSidebarOpen(false);setMobileDrawerOpen(false);}}
+        />}
         {mode === "setup" && (
           <SetupWorkspace
             snapshotLoaded={snapshotLoaded}
@@ -710,7 +732,7 @@ export function FusionApp({
           />
         )}
       </main>
-      {mode === "setup" || mode === "tasks" ? null : (
+      {mode === "ocean" || mode === "setup" || mode === "tasks" ? null : (
         <RightDrawer
           mode={mode}
           bot={selectedBot}

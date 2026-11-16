@@ -64,7 +64,7 @@
   border: 1px solid var(--fusion-border);
   border-radius: 999px;
   color: var(--fusion-amber);
-  background: #fff;
+  background: var(--fusion-surface);
   font-size: 9px;
   white-space: nowrap;
 }
@@ -237,7 +237,7 @@
   min-height: 23px;
   padding: 2px 7px;
   border-radius: 5px;
-  background: #f7f8fa;
+  background: var(--fusion-surface);
 }
 
 .fusion-bridge-provider-strip > span > strong {

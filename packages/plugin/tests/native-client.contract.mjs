@@ -149,7 +149,7 @@ test("actual production workspace installs styles only while mounted and removes
     const module = h.actualWorkspace();
     assert.equal(h.dom.window.document.querySelector("style"), null);
     await React.act(async () => h.arrivals[0].resolve(module));
-    assert.match(h.dom.window.document.body.textContent, /DSH FUSION/);
+    assert.match(h.dom.window.document.body.textContent, /鲸/);
     assert.equal(h.dom.window.document.querySelectorAll('style[data-plugin="dsh-fusion"]').length, 1);
     await h.toggle();
     assert.equal(h.dom.window.document.querySelector("style"), null);

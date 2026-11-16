@@ -4,6 +4,6 @@ import { FusionApp } from "./app.js";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <FusionApp />
+    <FusionApp initialMode="ocean" />
   </StrictMode>,
 );

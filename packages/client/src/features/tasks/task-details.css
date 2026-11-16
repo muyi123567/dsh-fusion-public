@@ -5,9 +5,9 @@
   gap: 14px;
   margin-top: 16px;
   padding: 18px;
-  border: 1px solid var(--fusion-border, #dce1e8);
+  border: 1px solid var(--fusion-border, var(--fusion-border));
   border-radius: 10px;
-  background: var(--fusion-surface, #fff);
+  background: var(--fusion-surface, var(--fusion-surface));
 }
 
 .fusion-task-details > header {
@@ -32,19 +32,19 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--fusion-muted, #64748b);
+  color: var(--fusion-muted, var(--fusion-muted));
   cursor: pointer;
 }
 
 .fusion-task-details > header > button:hover {
-  background: var(--fusion-bg, #f7f8fa);
-  color: var(--fusion-text, #16181d);
+  background: var(--fusion-bg, var(--fusion-surface));
+  color: var(--fusion-text, var(--fusion-text));
 }
 
 .fusion-task-details-eyebrow {
   display: block;
   margin-bottom: 4px;
-  color: var(--fusion-muted, #64748b);
+  color: var(--fusion-muted, var(--fusion-muted));
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .08em;
@@ -61,7 +61,7 @@
 .fusion-task-details > header code {
   display: block;
   overflow: hidden;
-  color: var(--fusion-muted, #64748b);
+  color: var(--fusion-muted, var(--fusion-muted));
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -72,9 +72,9 @@
   align-items: center;
   gap: 14px;
   padding: 10px 11px;
-  border: 1px solid var(--fusion-border, #dce1e8);
+  border: 1px solid var(--fusion-border, var(--fusion-border));
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--fusion-blue-soft);
 }
 
 .fusion-task-details-status > div {
@@ -84,12 +84,12 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 4px 8px;
-  color: var(--fusion-muted, #64748b);
+  color: var(--fusion-muted, var(--fusion-muted));
   font-size: 10px;
 }
 
 .fusion-task-details-status > div b {
-  color: var(--fusion-text, #16181d);
+  color: var(--fusion-text, var(--fusion-text));
   font-size: 10px;
 }
 
@@ -98,7 +98,7 @@
   height: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: #e7ebf1;
+  background: var(--fusion-blue-soft);
 }
 
 .fusion-task-details-status > div i span {
@@ -120,14 +120,14 @@
 }
 
 .fusion-task-details-facts dt {
-  color: var(--fusion-muted, #64748b);
+  color: var(--fusion-muted, var(--fusion-muted));
   font-size: 10px;
 }
 
 .fusion-task-details-facts dd {
   margin: 3px 0 0;
   overflow-wrap: anywhere;
-  color: var(--fusion-text, #16181d);
+  color: var(--fusion-text, var(--fusion-text));
   font-size: 11px;
 }
 
@@ -135,7 +135,7 @@
   display: grid;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid var(--fusion-border, #dce1e8);
+  border-top: 1px solid var(--fusion-border, var(--fusion-border));
 }
 
 .fusion-task-detail-section > h3 {
@@ -154,7 +154,7 @@
   gap: 8px;
   padding: 8px 9px;
   border-radius: 6px;
-  background: #f7f8fa;
+  background: var(--fusion-surface);
 }
 
 .fusion-task-detail-target > div {
@@ -169,7 +169,7 @@
 
 .fusion-task-detail-target small {
   overflow: hidden;
-  color: var(--fusion-muted, #64748b);
+  color: var(--fusion-muted, var(--fusion-muted));
   font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -177,9 +177,9 @@
 
 .fusion-task-details [role="alert"] {
   padding: 9px 10px;
-  border: 1px solid #f1c7cd;
+  border: 1px solid var(--fusion-border);
   border-radius: 7px;
-  background: var(--fusion-red-soft, #fcecef);
+  background: var(--fusion-red-soft, var(--fusion-red-soft));
   color: var(--fusion-red, #c33d4a);
   font-size: 10px;
 }
@@ -200,7 +200,7 @@
   align-items: center;
   gap: 8px;
   padding: 9px 0;
-  border-bottom: 1px solid var(--fusion-border, #dce1e8);
+  border-bottom: 1px solid var(--fusion-border, var(--fusion-border));
 }
 
 .fusion-task-child pre {
@@ -233,7 +233,7 @@
     z-index: 2;
     margin: -18px -16px 0;
     padding: 14px 16px 10px;
-    background: var(--fusion-surface, #fff);
+    background: var(--fusion-surface, var(--fusion-surface));
   }
 
   .fusion-task-details-facts {

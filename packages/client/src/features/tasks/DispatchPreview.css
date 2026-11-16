@@ -38,10 +38,10 @@
 .fusion-dispatch-preview {
   min-width: 0;
   padding: 16px;
-  border: 1px solid var(--fusion-border, #e1e4e8);
+  border: 1px solid var(--fusion-border, var(--fusion-border));
   border-radius: var(--fusion-radius, 8px);
-  color: var(--fusion-text, #16181d);
-  background: var(--fusion-surface, #fff);
+  color: var(--fusion-text, var(--fusion-text));
+  background: var(--fusion-surface, var(--fusion-surface));
   font-size: 13px;
   line-height: 1.6;
   overflow-wrap: anywhere;
@@ -78,7 +78,7 @@
 }
 
 .fusion-dispatch-preview-times dt {
-  color: var(--fusion-muted, #6f7681);
+  color: var(--fusion-muted, var(--fusion-muted));
 }
 
 .fusion-dispatch-preview-times dd {
@@ -94,7 +94,7 @@
 .fusion-dispatch-preview article {
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--fusion-border, #e1e4e8);
+  border: 1px solid var(--fusion-border, var(--fusion-border));
   border-left: 3px solid var(--fusion-amber, #b7791f);
   border-radius: var(--fusion-radius, 8px);
 }
@@ -114,7 +114,7 @@
 
 .fusion-dispatch-preview-checks {
   margin-top: 8px;
-  border-top: 1px solid var(--fusion-border, #e1e4e8);
+  border-top: 1px solid var(--fusion-border, var(--fusion-border));
   padding-top: 8px;
 }
 

@@ -10,7 +10,7 @@
   overflow: auto;
   background:
     radial-gradient(circle at 1px 1px, rgb(37 99 235 / 12%) 1px, transparent 0) 0 0 / 18px 18px,
-    linear-gradient(180deg, #fafcff 0%, #f7f9fc 100%);
+    linear-gradient(180deg, var(--fusion-blue-soft) 0%, var(--fusion-blue-soft) 100%);
 }
 
 .fusion-task-canvas-grid {
@@ -110,23 +110,23 @@
   box-shadow: 0 3px 12px rgb(24 34 50 / 6%);
 }
 
-button.fusion-task-canvas-card {
+.fusion-shell button.fusion-task-canvas-card {
   cursor: pointer;
 }
 
-button.fusion-task-canvas-card:hover {
-  border-color: #b9cdec;
+.fusion-shell button.fusion-task-canvas-card:hover {
+  border-color: var(--fusion-border);
   box-shadow: 0 6px 18px rgb(24 34 50 / 9%);
 }
 
 .fusion-task-canvas-card.is-linked {
   border-color: rgb(37 99 235 / 28%);
-  background: #fbfdff;
+  background: var(--fusion-blue-soft);
 }
 
 .fusion-task-canvas-card.is-selected {
   border-color: var(--fusion-blue);
-  background: #f4f8ff;
+  background: var(--fusion-blue-soft);
   box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
 }
 
@@ -206,7 +206,7 @@ button.fusion-task-canvas-card:hover {
   display: block;
   overflow: hidden;
   border-radius: 999px;
-  background: #e7ebf1;
+  background: var(--fusion-blue-soft);
 }
 
 .fusion-task-canvas-progress i span {

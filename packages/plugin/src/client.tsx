@@ -76,10 +76,10 @@ interface SessionsService {
 }
 
 export function FusionLauncher() {
-  return <button type="button" aria-label="打开 DSH Fusion"
+  return <button type="button" aria-label="打开鲸插件"
     onClick={() => window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"))}
     style={{ minHeight: 32, width: "100%", border: 0, borderRadius: 7, background: "transparent", color: "inherit", textAlign: "left", padding: "0 10px", cursor: "pointer" }}>
-    Fusion
+    🐋 鲸
   </button>;
 }
 
@@ -157,7 +157,12 @@ export function FusionOverlay({ roomCommand, loadWorkspace = nativeWorkspace, lo
 
   useEffect(() => {
     const toggle = () => setOpen((current) => !current);
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      // A nested mobile panel consumes this Escape; a second Escape closes Whale.
+      if (dialogRef.current?.querySelector(".fusion-sidebar.is-mobile-open, .fusion-drawer.is-mobile-open")) return;
+      setOpen(false);
+    };
     window.addEventListener("dsh-fusion:toggle", toggle);
     window.addEventListener("keydown", escape);
     return () => {
@@ -180,11 +185,11 @@ export function FusionOverlay({ roomCommand, loadWorkspace = nativeWorkspace, lo
 
   if (!open) return null;
   const Workspace = workspace?.FusionWorkspace;
-  return <div ref={dialogRef} onKeyDown={trapTab} data-dsh-fusion-overlay="true" role="dialog" aria-modal="true" aria-label="DSH Fusion 工作区" style={{ position: "fixed", inset: 0, zIndex: 9000, background: "#f5f6f8" }}>
-    <button ref={closeButtonRef} type="button" aria-label="关闭 DSH Fusion" onClick={() => setOpen(false)}
-      style={{ position: "fixed", top: 14, right: 14, zIndex: 9001, width: 34, height: 34, border: "1px solid #d9dee7", borderRadius: 7, background: "#fff", color: "#334155", cursor: "pointer" }}>×</button>
-    {error !== undefined ? <div role="alert">Fusion 工作区加载失败：{error} <button type="button" onClick={() => setAttempt((value) => value + 1)}>重试</button></div>
-      : Workspace === undefined ? <div role="status">正在加载 Fusion 工作区…</div>
+  return <div ref={dialogRef} onKeyDown={trapTab} data-dsh-fusion-overlay="true" role="dialog" aria-modal="true" aria-label="鲸 · 深海工作区" style={{ position: "fixed", inset: 0, zIndex: 9000, background: "#07131d" }}>
+    <button ref={closeButtonRef} type="button" aria-label="关闭鲸插件" onClick={() => setOpen(false)}
+      style={{ position: "fixed", top: 14, right: 14, zIndex: 9001, width: 40, height: 40, border: "1px solid #2b4658", borderRadius: 7, background: "#102533", color: "#dcecf4", cursor: "pointer" }}>×</button>
+    {error !== undefined ? <div role="alert">鲸工作区加载失败：{error} <button type="button" onClick={() => setAttempt((value) => value + 1)}>重试</button></div>
+      : Workspace === undefined ? <div role="status">正在加载鲸工作区…</div>
       : <Workspace {...(roomCommand === undefined ? {} : { roomCommand })} />}
   </div>;
 }

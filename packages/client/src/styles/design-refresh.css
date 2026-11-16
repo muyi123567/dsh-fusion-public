@@ -1,42 +1,30 @@
-:root {
-  --fusion-bg: #f5f7fa;
-  --fusion-sidebar: #f2f4f7;
-  --fusion-border: #dfe3e9;
-  --fusion-border-strong: #c8ced7;
-  --fusion-muted: #68717e;
-  --fusion-faint: #9ba3ae;
-  --fusion-blue: #2563eb;
-  --fusion-blue-soft: #eaf1ff;
-  --fusion-radius: 8px;
-}
-
-body {
+.fusion-shell {
   font-size: 13px;
   line-height: 1.45;
   text-rendering: optimizeLegibility;
 }
 
-button,
-input,
-select,
-textarea {
+.fusion-shell button,
+.fusion-shell input,
+.fusion-shell select,
+.fusion-shell textarea {
   font: inherit;
 }
 
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible {
+.fusion-shell button:focus-visible,
+.fusion-shell input:focus-visible,
+.fusion-shell select:focus-visible,
+.fusion-shell textarea:focus-visible,
+.fusion-shell [tabindex]:focus-visible {
   outline: 2px solid rgb(37 99 235 / 45%);
   outline-offset: 2px;
 }
 
-::selection {
+.fusion-shell ::selection {
   background: rgb(37 99 235 / 18%);
 }
 
-* {
+.fusion-shell * {
   scrollbar-color: #c9d0da transparent;
   scrollbar-width: thin;
 }
@@ -85,7 +73,7 @@ textarea:focus-visible,
 }
 
 .fusion-nav button.is-active {
-  background: #e8f0ff;
+  background: var(--fusion-blue-soft);
   box-shadow: inset 3px 0 0 var(--fusion-blue);
 }
 
@@ -270,7 +258,7 @@ textarea:focus-visible,
   border-radius: 10px;
   background:
     radial-gradient(circle at 50% 30%, rgb(37 99 235 / 5%), transparent 42%),
-    #fafbfd;
+    var(--fusion-blue-soft);
 }
 
 .fusion-fleet-empty {
@@ -284,7 +272,7 @@ textarea:focus-visible,
   border-radius: 10px;
   background:
     radial-gradient(circle at 50% 25%, rgb(37 99 235 / 5%), transparent 40%),
-    #fafbfd;
+    var(--fusion-blue-soft);
   color: var(--fusion-muted);
   text-align: center;
 }
@@ -425,9 +413,9 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  .fusion-shell *,
+  .fusion-shell *::before,
+  .fusion-shell *::after {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;

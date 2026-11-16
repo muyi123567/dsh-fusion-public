@@ -266,7 +266,7 @@
   z-index: 2;
   min-height: 40px;
   border-top: 0;
-  background: #f7f8fa;
+  background: var(--fusion-surface);
   color: var(--fusion-muted);
   font-size: 10px;
   font-weight: 700;
@@ -274,11 +274,11 @@
 }
 
 .fusion-task-table-row:not(.fusion-task-table-head):hover {
-  background: #f9fafc;
+  background: var(--fusion-blue-soft);
 }
 
 .fusion-task-table-row.is-selected {
-  background: #f1f6ff;
+  background: var(--fusion-blue-soft);
   box-shadow: inset 3px 0 0 var(--fusion-blue);
 }
 
@@ -353,7 +353,7 @@
   min-height: 24px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #f0f2f5;
+  background: var(--fusion-surface);
   color: var(--fusion-muted);
   font-size: 10px;
   font-weight: 700;
@@ -411,7 +411,7 @@
   display: block;
   overflow: hidden;
   border-radius: 999px;
-  background: #edf0f4;
+  background: var(--fusion-surface);
 }
 
 .fusion-task-progress-track i {
