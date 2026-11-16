@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { WhaleHabitatProps } from "./contracts.js";
 import type { AmbientScene } from "../dive/scene.js";
-import { habitatPolicy, shouldSchedule } from "./policy.js";
+import { frameDelta, frameDelay, habitatPolicy, shouldSchedule } from "./policy.js";
 import "./habitat.css";
 
 type Connection = EventTarget & { saveData?: boolean };
@@ -41,7 +41,11 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
  useEffect(() => {
   if (policy.poster) {
    setReady(false);
-   if(host.current) host.current.dataset.habitatQuality = "still";
+   if(host.current) {
+    host.current.dataset.habitatQuality = "still";
+    host.current.dataset.habitatFrames = String(frames.current);
+    host.current.dataset.habitatElapsed = String(elapsed.current);
+   }
    publishState("still");
    return;
   }
@@ -54,11 +58,16 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
 
   let tier = policy.tier;
   let slowFrames = 0;
+  let needsResize = true;
   let scene: AmbientScene | undefined;
   const stop = () => {
    if (timer !== undefined) clearTimeout(timer);
    timer = undefined;
    last = undefined;
+   if(host.current){
+    host.current.dataset.habitatFrames=String(frames.current);
+    host.current.dataset.habitatElapsed=String(elapsed.current);
+   }
   };
   const fail = () => {
    if (disposed || failed) return;
@@ -75,10 +84,11 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
    timer = undefined;
    if (!active() || !loaded || !scene) return;
    const now = performance.now();
-   if (last !== undefined) elapsed.current += Math.max(0, now - last) / 1000;
+   elapsed.current += frameDelta(now, last);
    last = now;
    try {
     const begin = performance.now();
+    if (needsResize) { scene.resize(); needsResize = false; }
     scene.render(elapsed.current);
     const cost = performance.now() - begin;
     if (tier === "balanced") {
@@ -95,7 +105,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
      lastMetrics.current = now;
      latest.current.onMetrics?.({ ...scene.getMetrics(), frames: frames.current, elapsed: elapsed.current, tier });
     }
-    if (active()) timer = setTimeout(tick, Math.max(0, 1000 / (tier === "eco" ? 15 : 24) - (performance.now() - now)));
+    if (active()) timer = setTimeout(tick, frameDelay(tier, performance.now() - now));
    } catch { fail(); }
   };
   const sync = () => {
@@ -117,18 +127,29 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
     publishState("loading");
     import("../dive/scene.js").then(({ createAmbientScene }) => {
      if (disposed || failed || !canvas.current) return;
+     if (!active()) { loading = false; return; }
      scene = createAmbientScene({
       canvas: canvas.current,
       assetUrl: whaleAsset,
       mode: "ambient",
       quality: tier,
       activity: latest.current.activity,
+      pods: latest.current.pods ?? [],
+      view: latest.current.view ?? "deep",
+      selectedPodId: latest.current.selectedPodId,
       onReady: () => {
        // GLTF callbacks are asynchronous; scene assignment completes first.
        if (disposed || failed) return;
-       loaded = true;
-       setReady(true);
-       sync();
+       queueMicrotask(() => {
+        if(disposed || failed || !scene) return;
+        scene.setPods(latest.current.pods ?? []);
+        scene.setActivity(latest.current.activity);
+        scene.setView(latest.current.view ?? "deep");
+        scene.setSelected(latest.current.selectedPodId);
+        loaded = true;
+        setReady(true);
+        sync();
+       });
       },
       onError: fail,
      });
@@ -141,9 +162,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
   qualityUpdate.current = next => {
    tier=next; slowFrames=0; scene?.setQuality(next); sync();
   };
-  const resize = new ResizeObserver(() => {
-   try { scene?.resize(); } catch { fail(); }
-  });
+  const resize = new ResizeObserver(() => { needsResize = true; });
   if (host.current) resize.observe(host.current);
   const intersection = typeof IntersectionObserver === "undefined" ? undefined : new IntersectionObserver(entries => {
    onscreen = entries.some(entry => entry.isIntersecting);
@@ -168,8 +187,20 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
  useEffect(() => { qualityUpdate.current(policy.tier); }, [policy.tier]);
  useEffect(() => { resume.current(); }, [props.playing]);
  useEffect(() => { sceneRef.current?.setActivity(props.activity); }, [props.activity]);
- return <div ref={host} className={["whale-habitat", props.className].filter(Boolean).join(" ")} data-habitat-frames={frames.current} data-habitat-elapsed={elapsed.current} data-ready={ready && !policy.poster ? "true" : "false"}>
+ useEffect(() => { sceneRef.current?.setPods(props.pods ?? []); }, [props.pods]);
+ useEffect(() => { sceneRef.current?.setView(props.view ?? "deep"); }, [props.view]);
+ useEffect(() => { sceneRef.current?.setSelected(props.selectedPodId); }, [props.selectedPodId]);
+ const selectPod = (event: MouseEvent<HTMLCanvasElement>) => {
+  const rect = event.currentTarget.getBoundingClientRect();
+  if (!rect.width || !rect.height || policy.poster) return;
+  const id = sceneRef.current?.hitTest(
+   (event.clientX - rect.left) / rect.width * 2 - 1,
+   1 - (event.clientY - rect.top) / rect.height * 2,
+  );
+  if (id) latest.current.onSelectPod?.(id);
+ };
+ return <div ref={host} className={["whale-habitat", props.className].filter(Boolean).join(" ")} data-ready={ready && !policy.poster ? "true" : "false"}>
   <img className="whale-habitat__poster" src={posterAsset} alt="鲸鱼潜入深海的静态画面" />
-  <canvas key={policy.poster?"poster":"dynamic"} ref={canvas} className="whale-habitat__canvas" role="img" aria-label="持续巡游的鲸鱼海域" />
+  <canvas onClick={selectPod} key={policy.poster?"poster":"dynamic"} ref={canvas} className="whale-habitat__canvas" role="img" aria-label="持续巡游的鲸鱼海域" />
  </div>;
 }
