@@ -5,7 +5,6 @@ import { frameDelta, frameDelay, habitatPolicy, shouldSchedule } from "./policy.
 import "./habitat.css";
 
 type Connection = EventTarget & { saveData?: boolean };
-import whaleAsset from "./assets/whale-panel.glb?url";
 import posterAsset from "./assets/poster.jpg?url";
 
 export function WhaleHabitat(props: WhaleHabitatProps) {
@@ -102,6 +101,10 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
       host.current.dataset.habitatElapsed=String(elapsed.current);
       host.current.dataset.habitatQuality=tier;
      }
+     if(host.current) {
+      const m=scene.getMetrics();
+      host.current.dataset.habitatMetrics=JSON.stringify(m);
+     }
      lastMetrics.current = now;
      latest.current.onMetrics?.({ ...scene.getMetrics(), frames: frames.current, elapsed: elapsed.current, tier });
     }
@@ -130,13 +133,12 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
      if (!active()) { loading = false; return; }
      scene = createAmbientScene({
       canvas: canvas.current,
-      assetUrl: whaleAsset,
       mode: "ambient",
       quality: tier,
       activity: latest.current.activity,
       pods: latest.current.pods ?? [],
       view: latest.current.view ?? "deep",
-      selectedPodId: latest.current.selectedPodId,
+      ...(latest.current.selectedPodId===undefined?{}:{selectedPodId:latest.current.selectedPodId}),
       onReady: () => {
        // GLTF callbacks are asynchronous; scene assignment completes first.
        if (disposed || failed) return;

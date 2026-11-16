@@ -1,3 +1,4 @@
+import type {OceanLife} from "./life-types.js";
 /** Shared boundary for the single-canvas, continuously swimming panel. */
 export type HabitatQuality = "auto" | "balanced" | "eco" | "still";
 export type HabitatTier = "balanced" | "eco";
@@ -20,6 +21,7 @@ export interface HabitatMetrics {
 export interface HabitatPod extends HabitatActivity { id: string; name: string; }
 export type HabitatView = "deep" | "surface";
 export interface WhaleHabitatProps {
+ life?:OceanLife;
  pods?: HabitatPod[];
  view?: HabitatView;
  selectedPodId?: string;

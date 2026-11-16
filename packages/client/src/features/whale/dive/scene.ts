@@ -1,3 +1,4 @@
+import panelAssetUrl from "../ambient/assets/whale-panel.glb?url";
 import * as THREE from "three";
 import { samplePodMotion } from "../ambient/pod-motion.js";
 import type { HabitatActivity, HabitatTier, HabitatPod, HabitatView } from "../ambient/contracts.js";
@@ -194,8 +195,8 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   for(const geometry of geometries)geometry.dispose();
   for(const material of materials)material.dispose();
   for(const texture of textures){
-   const image=texture.source?.data;
-   if(image&&typeof image.close==="function")images.add(image);
+   const image=texture.source?.data as {close?:()=>void}|undefined;
+   if(image&&typeof image.close==="function")images.add(image as {close:()=>void});
    texture.dispose();
   }
   for(const image of images)image.close();
@@ -435,8 +436,8 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   if(disposed||!ambient)return undefined;
   const bounds=canvas.getBoundingClientRect();
   if(bounds.width<=0||bounds.height<=0)return undefined;
-  // DOM client coordinates, matching PointerEvent.clientX/clientY.
-  pointer.set((x-bounds.left)/bounds.width*2-1,-(y-bounds.top)/bounds.height*2+1);
+  // Normalized device coordinates from the canvas click handler.
+  pointer.set(x,y);
   camera.updateMatrixWorld();scene.updateMatrixWorld(true);
   raycaster.setFromCamera(pointer,camera);
   const hit=raycaster.intersectObjects(podWhales.map(w=>w.root),true)[0];
@@ -462,6 +463,6 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
 
 /** Explicit ambient mode; legacy callers retain the original 36-second dive. */
 export type AmbientScene = DiveScene;
-export function createAmbientScene(options: Options): AmbientScene {
- return createDiveScene({ ...options, mode: "ambient" });
+export function createAmbientScene(options: Omit<Options,"assetUrl"> & {assetUrl?:string}): AmbientScene {
+ return createDiveScene({ ...options, assetUrl:options.assetUrl??panelAssetUrl, mode: "ambient" });
 }

@@ -1,4 +1,4 @@
-import type { HabitatActivity, HabitatView } from "./contracts";
+import type { HabitatActivity, HabitatView } from "./contracts.js";
 
 export interface PodMotion {
  position: [number, number, number];

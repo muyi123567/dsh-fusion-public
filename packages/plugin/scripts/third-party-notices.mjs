@@ -127,7 +127,7 @@ export async function writeThirdPartyNotices({
     else for (const usage of entry.usages) prior.usages.add(usage);
   }
   let notice = "DSH Fusion - Third-party notices\n"
-    + "Generated from emitted esbuild outputs and all three Vite entry chunks.\n"
+    + "Generated from emitted esbuild outputs and all emitted Vite entry chunks.\n"
     + "Legal texts below are copied verbatim from the installed dependency packages.\n"
     + "Referenced React runtime externals are identified separately.\n";
   for (const { manifest, usages, texts } of unique.values()) {

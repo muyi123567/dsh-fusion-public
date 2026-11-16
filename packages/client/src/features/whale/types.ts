@@ -1,3 +1,4 @@
+import type {OceanSubagent,OceanSchedule} from "./ambient/life-types.js";
 import type { TaskStatus, NodeStatus, ConfigState } from "@dsh-fusion/core";
 
 export type WhaleDestination = "tasks" | "fleet" | "sessions" | "runs" | "setup";
@@ -12,6 +13,7 @@ export interface WhalePod {
   taskIds: string[]; hostIds: string[]; active: number; completed: number; blocked: number;
 }
 export interface WhaleHost {
+ transports?:string[];
   id: string; name: string; status: NodeStatus; configState: ConfigState;
   cpu?: number; memory?: number; active: number; capacity?: number; owner?: string;
 }
@@ -20,6 +22,9 @@ export interface WhaleAttention {
   taskId?: string; hostId?: string;
 }
 export interface WhalePanelModel {
+ subagents?:OceanSubagent[];
+ schedules?:OceanSchedule[];
+ schedulesObserved?:boolean;
   pods: WhalePod[]; hosts: WhaleHost[]; krill: WhaleKrill[]; attention: WhaleAttention[];
   freshness: "current" | "stale" | "unobserved"; demo: boolean;
   summary: { hosts: number; online: number; teams: number; active: number; waiting: number; completed: number; unknownHosts: number };

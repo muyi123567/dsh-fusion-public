@@ -203,3 +203,23 @@ test("terminal is an independently registered native chunk with no ESM split art
   assert.doesNotMatch(source, /\bimport\s*\(/);
   assert.match(source, /xterm/);
 });
+
+
+test("habitat UI and ocean renderer are independently registered native chunks", () => {
+  const workspace=readFileSync(new URL("client.workspace.js",dist),"utf8");
+  const habitat=readFileSync(new URL("client.habitat.js",dist),"utf8");
+  const scene=readFileSync(new URL("client.ocean-scene.js",dist),"utf8");
+  assert.match(workspace,/client\.habitat\.js/);
+  assert.doesNotMatch(workspace,/WebGLRenderer|humpback-whale|data:model\/gltf/);
+  assert.match(habitat,/client\.ocean-scene\.js/);
+  assert.doesNotMatch(habitat,/WebGLRenderer|whale-demo-v1/);
+  for (const [name,source] of [["client.habitat.js",habitat],["client.ocean-scene.js",scene]]) {
+    let registration;
+    runInNewContext(source,{window:{__ModuleLoader__:{load:value=>{registration=value;}}}});
+    assert.equal(registration.id,"dsh-fusion");
+    assert.equal(registration.chunk,name);
+    assert.equal(typeof registration.factory,"function");
+    assert.doesNotMatch(source,/\bimport\s*\(/);
+  }
+  assert.match(readFileSync(new URL("WHALE_ASSET_LICENSE.txt",dist),"utf8"),/CC0/);
+});

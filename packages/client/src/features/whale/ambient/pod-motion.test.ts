@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { samplePodMotion } from "./pod-motion";
-import type { HabitatActivity, HabitatView } from "./contracts";
+import { samplePodMotion } from "./pod-motion.js";
+import type { HabitatActivity, HabitatView } from "./contracts.js";
 
 const idle: HabitatActivity = { active: 0, blocked: 0, completed: 0, observed: false };
 const sample = (t: number, i = 0, view: HabitatView = "surface", aspect = 0.4) =>
