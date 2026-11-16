@@ -177,7 +177,8 @@ export function FusionApp({
   const [runViewState, setRunViewState] = useState<RunViewState>({ tab: "running" });
   const [botDrafts, setBotDrafts] = useState<Record<string, string>>({});
   const [taskOrigin, setTaskOrigin] = useState<WorkspaceMode>();
-  const whaleModel = useMemo(() => buildWhalePanelModel({nodes:nodeData,tasks:taskData,...(agentTeamData===undefined?{}:{agentTeams:agentTeamData}),demo:allowDemo,loaded:snapshotLoaded,stale:snapshotError!==undefined}),[nodeData,taskData,agentTeamData,allowDemo,snapshotLoaded,snapshotError]);
+  const [sessionHubSnapshot, setSessionHubSnapshot] = useState<SessionHubSnapshot>();
+  const whaleModel = useMemo(() => buildWhalePanelModel({nodes:nodeData,tasks:taskData,...(sessionHubSnapshot===undefined?{}:{sessionHub:sessionHubSnapshot}),...(agentTeamData===undefined?{}:{agentTeams:agentTeamData}),demo:allowDemo,loaded:snapshotLoaded,stale:snapshotError!==undefined}),[nodeData,taskData,agentTeamData,allowDemo,snapshotLoaded,snapshotError,sessionHubSnapshot]);
   const whaleSourceWarnings = useMemo(() => {
     if (standaloneSnapshot) return [];
     const warnings: string[] = [];
@@ -199,7 +200,6 @@ export function FusionApp({
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
-  const [sessionHubSnapshot, setSessionHubSnapshot] = useState<SessionHubSnapshot>();
   const [fleetObservability, setFleetObservability] = useState<FleetObservability>();
   const coordinatorRef = useRef<ReturnType<typeof createSnapshotCoordinator<FusionSnapshotPayload>>>();
   const snapshotScope = useMemo(() => ({}), [snapshotUrl]);

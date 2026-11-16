@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentTeamRecord, NodeRecord, TaskRecord } from "@dsh-fusion/core";
+import type { AgentTeamRecord, NodeRecord, SessionHubSnapshot, SessionHubSessionRecord, TaskRecord } from "@dsh-fusion/core";
 import { buildWhalePanelModel, WHALE_PANEL_LIMITS } from "./model.js";
 import { WHALE_DEMO_MODEL } from "./demo-fixture.js";
 
@@ -393,5 +393,56 @@ describe("WHALE_DEMO_MODEL", () => {
     ]));
     expect(project().krill).toEqual([]);
     expect(project().pods).toEqual([]);
+  });
+});
+
+describe("session and transport projection", () => {
+  const session = (patch: Partial<SessionHubSessionRecord> = {}): SessionHubSessionRecord => ({
+    id: "display", sourceId: "a", nativeSessionId: "child", title: "Worker",
+    running: true, agentAvailable: true, blank: false, updatedAt: 1,
+    origin: "subagent", parentNativeId: "parent", ...patch,
+  });
+  const projectHub = (sessions: SessionHubSessionRecord[]) => {
+    const sessionHub: SessionHubSnapshot = { provider: "available", checkedAt: 1, sessions,
+      sources: [...new Set(sessions.map(s => s.sourceId))].map(sourceId => ({
+        sourceId, state: "available", sessionCount: sessions.filter(s => s.sourceId === sourceId).length,
+      })) };
+    freezeDeep(sessionHub);
+    return buildWhalePanelModel({ nodes: [], tasks: [], loaded: true, stale: false, demo: false, sessionHub });
+  };
+  it("projects fresh explicit subagents without treating idle as success", () => {
+    const model = projectHub([session(), session({ nativeSessionId: "idle", running: false }),
+      session({ nativeSessionId: "error", lastError: "failed" }),
+      session({ nativeSessionId: "missing", agentAvailable: false })]);
+    expect(model.freshness).toBe("current");
+    expect(model.subagents?.map(s => s.status)).toEqual(["running", "idle", "failed", "unknown"]);
+    expect(model.subagents?.[0]).toMatchObject({
+      id: JSON.stringify(["a", "child"]), parentId: JSON.stringify(["a", "parent"]),
+    });
+    expect(model.summary.completed).toBe(0);
+    expect(model.schedules).toEqual([]);
+    expect(model.schedulesObserved).toBe(false);
+  });
+  it("creates no dolphins from absent origin, absent parents or member counts", () => {
+    expect(projectHub([session({ origin: undefined }), session({ parentNativeId: "" }),
+      session({ parentNativeId: "  " })]).subagents).toEqual([]);
+    expect(project([], [], [team("large", [], { memberIds: ["a", "b", "c"] })]).subagents).toEqual([]);
+  });
+  it("keeps source-scoped ids collision free and stable across title changes", () => {
+    const model = projectHub([session(), session({ sourceId: "b" }),
+      session({ sourceId: "a:child", nativeSessionId: "x" }),
+      session({ sourceId: "a", nativeSessionId: "child:x" })]);
+    expect(new Set(model.subagents?.map(s => s.id)).size).toBe(4);
+    expect(projectHub([session({ title: "Renamed", id: "new-display" })]).subagents?.[0]?.id)
+      .toBe(model.subagents?.[0]?.id);
+  });
+  it("copies transports without inventing sessions for reachable SSH hosts", () => {
+    const host = node("ssh", { transports: ["ssh", "tincan"] });
+    const model = project([], [host]);
+    expect(model.hosts[0]?.transports).toEqual(["ssh", "tincan"]);
+    model.hosts[0]?.transports?.push("local");
+    expect(host.transports).toEqual(["ssh", "tincan"]);
+    expect(model.subagents).toEqual([]);
+    expect(model.hosts[0]?.active).toBe(0);
   });
 });

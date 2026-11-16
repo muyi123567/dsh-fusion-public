@@ -1,4 +1,4 @@
-import type { AgentTeamRecord, NodeRecord, TaskRecord, TaskStatus } from "@dsh-fusion/core";
+import type { AgentTeamRecord, NodeRecord, SessionHubSnapshot, TaskRecord, TaskStatus } from "@dsh-fusion/core";
 import type { WhaleAttention, WhaleHost, WhaleKrill, WhalePanelModel, WhalePod } from "./types.js";
 
 /**
@@ -15,6 +15,7 @@ export const WHALE_PANEL_LIMITS = Object.freeze({
 });
 
 export interface WhalePanelInput {
+  sessionHub?: SessionHubSnapshot;
   nodes: NodeRecord[];
   tasks: TaskRecord[];
   agentTeams?: AgentTeamRecord[];
@@ -207,6 +208,7 @@ export function buildWhalePanelModel(input: WhalePanelInput): WhalePanelModel {
     const owner = node.hostAccess?.ownerId;
     return {
       id: node.id, name: node.name, status: node.status, configState: node.configState,
+      transports: [...node.transports],
       active: hostActive.get(node.id)?.size ?? 0,
       ...(cpu === undefined ? {} : { cpu }),
       ...(memory === undefined ? {} : { memory }),
@@ -265,6 +267,21 @@ export function buildWhalePanelModel(input: WhalePanelInput): WhalePanelModel {
 
   return {
     pods, hosts,
+    // Session identity is source-scoped; membership counts never create life.
+    subagents: [...new Map((input.sessionHub?.sessions ?? [])
+      .filter((session) => session.origin === "subagent" && session.parentNativeId?.trim())
+      .map((session) => {
+        const id = JSON.stringify([session.sourceId, session.nativeSessionId]);
+        const source = input.sessionHub?.sources.find((entry) => entry.sourceId === session.sourceId);
+        const status = session.lastError?.trim() ? "failed" as const
+          : input.sessionHub?.provider === "unavailable" || input.sessionHub?.provider === "failed"
+            || source?.state !== "available" || !session.agentAvailable ? "unknown" as const
+          : session.running ? "running" as const : "idle" as const;
+        return [id, { id, name: session.title,
+          parentId: JSON.stringify([session.sourceId, session.parentNativeId]), status }] as const;
+      })).values()],
+    schedules: [],
+    schedulesObserved: false,
     krill: [...krillById.values()].slice(0, WHALE_PANEL_LIMITS.krill),
     attention: [...errors, ...warnings].slice(0, WHALE_PANEL_LIMITS.attention),
     freshness: !input.loaded ? "unobserved" : input.stale ? "stale" : "current",
