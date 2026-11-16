@@ -4,10 +4,11 @@ import { join } from 'node:path';
 
 const env = process.env;
 const selectors = {
- root: '[data-testid="whale-habitat"]', quality: '[data-testid="whale-habitat-quality"]',
- toggle: '[data-testid="whale-habitat-toggle"]', poster: '[data-testid="whale-habitat-poster"]',
- task: '[data-testid="whale-task"][data-source="live"]',
- detail: '[data-testid="whale-task-detail"]',
+ root: '.whale-habitat', quality: '[aria-label="海域画质"]',
+ pause: 'role=button[name="暂停海域"]', resume: 'role=button[name="继续海域"]',
+ poster: 'img.whale-habitat__poster',
+ task: 'button[aria-label^="打开任务"][data-task-id]',
+ detail: 'dialog[aria-label="预览详情"]',
  ...JSON.parse(env.WHALE_QA_SELECTORS ?? '{}'),
 };
 const output = env.WHALE_EVIDENCE_DIR;
@@ -22,8 +23,10 @@ const check = (value, message) => { if (!value) throw new Error(message); };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function run(name, action) {
  const entry = { name, samples: [] }; report.cases.push(entry);
- try { await action(entry); entry.status = 'passed'; }
+ try { await action(entry); entry.status = report.failures.includes(name) ? 'failed' : 'passed'; }
  catch (error) { entry.status = 'failed'; entry.error = error.message; report.failures.push(name); }
+ await writeFile(join(output,'result.json'),JSON.stringify({...report,status:'running'},null,2)+'\n');
+ console.log(JSON.stringify({case:name,status:entry.status,error:entry.error}));
 }
 try {
  const url = new URL(env.WHALE_HABITAT_URL);
@@ -32,7 +35,7 @@ try {
  const duration = Number(env.WHALE_QA_DURATION_SECONDS ?? 90);
  check(Number.isFinite(duration) && duration >= 90, 'Duration must be at least 90 seconds');
  browser = await chromium.launch({ executablePath: env.CHROMIUM_PATH ?? '/usr/bin/chromium',
- headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
  report.browser = browser.version();
  for (const viewport of [{width:1536,height:960},{width:1280,height:720},{width:390,height:844}]) {
   await run('viewport-' + viewport.width, async entry => {
@@ -44,13 +47,17 @@ try {
    const root = page.locator(selectors.root);
    const sample = async () => {
     const s = await root.evaluate(el => ({
-     frames:Number(el.dataset.frames), elapsed:Number(el.dataset.elapsed),
-     state:el.dataset.state, quality:el.dataset.quality,
+     frames:Number(el.dataset.habitatFrames), elapsed:Number(el.dataset.habitatElapsed),
+     state:el.dataset.habitatState, quality:el.dataset.habitatQuality,
     }));
-    check(Number.isFinite(s.frames) && Number.isFinite(s.elapsed), 'Missing finite data-frames/data-elapsed');
+    check(Number.isFinite(s.frames) && Number.isFinite(s.elapsed), 'Missing finite data-habitat-frames/data-habitat-elapsed');
     entry.samples.push({at:Date.now(),...s}); return s;
    };
-   const advancing = async () => { const a=await sample(); await wait(2200); const b=await sample();
+   const ready = async () => page.waitForFunction(selector => {
+    const el=document.querySelector(selector);
+    return el?.dataset.habitatState==='running' && Number(el.dataset.habitatFrames)>0;
+   }, selectors.root, {timeout:30000});
+   const advancing = async () => { await ready(); const a=await sample(); await wait(2200); const b=await sample();
     check(b.frames>a.frames && b.elapsed>a.elapsed, 'Render frames/time did not advance'); };
    const stopped = async () => { await wait(1200); const a=await sample(); await wait(2200);
     const b=await sample(); check(b.frames===a.frames && b.elapsed===a.elapsed,'Rendering continued while stopped'); };
@@ -65,22 +72,28 @@ try {
     await page.screenshot({path:join(output,viewport.width+'-running.png'),fullPage:true});
     for(const quality of ['eco','auto','balanced']) {
      await page.locator(selectors.quality).selectOption(quality);
-     await page.waitForFunction(({s,q})=>document.querySelector(s)?.dataset.quality===q,{s:selectors.root,q:quality});
+     await page.waitForFunction(({s,q})=>{
+      const actual=document.querySelector(s)?.dataset.habitatQuality;
+      return q==='auto' ? ['balanced','eco'].includes(actual) : actual===q;
+     },{s:selectors.root,q:quality});
+     check(await page.locator(selectors.quality).inputValue()===quality,'Quality selection not retained');
      await advancing();
     }
-    await page.locator(selectors.toggle).click(); await stopped();
+    await page.locator(selectors.pause).click(); await stopped();
     await page.screenshot({path:join(output,viewport.width+'-paused.png')});
-    await page.locator(selectors.toggle).click(); await advancing();
+    await page.locator(selectors.resume).click(); await advancing();
     const task=page.locator(selectors.task).first();
     await task.waitFor({state:'visible'});
     const id=await task.getAttribute('data-task-id');
-    check(Boolean(id),'Live task needs data-task-id');
+    check(Boolean(id),'Fixture task needs data-task-id');
     await task.click();
     const detail=page.locator(selectors.detail);
     await detail.waitFor({state:'visible'});
-    check(await detail.getAttribute('data-task-id')===id,'Wrong real task details opened');
+    check(await detail.getAttribute('data-task-id')===id,'Wrong fixture task details opened');
+    entry.taskInteraction={source:'synthetic-public-fixture',taskId:id,assertion:'detail identity only; no remote execution'};
     await page.screenshot({path:join(output,viewport.width+'-task.png'),fullPage:true});
     await page.keyboard.press('Escape');
+    await detail.waitFor({state:'hidden'});
     await root.scrollIntoViewIfNeeded();
     await page.locator(selectors.quality).selectOption('still'); await stopped();
     await page.locator(selectors.poster).waitFor({state:'visible'});
@@ -120,24 +133,37 @@ try {
  await run('reduced-motion-and-cold-still', async entry=>{
   for(const mode of ['reduced','still']) {
    const context=await browser.newContext({viewport:{width:1280,height:720}, reducedMotion:mode==='reduced'?'reduce':'no-preference'});
-   // Set the UI preference before navigation using the application's documented storage key.
-   if(mode==='still') {
-    check(Boolean(env.WHALE_QUALITY_STORAGE_KEY),'Cold still requires WHALE_QUALITY_STORAGE_KEY');
-    await context.addInitScript(key=>localStorage.setItem(key,'still'),env.WHALE_QUALITY_STORAGE_KEY);
-   }
+   const staticUrl=new URL(url);
+   if(mode==='still') staticUrl.searchParams.set('quality','still');
+   // Observe WebGL creation before application scripts, without replacing their result.
+   await context.addInitScript(()=>{
+    window.__whaleQaWebglContexts=0;
+    const original=HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext=function(type,...args){
+     const result=original.call(this,type,...args);
+     if(/^webgl2?$|^experimental-webgl$/.test(type) && result) window.__whaleQaWebglContexts++;
+     return result;
+    };
+   });
    const page=await context.newPage(); const assets=[]; const errors=[];
-   page.on('request',request=>{if(/\.(glb|gltf|ktx2?)(\?|$)/i.test(request.url()))assets.push(request.url());});
+   page.on('request',request=>{if(/\.(glb|gltf|ktx2?)(\?|$)|(?:habitat|ambient).*scene|scene.*(?:habitat|ambient)/i.test(request.url()))assets.push(request.url());});
    page.on('pageerror',e=>errors.push(e.message));
+   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
    try {
-    await page.goto(url.href,{waitUntil:'domcontentloaded'});
+    await page.goto(staticUrl.href,{waitUntil:'domcontentloaded'});
     const root=page.locator(selectors.root); await root.waitFor({state:'visible'});
     await page.locator(selectors.poster).waitFor({state:'visible'});
     await wait(2500);
-    check(await root.locator('canvas').count()===0,'Static entry loaded Canvas');
+    const staticState=await root.evaluate(el=>({
+     frames:Number(el.dataset.habitatFrames), contexts:window.__whaleQaWebglContexts
+    }));
+    check(staticState.frames===0,'Static entry rendered frames');
+    check(staticState.contexts===0,'Static entry created WebGL context');
+    entry[mode]={staticState};
     check(assets.length===0,'Static entry requested 3D assets');
     check(errors.length===0,'Static entry page errors');
     await page.screenshot({path:join(output,mode+'.png'),fullPage:true});
-    entry[mode]={assets,errors};
+    entry[mode]={...entry[mode],assets,errors};
    } finally { await context.close(); }
   }
  });
