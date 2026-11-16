@@ -5,7 +5,8 @@ import { habitatPolicy, shouldSchedule } from "./policy.js";
 import "./habitat.css";
 
 type Connection = EventTarget & { saveData?: boolean };
-const assets = import.meta.env.BASE_URL + "whale-assets/";
+import whaleAsset from "./assets/whale-panel.glb?url";
+import posterAsset from "./assets/poster.jpg?url";
 
 export function WhaleHabitat(props: WhaleHabitatProps) {
  const host = useRef<HTMLDivElement>(null);
@@ -15,6 +16,13 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
  const sceneRef = useRef<AmbientScene | undefined>(undefined);
  const resume = useRef<() => void>(() => {});
  const elapsed = useRef(0);
+ const frames = useRef(0);
+ const lastMetrics = useRef(-Infinity);
+ const qualityUpdate = useRef<(tier: "balanced" | "eco") => void>(() => {});
+ const publishState = (state: "loading" | "running" | "paused" | "still" | "error") => {
+  if(host.current) host.current.dataset.habitatState = state;
+  latest.current.onStateChange?.(state);
+ };
  const [ready, setReady] = useState(false);
  const [preferences, setPreferences] = useState({ reduced: true, saveData: false });
  useEffect(() => {
@@ -33,7 +41,8 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
  useEffect(() => {
   if (policy.poster) {
    setReady(false);
-   latest.current.onStateChange?.("still");
+   if(host.current) host.current.dataset.habitatQuality = "still";
+   publishState("still");
    return;
   }
   setReady(false);
@@ -42,8 +51,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
   let visible = !document.hidden;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let last: number | undefined;
-  let published = -Infinity;
-  let frames = 0;
+
   let tier = policy.tier;
   let slowFrames = 0;
   let scene: AmbientScene | undefined;
@@ -60,7 +68,7 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
    scene = undefined;
    sceneRef.current = undefined;
    setReady(false);
-   latest.current.onStateChange?.("error");
+   publishState("error");
   };
   const active = () => !disposed && !failed && shouldSchedule(latest.current.playing, visible, onscreen);
   const tick = () => {
@@ -75,33 +83,45 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
     const cost = performance.now() - begin;
     if (tier === "balanced") {
      slowFrames = cost > 1000 / 24 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-     if (slowFrames >= 24) tier = "eco";
+     if (slowFrames >= 24) { tier = "eco"; scene.setQuality(tier); }
     }
-    frames++;
-    if (now - published >= 1000) {
-     published = now;
-     latest.current.onMetrics?.({ ...scene.metrics(), frames, elapsed: elapsed.current, tier });
+    frames.current++;
+    if(host.current){
+     host.current.dataset.habitatFrames=String(frames.current);
+     host.current.dataset.habitatElapsed=String(elapsed.current);
+     host.current.dataset.habitatQuality=tier;
+    }
+    if (now - lastMetrics.current >= 1000) {
+     lastMetrics.current = now;
+     latest.current.onMetrics?.({ ...scene.getMetrics(), frames: frames.current, elapsed: elapsed.current, tier });
     }
     if (active()) timer = setTimeout(tick, Math.max(0, 1000 / (tier === "eco" ? 15 : 24) - (performance.now() - now)));
    } catch { fail(); }
   };
   const sync = () => {
    stop();
+   if(host.current){
+    host.current.dataset.habitatQuality=tier;
+    host.current.dataset.habitatFrames=String(frames.current);
+    host.current.dataset.habitatElapsed=String(elapsed.current);
+   }
    if (!active()) {
-    if (!failed && !disposed) latest.current.onStateChange?.("paused");
+    if (!failed && !disposed) publishState("paused");
     return;
    }
    if (loaded) {
-    latest.current.onStateChange?.("running");
+    publishState("running");
     timer = setTimeout(tick, 0);
    } else if (!loading) {
     loading = true;
-    latest.current.onStateChange?.("loading");
+    publishState("loading");
     import("../dive/scene.js").then(({ createAmbientScene }) => {
      if (disposed || failed || !canvas.current) return;
      scene = createAmbientScene({
       canvas: canvas.current,
-      assetUrl: assets + "humpback-whale-light.glb",
+      assetUrl: whaleAsset,
+      mode: "ambient",
+      quality: tier,
       activity: latest.current.activity,
       onReady: () => {
        // GLTF callbacks are asynchronous; scene assignment completes first.
@@ -118,6 +138,9 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
    }
   };
   resume.current = sync;
+  qualityUpdate.current = next => {
+   tier=next; slowFrames=0; scene?.setQuality(next); sync();
+  };
   const resize = new ResizeObserver(() => {
    try { scene?.resize(); } catch { fail(); }
   });
@@ -134,17 +157,19 @@ export function WhaleHabitat(props: WhaleHabitatProps) {
    disposed = true;
    stop();
    resume.current = () => {};
+   qualityUpdate.current = () => {};
    resize.disconnect();
    intersection?.disconnect();
    document.removeEventListener("visibilitychange", visibility);
    scene?.dispose();
    sceneRef.current = undefined;
   };
- }, [policy.poster, policy.tier]);
+ }, [policy.poster]);
+ useEffect(() => { qualityUpdate.current(policy.tier); }, [policy.tier]);
  useEffect(() => { resume.current(); }, [props.playing]);
  useEffect(() => { sceneRef.current?.setActivity(props.activity); }, [props.activity]);
- return <div ref={host} className={["whale-habitat", props.className].filter(Boolean).join(" ")} data-ready={ready && !policy.poster ? "true" : "false"}>
-  <img className="whale-habitat__poster" src={assets + "whale-dive-poster.jpg"} alt="鲸鱼潜入深海的静态画面" />
+ return <div ref={host} className={["whale-habitat", props.className].filter(Boolean).join(" ")} data-habitat-frames={frames.current} data-habitat-elapsed={elapsed.current} data-ready={ready && !policy.poster ? "true" : "false"}>
+  <img className="whale-habitat__poster" src={posterAsset} alt="鲸鱼潜入深海的静态画面" />
   <canvas ref={canvas} className="whale-habitat__canvas" role="img" aria-label="持续巡游的鲸鱼海域" />
  </div>;
 }
