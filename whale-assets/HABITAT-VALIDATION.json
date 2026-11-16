@@ -1,0 +1,1926 @@
+{
+  "date": "2026-11-17",
+  "scope": "Whale habitat scene preview; installed beta13 package unchanged",
+  "sourceTests": 1129,
+  "nodeContracts": 27,
+  "nativeClientContracts": 9,
+  "modelBytes": 931352,
+  "modelTriangles": 19999,
+  "shaderFrameQueue": "one GPU fence in flight; adaptive eco",
+  "desktopQA": [
+    {
+      "name": "viewport-1536",
+      "samples": [
+        {
+          "at": 1794857372813,
+          "frames": 5,
+          "elapsed": 1.0067999999970196,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857375031,
+          "frames": 17,
+          "elapsed": 3.047899999998511,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857376285,
+          "frames": 22,
+          "elapsed": 3.704500000000001,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857378498,
+          "frames": 38,
+          "elapsed": 5.8270999999940445,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857379330,
+          "frames": 44,
+          "elapsed": 6.668700000002986,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857381538,
+          "frames": 56,
+          "elapsed": 8.744100000001497,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857382150,
+          "frames": 63,
+          "elapsed": 9.747600000001498,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857384359,
+          "frames": 79,
+          "elapsed": 11.873700000002987,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857385690,
+          "frames": 80,
+          "elapsed": 12.072200000002988,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857387901,
+          "frames": 80,
+          "elapsed": 12.072200000002988,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857388639,
+          "frames": 81,
+          "elapsed": 12.072200000002988,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857390865,
+          "frames": 96,
+          "elapsed": 14.1971000000015,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857391616,
+          "frames": 103,
+          "elapsed": 15.214200000002993,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857392365,
+          "frames": 109,
+          "elapsed": 15.878000000007464,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857394578,
+          "frames": 125,
+          "elapsed": 18.000400000005985,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857394584,
+          "frames": 125,
+          "elapsed": 18.000400000005985,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857395405,
+          "frames": 125,
+          "elapsed": 18.000400000005985,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857397622,
+          "frames": 148,
+          "elapsed": 21.19030000000451,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857398081,
+          "frames": 150,
+          "elapsed": 21.389900000005998,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857398845,
+          "frames": 153,
+          "elapsed": 21.922600000008977,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857401061,
+          "frames": 168,
+          "elapsed": 24.04830000000451,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857401066,
+          "frames": 168,
+          "elapsed": 24.04830000000451,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857401957,
+          "frames": 176,
+          "elapsed": 25.059700000010476,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857404168,
+          "frames": 191,
+          "elapsed": 27.1900000000075,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857405758,
+          "frames": 194,
+          "elapsed": 27.522400000006012,
+          "state": "still",
+          "quality": "still"
+        },
+        {
+          "at": 1794857407966,
+          "frames": 194,
+          "elapsed": 27.522400000006012,
+          "state": "still",
+          "quality": "still"
+        },
+        {
+          "at": 1794857409059,
+          "frames": 195,
+          "elapsed": 27.522400000006012,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857411268,
+          "frames": 208,
+          "elapsed": 29.61190000000602,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857412477,
+          "frames": 213,
+          "elapsed": 30.276800000011985,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857414684,
+          "frames": 213,
+          "elapsed": 30.276800000011985,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857415216,
+          "frames": 214,
+          "elapsed": 30.276800000011985,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857417429,
+          "frames": 230,
+          "elapsed": 32.405300000011984,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857418652,
+          "frames": 234,
+          "elapsed": 33.00280000001198,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857420860,
+          "frames": 234,
+          "elapsed": 33.00280000001198,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857421552,
+          "frames": 235,
+          "elapsed": 33.00280000001198,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857423762,
+          "frames": 250,
+          "elapsed": 35.06870000001047,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857424365,
+          "frames": 258,
+          "elapsed": 36.12910000000898,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857426576,
+          "frames": 274,
+          "elapsed": 38.25870000001047,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857426584,
+          "frames": 274,
+          "elapsed": 38.25870000001047,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857428796,
+          "frames": 290,
+          "elapsed": 40.38580000001197,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857431009,
+          "frames": 306,
+          "elapsed": 42.510100000009,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857433219,
+          "frames": 321,
+          "elapsed": 44.573400000013464,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857435430,
+          "frames": 336,
+          "elapsed": 46.57680000001197,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857437640,
+          "frames": 360,
+          "elapsed": 49.76290000001347,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857439848,
+          "frames": 376,
+          "elapsed": 51.82660000000899,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857442057,
+          "frames": 391,
+          "elapsed": 53.889500000007516,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857444268,
+          "frames": 407,
+          "elapsed": 56.01330000001198,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857446479,
+          "frames": 423,
+          "elapsed": 58.13960000000902,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857448695,
+          "frames": 439,
+          "elapsed": 60.26260000000904,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857450908,
+          "frames": 454,
+          "elapsed": 62.32650000000756,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857453118,
+          "frames": 469,
+          "elapsed": 64.45690000001353,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857455338,
+          "frames": 485,
+          "elapsed": 66.58030000001203,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857457551,
+          "frames": 500,
+          "elapsed": 68.70690000001348,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857459764,
+          "frames": 524,
+          "elapsed": 71.89470000001046,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857461974,
+          "frames": 540,
+          "elapsed": 74.01620000001041,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857464182,
+          "frames": 556,
+          "elapsed": 76.13880000001188,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857466392,
+          "frames": 571,
+          "elapsed": 78.26280000001185,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857468600,
+          "frames": 586,
+          "elapsed": 80.32400000000735,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857470815,
+          "frames": 602,
+          "elapsed": 82.44690000001327,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857473031,
+          "frames": 617,
+          "elapsed": 84.56900000000728,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857475243,
+          "frames": 633,
+          "elapsed": 86.69130000001172,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857477460,
+          "frames": 649,
+          "elapsed": 88.81350000000721,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857479672,
+          "frames": 664,
+          "elapsed": 90.93520000001016,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857481886,
+          "frames": 679,
+          "elapsed": 93.06000000000714,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857484099,
+          "frames": 695,
+          "elapsed": 95.1843000000116,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857486311,
+          "frames": 719,
+          "elapsed": 98.37040000001303,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857488527,
+          "frames": 734,
+          "elapsed": 100.49060000000851,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857490736,
+          "frames": 750,
+          "elapsed": 102.61490000001298,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857492948,
+          "frames": 766,
+          "elapsed": 104.73720000000995,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857495163,
+          "frames": 782,
+          "elapsed": 106.85700000000693,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857497371,
+          "frames": 798,
+          "elapsed": 108.98350000000686,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857499588,
+          "frames": 813,
+          "elapsed": 111.1039000000128,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857501800,
+          "frames": 829,
+          "elapsed": 113.22420000000977,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857504016,
+          "frames": 845,
+          "elapsed": 115.34890000001272,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857506234,
+          "frames": 861,
+          "elapsed": 117.47790000001267,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857508445,
+          "frames": 876,
+          "elapsed": 119.60370000000965,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857510663,
+          "frames": 900,
+          "elapsed": 122.78830000001112,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857512878,
+          "frames": 916,
+          "elapsed": 124.90750000000662,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857515090,
+          "frames": 932,
+          "elapsed": 127.02720000000957,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857517301,
+          "frames": 948,
+          "elapsed": 129.1484000000126,
+          "state": "running",
+          "quality": "eco"
+        }
+      ],
+      "taskInteraction": {
+        "teamId": "demo-voyage",
+        "source": "synthetic-public-fixture",
+        "taskId": "demo-voyage-1",
+        "assertion": "detail identity only; no remote execution"
+      },
+      "views": [
+        {
+          "view": "deep",
+          "teamId": "demo-voyage",
+          "taskIds": [
+            "demo-voyage-1",
+            "demo-voyage-2",
+            "demo-voyage-3",
+            "demo-voyage-4"
+          ]
+        },
+        {
+          "view": "surface",
+          "teamId": "demo-voyage",
+          "taskIds": [
+            "demo-voyage-1",
+            "demo-voyage-2",
+            "demo-voyage-3",
+            "demo-voyage-4"
+          ]
+        }
+      ],
+      "rendererMetrics": {
+        "dolphins": 0,
+        "gulls": 0,
+        "beacons": 4,
+        "krill": 72,
+        "whales": 3,
+        "renderers": 1,
+        "spouts": 0,
+        "frames": 191,
+        "elapsed": 27.12370000001048,
+        "tier": "eco",
+        "calls": 26,
+        "triangles": 63941,
+        "geometries": 9,
+        "textures": 3,
+        "programs": 16
+      },
+      "durationMs": 90725,
+      "previewStates": [
+        {
+          "state": "empty",
+          "requests": []
+        },
+        {
+          "state": "stale",
+          "requests": []
+        },
+        {
+          "state": "unobserved",
+          "requests": []
+        }
+      ],
+      "pageErrors": [],
+      "status": "passed"
+    },
+    {
+      "name": "viewport-1280",
+      "samples": [
+        {
+          "at": 1794857521701,
+          "frames": 1,
+          "elapsed": 0,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857523907,
+          "frames": 22,
+          "elapsed": 3.1306000000014897,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857524850,
+          "frames": 23,
+          "elapsed": 3.1971000000014898,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857527061,
+          "frames": 44,
+          "elapsed": 5.988800000004472,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857527664,
+          "frames": 44,
+          "elapsed": 5.988800000004472,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857529870,
+          "frames": 58,
+          "elapsed": 7.972200000002992,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857530425,
+          "frames": 66,
+          "elapsed": 9.005500000007455,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857532636,
+          "frames": 80,
+          "elapsed": 11.075700000002968,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857533958,
+          "frames": 83,
+          "elapsed": 11.614900000005942,
+          "state": "paused",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857536174,
+          "frames": 83,
+          "elapsed": 11.614900000005942,
+          "state": "paused",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857536991,
+          "frames": 84,
+          "elapsed": 11.614900000005942,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857539205,
+          "frames": 97,
+          "elapsed": 13.690900000005929,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857539962,
+          "frames": 106,
+          "elapsed": 14.893600000001447,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857540778,
+          "frames": 110,
+          "elapsed": 15.459600000001448,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857542990,
+          "frames": 126,
+          "elapsed": 17.584800000004435,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857542997,
+          "frames": 126,
+          "elapsed": 17.584800000004435,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857543796,
+          "frames": 133,
+          "elapsed": 18.59249999999997,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857546014,
+          "frames": 149,
+          "elapsed": 20.716200000002953,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857546311,
+          "frames": 152,
+          "elapsed": 21.047400000005933,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857547220,
+          "frames": 155,
+          "elapsed": 21.521700000010405,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857549429,
+          "frames": 171,
+          "elapsed": 23.647900000005944,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857549434,
+          "frames": 171,
+          "elapsed": 23.647900000005944,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857550163,
+          "frames": 179,
+          "elapsed": 24.652900000005946,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857552373,
+          "frames": 195,
+          "elapsed": 26.777000000007448,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857553825,
+          "frames": 197,
+          "elapsed": 27.108100000008942,
+          "state": "still",
+          "quality": "still"
+        },
+        {
+          "at": 1794857556033,
+          "frames": 197,
+          "elapsed": 27.108100000008942,
+          "state": "still",
+          "quality": "still"
+        },
+        {
+          "at": 1794857556889,
+          "frames": 198,
+          "elapsed": 27.108100000008942,
+          "state": "running",
+          "quality": "balanced"
+        },
+        {
+          "at": 1794857559095,
+          "frames": 211,
+          "elapsed": 29.188800000011927,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857560309,
+          "frames": 217,
+          "elapsed": 29.92020000001044,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857562523,
+          "frames": 217,
+          "elapsed": 29.92020000001044,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857563151,
+          "frames": 218,
+          "elapsed": 29.92020000001044,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857565363,
+          "frames": 233,
+          "elapsed": 32.04720000001045,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857566585,
+          "frames": 238,
+          "elapsed": 32.71130000000449,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857568799,
+          "frames": 238,
+          "elapsed": 32.71130000000449,
+          "state": "paused",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857569566,
+          "frames": 239,
+          "elapsed": 32.71130000000449,
+          "state": "running",
+          "quality": "eco"
+        },
+        {
+          "at": 1794857571786,
+          "frames": 250,
+          "elapsed": 34.839400000005966,
+          "state": "running",
+          "quality": "eco"
+        }
+      ],
+      "taskInteraction": {
+        "teamId": "demo-voyage",
+        "source": "synthetic-public-fixture",
+        "taskId": "demo-voyage-1",
+        "assertion": "detail identity only; no remote execution"
+      },
+      "views": [
+        {
+          "view": "deep",
+          "teamId": "demo-voyage",
+          "taskIds": [
+            "demo-voyage-1",
+            "demo-voyage-2",
+            "demo-voyage-3",
+            "demo-voyage-4"
+          ]
+        },
+        {
+          "view": "surface",
+          "teamId": "demo-voyage",
+          "taskIds": [
+            "demo-voyage-1",
+            "demo-voyage-2",
+            "demo-voyage-3",
+            "demo-voyage-4"
+          ]
+        }
+      ],
+      "rendererMetrics": {
+        "dolphins": 0,
+        "gulls": 0,
+        "beacons": 4,
+        "krill": 72,
+        "whales": 3,
+        "renderers": 1,
+        "spouts": 0,
+        "frames": 195,
+        "elapsed": 26.777000000007448,
+        "tier": "eco",
+        "calls": 26,
+        "triangles": 63941,
+        "geometries": 9,
+        "textures": 3,
+        "programs": 16
+      },
+      "previewStates": [
+        {
+          "state": "empty",
+          "requests": []
+        },
+        {
+          "state": "stale",
+          "requests": []
+        },
+        {
+          "state": "unobserved",
+          "requests": []
+        }
+      ],
+      "pageErrors": [],
+      "status": "passed"
+    }
+  ],
+  "mobileQA": {
+    "startedAt": "2026-11-16T19:35:24.075Z",
+    "cases": [
+      {
+        "name": "viewport-390",
+        "samples": [
+          {
+            "at": 1794857725659,
+            "frames": 1,
+            "elapsed": 0,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857727872,
+            "frames": 19,
+            "elapsed": 2.067,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857728798,
+            "frames": 27,
+            "elapsed": 2.8958000000044715,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857731011,
+            "frames": 43,
+            "elapsed": 4.956600000001491,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857731648,
+            "frames": 52,
+            "elapsed": 5.934200000002983,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857733872,
+            "frames": 71,
+            "elapsed": 8.004899999998521,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857734464,
+            "frames": 80,
+            "elapsed": 9.039899999998513,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857736672,
+            "frames": 100,
+            "elapsed": 11.106200000002968,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857737929,
+            "frames": 102,
+            "elapsed": 11.354399999998495,
+            "state": "paused",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857740137,
+            "frames": 102,
+            "elapsed": 11.354399999998495,
+            "state": "paused",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857740785,
+            "frames": 103,
+            "elapsed": 11.354399999998495,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857742995,
+            "frames": 123,
+            "elapsed": 13.422300000004439,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857743543,
+            "frames": 133,
+            "elapsed": 14.358399999998474,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857744177,
+            "frames": 133,
+            "elapsed": 14.358399999998474,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857746387,
+            "frames": 155,
+            "elapsed": 16.432199999995483,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857746396,
+            "frames": 155,
+            "elapsed": 16.432199999995483,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857747092,
+            "frames": 165,
+            "elapsed": 17.466299999996973,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857749304,
+            "frames": 186,
+            "elapsed": 19.533399999998455,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857749503,
+            "frames": 194,
+            "elapsed": 20.27739999999845,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857750206,
+            "frames": 196,
+            "elapsed": 20.40099999999249,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857752418,
+            "frames": 217,
+            "elapsed": 22.4859999999925,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857752424,
+            "frames": 217,
+            "elapsed": 22.4859999999925,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857753095,
+            "frames": 226,
+            "elapsed": 23.49189999999846,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857755305,
+            "frames": 248,
+            "elapsed": 25.616499999992495,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857756691,
+            "frames": 254,
+            "elapsed": 26.0799999999925,
+            "state": "still",
+            "quality": "still"
+          },
+          {
+            "at": 1794857758897,
+            "frames": 254,
+            "elapsed": 26.0799999999925,
+            "state": "still",
+            "quality": "still"
+          },
+          {
+            "at": 1794857759650,
+            "frames": 255,
+            "elapsed": 26.0799999999925,
+            "state": "running",
+            "quality": "balanced"
+          },
+          {
+            "at": 1794857761859,
+            "frames": 275,
+            "elapsed": 28.170899999991008,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857763067,
+            "frames": 280,
+            "elapsed": 28.83489999999101,
+            "state": "paused",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857765275,
+            "frames": 280,
+            "elapsed": 28.83489999999101,
+            "state": "paused",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857765858,
+            "frames": 281,
+            "elapsed": 28.83489999999101,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857768067,
+            "frames": 301,
+            "elapsed": 30.96099999998506,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857769284,
+            "frames": 306,
+            "elapsed": 31.624599999986547,
+            "state": "paused",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857771495,
+            "frames": 306,
+            "elapsed": 31.624599999986547,
+            "state": "paused",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857772136,
+            "frames": 307,
+            "elapsed": 31.624599999986547,
+            "state": "running",
+            "quality": "eco"
+          },
+          {
+            "at": 1794857774357,
+            "frames": 321,
+            "elapsed": 33.74849999998506,
+            "state": "running",
+            "quality": "eco"
+          }
+        ],
+        "taskInteraction": {
+          "teamId": "demo-voyage",
+          "source": "synthetic-public-fixture",
+          "taskId": "demo-voyage-1",
+          "assertion": "detail identity only; no remote execution"
+        },
+        "views": [
+          {
+            "view": "deep",
+            "teamId": "demo-voyage",
+            "taskIds": [
+              "demo-voyage-1",
+              "demo-voyage-2",
+              "demo-voyage-3",
+              "demo-voyage-4"
+            ]
+          },
+          {
+            "view": "surface",
+            "teamId": "demo-voyage",
+            "taskIds": [
+              "demo-voyage-1",
+              "demo-voyage-2",
+              "demo-voyage-3",
+              "demo-voyage-4"
+            ]
+          }
+        ],
+        "rendererMetrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 248,
+          "elapsed": 25.550399999998454,
+          "tier": "eco",
+          "calls": 26,
+          "triangles": 63941,
+          "geometries": 11,
+          "textures": 3,
+          "programs": 17
+        },
+        "previewStates": [
+          {
+            "state": "empty",
+            "requests": []
+          },
+          {
+            "state": "stale",
+            "requests": []
+          },
+          {
+            "state": "unobserved",
+            "requests": []
+          }
+        ],
+        "pageErrors": [],
+        "status": "passed"
+      },
+      {
+        "name": "reduced-motion-and-cold-still",
+        "samples": [],
+        "reduced": {
+          "staticState": {
+            "frames": 0,
+            "contexts": 0
+          },
+          "assets": [],
+          "errors": []
+        },
+        "still": {
+          "staticState": {
+            "frames": 0,
+            "contexts": 0
+          },
+          "assets": [],
+          "errors": []
+        },
+        "status": "passed"
+      }
+    ],
+    "failures": [],
+    "gaps": [],
+    "limits": [
+      "Software WebGL frame rates do not prove physical GPU performance or energy consumption.",
+      "DOM telemetry and screenshots require visual review; task interaction does not prove remote execution.",
+      "Hidden simulation overrides visibilityState; real OS backgrounding remains a manual check."
+    ],
+    "target": "http://127.0.0.1:4188/whale-habitat.html",
+    "browser": "156.0.8078.47",
+    "finishedAt": "2026-11-16T19:36:22.803Z",
+    "status": "passed"
+  },
+  "lifeQA": {
+    "synthetic": true,
+    "cases": [
+      {
+        "name": "startup",
+        "status": "passed",
+        "cues": [],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 1,
+          "elapsed": 0,
+          "tier": "balanced",
+          "calls": 37,
+          "triangles": 68215,
+          "geometries": 9,
+          "textures": 3,
+          "programs": 10
+        }
+      },
+      {
+        "name": "ssh-online",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "host-online",
+            "entityId": "demo-north",
+            "text": "SSH主机可达"
+          }
+        ],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 4,
+          "elapsed": 0.7206000000014902,
+          "tier": "eco",
+          "calls": 28,
+          "triangles": 64949,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 10
+        }
+      },
+      {
+        "name": "task-running",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "task-start",
+            "entityId": "demo-voyage-1",
+            "text": "起航执行"
+          }
+        ],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 8,
+          "elapsed": 1.3199999999925496,
+          "tier": "eco",
+          "calls": 30,
+          "triangles": 65285,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 10
+        }
+      },
+      {
+        "name": "task-verifying",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "task-verify",
+            "entityId": "demo-voyage-1",
+            "text": "待验收"
+          }
+        ],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 8,
+          "elapsed": 1.3199999999925496,
+          "tier": "eco",
+          "calls": 30,
+          "triangles": 65285,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 10
+        }
+      },
+      {
+        "name": "task-completed",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "task-complete",
+            "entityId": "demo-voyage-1",
+            "text": "新完成 · 查看任务证据"
+          }
+        ],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 13,
+          "elapsed": 2.18229999999702,
+          "tier": "eco",
+          "calls": 30,
+          "triangles": 65285,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 10
+        }
+      },
+      {
+        "name": "subagent",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "subagent-start",
+            "entityId": "demo-dolphin",
+            "text": "子代理协作中"
+          }
+        ],
+        "metrics": {
+          "dolphins": 1,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 18,
+          "elapsed": 2.981,
+          "tier": "eco",
+          "calls": 37,
+          "triangles": 66299,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 11
+        }
+      },
+      {
+        "name": "schedule",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "schedule-trigger",
+            "entityId": "demo-gull",
+            "text": "定时任务触发"
+          }
+        ],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 1,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 24,
+          "elapsed": 3.7784999999999993,
+          "tier": "eco",
+          "calls": 28,
+          "triangles": 65157,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 11
+        }
+      },
+      {
+        "name": "stale",
+        "status": "passed",
+        "cues": [
+          {
+            "kind": "source-stale",
+            "entityId": "ocean",
+            "text": "失去观测"
+          }
+        ],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 1,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 24,
+          "elapsed": 3.7784999999999993,
+          "tier": "eco",
+          "calls": 28,
+          "triangles": 65157,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 11
+        }
+      },
+      {
+        "name": "no-subagents",
+        "status": "passed",
+        "cues": [],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 37,
+          "elapsed": 5.5715,
+          "tier": "eco",
+          "calls": 28,
+          "triangles": 65157,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 11
+        }
+      },
+      {
+        "name": "no-schedules",
+        "status": "passed",
+        "cues": [],
+        "metrics": {
+          "dolphins": 0,
+          "gulls": 0,
+          "beacons": 4,
+          "krill": 72,
+          "whales": 3,
+          "renderers": 1,
+          "spouts": 0,
+          "frames": 44,
+          "elapsed": 6.43129999999702,
+          "tier": "eco",
+          "calls": 28,
+          "triangles": 65157,
+          "geometries": 10,
+          "textures": 3,
+          "programs": 11
+        }
+      }
+    ],
+    "gaps": [],
+    "failures": [],
+    "limits": [
+      "No real SSH/task/schedule execution proof; no performance acceptance."
+    ],
+    "status": "passed"
+  },
+  "audit": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 58,
+    "devDependencies": 221,
+    "optionalDependencies": 56,
+    "totalDependencies": 279
+  },
+  "limits": [
+    "software WebGL only; not real GPU energy measurements",
+    "scheduled tasks source not integrated; preview uses explicit synthetic cases",
+    "no real SSH auth or remote task execution claimed"
+  ],
+  "sources": {
+    "packages/plugin/vite.config.ts": "9805da92cd1584c4ccf162872f52b61e066b88386596cbaf37c0adcbb72bd49a",
+    "packages/plugin/vitest.config.ts": "dcd43116ca5a9223f395a66a5eb33d29bf1b78faebfe73ea21d1947142d591db",
+    "packages/plugin/tsconfig.json": "7e29b617c80ad70420058f337d1554d49354369878dc7d670489bb3a048d937a",
+    "packages/plugin/tsconfig.build.json": "ac8e3af65a7e3bec2f9de31655d5d53a1d5fbe72dd958ef9967af2d69fe125c9",
+    "packages/plugin/release.json": "eae62e0fac96fc4041c6f09ec6ea00cc19d5739c6d0b292c7912a1c169f2caa6",
+    "packages/plugin/package.json": "804f002d7003924c1178b9c0b197a1b1cf9bc2edafdd2e9858926583439ed0e8",
+    "packages/plugin/cordis.patch.yml": "622f1b4e9ea4f27fe0f9402077653e283792d22ec999597ce452db97ba7fcfa4",
+    "packages/plugin/compatibility.json": "6fbe8992b8c07d19ad20fbff3db3b2ab9db99d899d00819660d1f645fd076cbc",
+    "packages/plugin/README.md": "8946eaf54c3394c627ceafc22a48b7ce3e4715325656994808b0b774deca77bb",
+    "packages/plugin/LICENSE": "4490fe1939aa67dac4283ed4280127492a81d324c3ad44e357704b570661a27f",
+    "packages/host/vitest.config.ts": "dcd43116ca5a9223f395a66a5eb33d29bf1b78faebfe73ea21d1947142d591db",
+    "packages/host/tsconfig.json": "1ab9dec7818cb0c1702e4d338d037360a786245416d71cfdd09e4a126b79d738",
+    "packages/host/package.json": "46d7abcfa5d799cd778ee10203b42c2656a99d6367e6ed913fafbeda726de018",
+    "packages/core/vitest.config.ts": "dcd43116ca5a9223f395a66a5eb33d29bf1b78faebfe73ea21d1947142d591db",
+    "packages/core/tsconfig.json": "8459bfd80ea6fdf439f11690df0623efdf5c2e3ce7adb211901b3f3af638ec2b",
+    "packages/core/package.json": "d16e98ee2e7cfd707d5a82aea26d76602904dd35d3164a53100c0526a9ca42fb",
+    "packages/config/vitest.config.ts": "dcd43116ca5a9223f395a66a5eb33d29bf1b78faebfe73ea21d1947142d591db",
+    "packages/config/tsconfig.json": "8459bfd80ea6fdf439f11690df0623efdf5c2e3ce7adb211901b3f3af638ec2b",
+    "packages/config/package.json": "1656409f60432b90674f80d379bbf7d04667b492452cdca9535a660bea902801",
+    "packages/client/whale-habitat.html": "d93f0bae7fd68bebdbd344825972bcb2628562196e54b5ac46d21a42a41376d3",
+    "packages/client/vite.config.ts": "d95e3fd83e3c987515b9b7055747247fa77d14a99236089015884a0045272365",
+    "packages/client/whale-dive.html": "bd6317b0ece599537dff106c165c4f5f0d254c7e7e54981e9d9bc9b5340cf546",
+    "packages/client/tsconfig.json": "9d0baa0e5fbbc583ffdaf50fcf4a4470b3e24bfe6c7ff1fe46fb64002ad7fe69",
+    "packages/client/package.json": "91793564898307d88733882665779a1693ffecc4b898b4cf85f66ca62a25a073",
+    "packages/client/index.html": "2081e2e7021c6365b75eabbce115917b0418600beb117d3df9a886e0f6b23330",
+    "packages/client/design-gallery.html": "c61eadb9633ebe7f7b8416fbdc92d7a4be52508d9242008305ddb3a6dae1175b",
+    "packages/client/src/habitat.tsx": "22309afa7f64ba7f9a718cb1fd1fa9148adb67b56f44c998ef5df84b0482dd9a",
+    "packages/client/src/app.tsx": "21266f58a14a9d08f6e1437d8c487eb6a24bacdf4ac755936c66c09cc5f8514b",
+    "packages/client/src/vite-env.d.ts": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+    "packages/client/src/test-setup.ts": "f6dacd0c48caa5c15c870a23f157a9801eea0c792f9c6e4d9a29374fa10b3e39",
+    "packages/client/src/routes.ts": "a4ab522abfe82a57471060b2a37826ef05d52f456d12369b787f76367c445152",
+    "packages/client/src/routes.test.ts": "257ca32d468f0d29928efb9074b8a1407b511e5b322104946eab894e12a859bb",
+    "packages/client/src/plugin-client.test.tsx": "db5178abc54d769576f5b4c53736e8b4430698a1e9c95961cd035ed41cfb538d",
+    "packages/client/src/main.tsx": "5ded44636bd1d1f3cef36d8f438eaedf5822f1e65cbb3421f58899c0803701d2",
+    "packages/client/src/gallery.tsx": "7daeee7044cc2dfb615fb3f4c7039a2497d332ce7a7b1852bef4d81a34251afe",
+    "packages/client/src/dive.tsx": "06af40ca15d6768485dc0055147eeabb327cfcf947ac7cdc5e0edf577751ff64",
+    "packages/client/public/whale-assets/whale-dive-poster.jpg": "6d8af7b153d1b73bb3c81361f9c808956d830f7422b1023c2c522bbdc7bdb3f7",
+    "packages/client/public/whale-assets/manifest.json": "bda663730ce194b51eb52f965fffbb75e55f265d38b1537cee440309b1aaa70e",
+    "packages/client/public/whale-assets/humpback-whale-light.glb": "c07b1cec69fb3292165c51d00acf224809476b6d9d899c3a810d6050e9611c58",
+    "packages/client/public/whale-assets/THREE-LICENSE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+    "packages/client/public/whale-assets/LICENSE.txt": "a15412842aa03ed7746551767e80808a9303edbbca02a06cfbcf354dfbd0ad27",
+    "packages/client/public/whale-assets/CREDITS.md": "a3a55246cc423ae0301b173fec2196ff3f05a9d928bcc68dbb2d466f1c442491",
+    "packages/client/src/styles/whale-theme.css": "faa2c61dd7c274998a9d882bf9035f085d1dbaa8bff670ee7619a62e3291db63",
+    "packages/client/src/styles/tokens.css": "01a8350f1047989bc4b3a1ba05c0e51fef74d59d0d51518a0bca84bef9e04756",
+    "packages/client/src/styles/drawer-breakpoints.test.ts": "4b58854643ea9846e6b9cd84c43c2de097d8e2b4711e324c3ce0ce27b3000b9c",
+    "packages/client/src/styles/design-refresh.css": "491449a719cedd65fba7f28b1b54563da47c7ae04d7ca65270243d155ace5795",
+    "packages/client/src/styles/app.css": "8a1e935eb52b9b9169e570bc46e32a9833f751ceb57db471020738634f61f06d",
+    "packages/client/src/stream/use-fusion-stream.ts": "d8a1dc420ef1d7bb666aff4d82a837860fd74e30b46359f4b98bf32c7c330153",
+    "packages/client/src/stream/use-fusion-stream.test.ts": "189914b9f5d1e7169e892b9db27c4ce4c69e33aafc8b5ba792feb3ad21854477",
+    "packages/client/src/stream/sse-reader.ts": "bb968f017773bbbe21ced39277efbb770850a6134092c6019a1a881c76ed3370",
+    "packages/client/src/stream/sse-reader.test.ts": "3ad1e4e5cc41f61a39e6e6dfebb2c553100a33c5796841720fb96cfa4f4caa17",
+    "packages/client/src/stream/snapshot-coordinator.ts": "2e54b75f9be246b62769038514399adc022524700cf39a85f0a4ce9425be523a",
+    "packages/client/src/stream/snapshot-coordinator.test.ts": "cb82c67f3a8c11f2a35819a53b3b3bac87808b6250cdbcbf2500f8d08011d5bf",
+    "packages/client/src/shell/sidebar.test.tsx": "5dbe088466b31722e9ba2cd5b4cad6c9662ff7828103b4edbea361ffef80a7ff",
+    "packages/client/src/shell/right-drawer.test.tsx": "533c8bead7d8ec9a99d8fbf15bb315cc50be80c6902a96c87d37d29531933a9d",
+    "packages/client/src/shell/overlay-focus.test.tsx": "70c0c102a227a338a848d32d7cdd1e9196b01d3b0ed3088060d65f5bd6dd7cd9",
+    "packages/client/src/shell/focus-utils.ts": "da8aa760cc687cd85e3c171f78b749f1541bf555d4b46a1415dbb3216dfd2f03",
+    "packages/client/src/shell/Topbar.tsx": "5469ab39e4c951eb11efba2c020edae20999aeaef1dfa28b12a7082ab6f9f7b6",
+    "packages/client/src/shell/Sidebar.tsx": "d28626ba58c8780f6a559d66ad01312401599e8e4b0bacff5528ccfdacced4ad",
+    "packages/client/src/shell/RightDrawer.tsx": "0568a6549b1fde983b661af3157c93e965d4ff3f2ece62886bb8c12e4b0c40fd",
+    "packages/client/src/shell/BotAvatar.tsx": "a17624a2168c65e7ff7d6a4d45700848132c1dbbb0a15891897a584ba2de2174",
+    "packages/client/src/features/whale/whale-panel.css": "9bb8024aa4f44d468c4d85a7dfbea8fec803160f3e67e8f082fbc6cd86032a11",
+    "packages/client/src/features/whale/types.ts": "7d6f9052f3909f80a45f54d3afd701cff0dbea21459fa02ffccc768d6e8d9848",
+    "packages/client/src/features/whale/model.ts": "86a96d2b4c06d710247bf4e61103bfd1ecb647667e9ed97332ea28a6e63334f8",
+    "packages/client/src/features/whale/model.test.ts": "6dc07bda0c93f8f263489e30f99b4556042ef5bebbb7d984a3052a65fc2a40c6",
+    "packages/client/src/features/whale/WhalePanel.tsx": "42a571b1a471b2570a4200aa8c624e36c6e33e41cbbaf9003053fd8b936e4c58",
+    "packages/client/src/features/whale/whale-gallery.css": "740f081aaa1950a7f79b911af2bdfd7ac8ea5e186dde7977a3991604b1119111",
+    "packages/client/src/features/whale/whale-current.css": "5949d46171d88f5125d61668939212d406663786e0c079e92d6b7a8aace1b82d",
+    "packages/client/src/features/whale/whale-bridge.css": "0834227343b2bbb92e42063adba5f73127569e0e506a0561d01b68e110651baf",
+    "packages/client/src/features/whale/whale-atlas.css": "2b824b8924f507b61217ee36bdfe29873c910e5cf2b082a9ba8e77167f199538",
+    "packages/client/src/features/whale/demo-fixture.ts": "4ca45d348c977fa3018fc39c025d5e6fbdbf5ce591dc4f17aa468eac32cabe8c",
+    "packages/client/src/features/whale/WhalePanelFrame.tsx": "c07c251dcba63a65d6c9420e077bbf372266411c3ac61b80d77b3f54ae5c950d",
+    "packages/client/src/features/whale/WhaleGlyph.tsx": "9eec9f6a1bc10f205de5438890b522320a8d3dfd450ef31a3db9e4681ceee0dc",
+    "packages/client/src/features/whale/WhaleGallery.tsx": "780db76a1b38f070cedd2a067b6aee7bb7e839615303895708261007e0a824a7",
+    "packages/client/src/features/whale/WhaleCurrent.tsx": "43dfab82497d166127e0a77dcfd32dc0ffdf94b265691f3a46bd178c815ffb08",
+    "packages/client/src/features/whale/WhaleBridge.tsx": "5e3ae3afb2dee29bb70cae94c0ecbd584b31187d63ec4af24519383fbd5f970b",
+    "packages/client/src/features/whale/WhaleAtlas.tsx": "6bdb26750c44dce7d4f183a01e81b8afbe0589373e4e4640f4daaf072e9abf1e",
+    "packages/client/src/features/terminal/terminal-tabs.test.tsx": "a0aff2216290dd78b14ecb39dfca005ba90778613ddfbd0bc3f1565cb224c6e8",
+    "packages/client/src/features/terminal/pty-client.ts": "3ecca96a6188dc2d395d4c031461134ee36a790ed77e5c83511b387c8ef6adbf",
+    "packages/client/src/features/terminal/pty-client.test.ts": "dc37b3eca858bc88890006d3b3f78359a8cf159bd5f170f8a407b86846cb8828",
+    "packages/client/src/features/terminal/TerminalWindow.tsx": "023ab4e0c0bab363bb0375f41767c78b7409a55b4446ce941a46b684048ebe0b",
+    "packages/client/src/features/terminal/TerminalTabs.tsx": "9a3721eb65bd386370fd2d3f5a7c4b9647f420be074f8c78ecb9c427efebb137",
+    "packages/client/src/features/tasks/task-workspace.test.tsx": "96ce615ed903c5f1562ddd3a93f486499885c70f055f5b425638108b2ea0a2dd",
+    "packages/client/src/features/tasks/task-workspace.css": "9ca2a42d3f34470dfbfe256e0ceb63692d7a91ce3894ebf682434028caeb4101",
+    "packages/client/src/features/tasks/task-view-visuals.css": "2ae96b86bc883ea3518d2c9af6264a189a5a5e7ed2154d249db775bbb6854144",
+    "packages/client/src/features/tasks/task-view-registry.ts": "eb5f52f3c4bafdf2cafce40415e015a0dbdd142b916ead1ad22663e02cd621e6",
+    "packages/client/src/features/tasks/task-view-registry.test.tsx": "e47428bf13c3cdb3d1545e648162fc8811208ac3598f8137826e8f939074ba98",
+    "packages/client/src/features/tasks/task-view-error-boundary.test.tsx": "5a04f936280731b4f85136ad605c4147ca9c6ed9d09112ea96bf631325320877",
+    "packages/client/src/features/tasks/task-topology.ts": "cec725995d049791e8018655a0ef3e2819498a4bde3a7b8fd6e4367d37f66d4d",
+    "packages/client/src/features/tasks/task-topology.test.ts": "86ab73a632dcbc7e43546b5e02ed0be08e79f2d8fe4102ed241ce1a4732b3779",
+    "packages/client/src/features/tasks/task-model.ts": "c479005523197ebdfc8990e2e3636e7a911296f2cc09b0aa61d131b5990425af",
+    "packages/client/src/features/tasks/task-details.css": "ac3f6365ad43fe80d8e7071a0dc2f9e7097f62288004ceb8856d2a5b145313e7",
+    "packages/client/src/features/tasks/task-card.test.tsx": "e7aa698ebc4a4386650ddad626fa071e6f8949e192053433e1d989265b61c1b8",
+    "packages/client/src/features/tasks/task-canvas.css": "74258e2fbf285c8b50acba0cdcffaa5b4ed804b9dae210ae6c434d2f874229cd",
+    "packages/client/src/features/tasks/dispatch-preview.test.tsx": "7eba946352f3a8e5c75ababa9f174b10cec06e9b32b8c5fd3414969acfd916c2",
+    "packages/client/src/features/tasks/default-task-views.tsx": "68515bf5647f2a34c1c8a50466ef1463980e81e3589bee76e678e0614105bb09",
+    "packages/client/src/features/tasks/TaskWorkspace.tsx": "acc9826c2c6e1a52985417c1951ab53a7ed1d39323fb100ba8b0e3f2b50ad88e",
+    "packages/client/src/features/tasks/TaskViewErrorBoundary.tsx": "c8604bef59434ee19b2efbf99accddd6222410d7d31a05e9482fab574814e10d",
+    "packages/client/src/features/tasks/TaskSatellite.tsx": "e2bed0166fef23351b8099449c8da2f984620f62b14918c84f8088b2a2208c38",
+    "packages/client/src/features/tasks/TaskRadialTree.tsx": "2b73d78e4ab0dab28ad81b0c7873a1e3767aac43cebf954eb7a133dbfcf3506b",
+    "packages/client/src/features/tasks/TaskEvidence.tsx": "26dab78238361fda3d4a86281c299c2fa6071bfbc7df0d214b716d9455dfd62d",
+    "packages/client/src/features/tasks/TaskDetails.tsx": "d1efa280cda37cbf8bdd0724f77cf98172089ec37dda6f45b3b2d8012f94b9d4",
+    "packages/client/src/features/tasks/TaskCard.tsx": "848dc0e31d84e060dd4f8b4a44ee3da72d082e35aa4d4f0e96b42da1498d9277",
+    "packages/client/src/features/tasks/TaskCanvas.tsx": "064ed44016236cc59f89d2c361bffb7658d8e4c37dd530ab58484835c5ffbda3",
+    "packages/client/src/features/tasks/DispatchPreview.tsx": "eb34d248357c02de67b8b1ec6a80aa168b696acc5fe14fd8251a36cb046cf4b9",
+    "packages/client/src/features/tasks/DispatchPreview.css": "27a1ebf7ba250300003f163d1b9336ff7b0b69d559c2c1d10921ad12ab07811d",
+    "packages/client/src/features/setup/setup-workspace.test.tsx": "cb631652040202691aab7bf61a458a76f0a5eeda0843bbdfa30888a7272cf216",
+    "packages/client/src/features/setup/setup-readiness.ts": "9b2e01003cbed3934e98a64c990f0139031100b7e10ef24f0a7867ebbe828331",
+    "packages/client/src/features/setup/setup-readiness.test.ts": "f7818f3499b732a20cce90f5684edbc0ec517545add91b8205a1326b61af43b5",
+    "packages/client/src/features/setup/SetupWorkspace.tsx": "4a4a5a1d6e130d476b876eb8aa379039d11c85d6f687ad957e5725128756199b",
+    "packages/client/src/features/runs/run-view-model.ts": "2f0bfe0766ef627acedb84b58661cb435cf33ae68ee31f5d455a208a03fdaa59",
+    "packages/client/src/features/runs/run-view-model.test.ts": "3ab614ad09652dd7ec8e416b236afa92b04059e1a4e4a96bda127454d532deb5",
+    "packages/client/src/features/runs/run-center.test.tsx": "20aaedcfb6f7bc5c281c8ce56a9bedb3261b58057f17c1561b3526c33a280488",
+    "packages/client/src/features/runs/RunDag.tsx": "2d601e9eda0c97a4ddcf4a79413588f9e1b0a49d3a57986d378cd2375abb2619",
+    "packages/client/src/features/runs/RunCenter.tsx": "b52da682bf9466f197def110ac72132813ba8993a7a6b1fda8e5fd6187338c3b",
+    "packages/client/src/features/rooms/room-workspace.test.tsx": "f322b2fdac76784fc5bb987eaa03a3be40e0fc65c1723b975d2fec58af68dd91",
+    "packages/client/src/features/rooms/RoomWorkspace.tsx": "48e7a8818d899f4b7dc641eabfd1b855c5bb3555932529d350fae207850204e0",
+    "packages/client/src/features/mission-control/use-session-hub.ts": "7b0867757d2fd9b9ec198ca96fa8e5cf1417b02f515a1a46441cac4727a19f60",
+    "packages/client/src/features/mission-control/use-session-hub.test.tsx": "297845aef6debbadb87e6d05b5bb3c132e93e3df4190c915634448336f615e7d",
+    "packages/client/src/features/mission-control/pane-store.ts": "644837b5a72241201041c79314c72270eb8246ee49ad4dcd48aa21e2f882c60b",
+    "packages/client/src/features/mission-control/pane-store.test.ts": "0ed309ee22b0c840d1e022b267c95bbd248347b088430005606d2f3a90e37adc",
+    "packages/client/src/features/mission-control/SessionPane.tsx": "0db315e2c7b19c6ff18e9d7726e303886e5a4b77ba1b4cd903c36dcc3683d1e6",
+    "packages/client/src/features/mission-control/PaneGrid.tsx": "1207c58eb8d050b3914b3a36ab84db4ece5196cdd4d3b3ad15d9604553376b3c",
+    "packages/client/src/features/mission-control/MissionControl.tsx": "c0d7fafa6b0d39d08335b21d77479e103c6942ae717b0a4b10a23366f63913ae",
+    "packages/client/src/features/fleet/node-model.ts": "67f0a57c837d82e100d6a3ac97e12b10a1cfe29f580d1e2106eec60b0f5d4422",
+    "packages/client/src/features/fleet/node-model.test.ts": "357679deb4d975606541001961b5eedd1452d827c81ff11dd67408d192650326",
+    "packages/client/src/features/fleet/fleet-radar.test.tsx": "7f0624d05f136d19b3d5f02f4dd763e037b00c9d13f7b0d63b7c16ca59120ef3",
+    "packages/client/src/features/fleet/fleet-observability.ts": "8088fa01f520c210aabd1b7903fdfd8be6c6a87c3b6f8e8dbc4c83cb45567c3d",
+    "packages/client/src/features/fleet/fleet-observability.test.ts": "95c50b3198a3f75737477598e98296426a21490963f7bd3bd0928228b8be46f3",
+    "packages/client/src/features/fleet/NodeDetails.tsx": "fe5f9031406e25f813eadfb0a3571ea2c749d656eecd8ae63b50cae7a8c204e5",
+    "packages/client/src/features/fleet/NodeDetails.test.tsx": "52d275e19ccd7a2f94387ea82beee740faaef014f5c7d058bafe78d789ce741b",
+    "packages/client/src/features/fleet/FleetRadar.tsx": "687ab9fa4869a41db0d07eef643736b9b855f6efef9b5579416dfa929cae9b4b",
+    "packages/client/src/features/config/config-workspace.test.tsx": "145b8f75b50df202d2f43a7bfc331be713a909e147f7354a0ea218530272deb2",
+    "packages/client/src/features/config/config-panel.test.tsx": "870dcf305d60c4cb1b4e07c66a641a8f65f4d8246497de0801d408a11c03f692",
+    "packages/client/src/features/config/config-apply-error.ts": "7a90670f326d117d208ddae8276743a098a4eba919fd7d7cdebf7e6a45fa5d42",
+    "packages/client/src/features/config/config-apply-error.test.ts": "14ccaaf58bde1ffc2b15931b3d313df4bd6ae05d8a2ed980cf9d669a149d145e",
+    "packages/client/src/features/config/DriftBadge.tsx": "285f8bf64bea48a1e4572703e8a22cb9ea1774ac470fdc4ef1568ae9672184e0",
+    "packages/client/src/features/config/ConfigWorkspace.tsx": "280a18e03aeef0a59965943033d4f9ef8b2472a6feec8debf74c41e5a4e8af10",
+    "packages/client/src/features/config/ConfigPanel.tsx": "29b852b49394139c80f55546ff493d4804e00a4058bcbdeee212d904b9558bee",
+    "packages/client/src/features/bridges/bridge-sources.css": "f455ca6e00e88216a8dc20f80d3e467001faef4322e327ab8aed177aae116e8a",
+    "packages/client/src/features/bridges/bridge-sources-model.ts": "ad02fbf19ce784bf570fac33a857168875de2ba8cf9bfe2498e432c9f2ec3e75",
+    "packages/client/src/features/bridges/bridge-sources-model.test.ts": "a0a9e769e815b4e728309ff31dd545bc210615a9d5003dc76b04f2c0ef14b2ca",
+    "packages/client/src/features/bridges/BridgeSources.tsx": "ad1990a37fb0396ff617a67f1cc7fd9abda923cbd8d916de16b1ea6d64dcd12c",
+    "packages/client/src/features/bots/bot-workspace.test.tsx": "d3582b4b426e96ed5ecabc666fcc902623cfd74e3699bf113502027b5539eb37",
+    "packages/client/src/features/bots/BotWorkspace.tsx": "14c17a8c79236872391dd3e8648c48873413eec57963cb0a47cb98d618d9cf27",
+    "packages/client/src/features/actions/action-availability.ts": "e0e82257d569c595ef848b9fc018f730ef45b5405296a1929a33f9687a47ad0c",
+    "packages/client/src/features/actions/action-availability.test.ts": "ff35af77283a1850afaf9354f48b9df8d9a9baab1dc4aee0077f2989bffb3f13",
+    "packages/client/src/features/whale/ambient/whale-living-panel.css": "56ce07358d9be1a2e1cad3ff6dfea55b724747d41d07bfc6c673ba9b3862646a",
+    "packages/client/src/features/whale/ambient/policy.ts": "bf17f9acf3d6dbc2bef90b54bd55d554c04a677e30701d9e3c4ebed20ac82364",
+    "packages/client/src/features/whale/ambient/policy.test.ts": "fd517e2d1d78150f2b3d33904ddb56b711a439aa3a04c46cf2e3139bb43f8ac7",
+    "packages/client/src/features/whale/ambient/pod-motion.ts": "601d4c0731000f724201ccd3bf4ac5701b99c88488548345b70b45409393c9ea",
+    "packages/client/src/features/whale/ambient/pod-motion.test.ts": "fbc79e960d72b9976c3a4d97db764e527c8f2dd07b493dc90ea198b63ba76a9f",
+    "packages/client/src/features/whale/ambient/motion.ts": "49a47128fd980874ee4ea1069bfcd9bfad22c98b27c4c482f8ffba6fb032a9c5",
+    "packages/client/src/features/whale/ambient/motion.test.ts": "e936cc3972de0f6e0f65377be3ceb72aa75bd0bd2c74dc859a7e592c7e6131e9",
+    "packages/client/src/features/whale/ambient/life-types.ts": "fbb1458a924a54f1f66b5421225ad606a898ed2bc8d96caf1f9ebefb6a633bf3",
+    "packages/client/src/features/whale/ambient/life-scene.ts": "faeb1e1c91c30b7a090cba9cec32b41e204ca1fbe5859c741b0f37b0c9fa9a7e",
+    "packages/client/src/features/whale/ambient/life-director.ts": "ff07b23e6d4767e47673cec938e59992164872576e3d2eadf5f50aac2165165a",
+    "packages/client/src/features/whale/ambient/life-director.test.ts": "f1f8ac16bf4d46cbed48323d6805bcdce4a5bccbbba0ce44b9284ab76cc65ecc",
+    "packages/client/src/features/whale/ambient/habitat.css": "8968fa81502c4d2feaace442ac34a877bd63c1870cf23413952dacf2df12b023",
+    "packages/client/src/features/whale/ambient/habitat-preview.css": "fd2ed44cda03ecc280289d14051cbc44e04934d56d4df6cd73b2b7adb8a3aff5",
+    "packages/client/src/features/whale/ambient/contracts.ts": "07def3262d72cd8fc0ee51eeba5d872698002eb83db07e35fce29af7ae42e100",
+    "packages/client/src/features/whale/ambient/WhaleLivingPanel.tsx": "19d065365ce737823838200967e8348021ca60ba0673043b8c8f79dc7b451857",
+    "packages/client/src/features/whale/ambient/WhaleHabitat.tsx": "b5add83f7960e16807d739f0a46096f4083cd5e68843fd7ed7de0150cb678940",
+    "packages/client/src/features/whale/dive/scene.ts": "0d2c302cd6079200cc2789b4f73b05bd3dc88c66495f89ab7bf8f151ede776b5",
+    "packages/client/src/features/whale/dive/whale-dive.css": "42068ff02877944cf48904291d4d571e9dc44b273edc350ade8e5c0fd6e10c92",
+    "packages/client/src/features/whale/dive/WhaleDive.tsx": "b97a0402c85e54047066585385a8e6ca30434037868eda6f99e8479f62c9b711",
+    "packages/client/src/features/whale/ambient/assets/humpback-whale-panel-512.glb.json": "c40bb45c74071883f640b792064158870f5ba15912bdaf490e449249eaa2b3b9",
+    "packages/client/src/features/whale/ambient/assets/LICENSE.txt": "16d017a70081f6d99cfb70e886b1bdc6923951229af58e5aac3cfc23beab51e2",
+    "packages/client/src/features/whale/ambient/assets/CREDITS.md": "25f38c249b3a9e02d16407222a8e45bbc1fea83a16cc1021c20bc1f017f2b84e",
+    "packages/client/src/features/whale/ambient/assets/poster.jpg": "6d8af7b153d1b73bb3c81361f9c808956d830f7422b1023c2c522bbdc7bdb3f7",
+    "packages/client/src/features/whale/ambient/assets/whale-panel.glb": "229882ccf3110a551792482ab8e913121238fb44d87b9c1a14c6674ee5fbd7ed",
+    "packages/config/src/schema.ts": "4df7310a269957dbc9cc5691f691e604b88d9c3b482d2a3348e9cdf0690cbe04",
+    "packages/config/src/render.ts": "6afa83c50ac0b3af2e85fecf9579cebbdbac8cfae090e877a669c467ff1bc776",
+    "packages/config/src/render.test.ts": "3dcdef50aefb9e150b7c47611ac949159e200c45cb9e9a7dcdc1ea017f03a13a",
+    "packages/config/src/index.ts": "d758b285f66ec989c4c8ac23ac6e2840904ff62b0d3232477aaa0bb453f962b5",
+    "packages/config/src/hash.ts": "36a63b22262b37111def4b1ef5b0b74ba0b0eba3c9b611888572c215e107f6b4",
+    "packages/core/src/types.ts": "e9e24d566e2e9071c7e3c2cf903dea79d472125c4623b5307a3103cefb6c8d6f",
+    "packages/core/src/task-view.ts": "70a7627edbdb23e621ccc75365cc804da539727ca01db95a600ff587bdb89069",
+    "packages/core/src/task-view-extension.ts": "e81409092269d830f6c24ae576daf59c04ee3ed0ad2e0626963c9334f707fcc6",
+    "packages/core/src/providers.ts": "72de42b72f2352a1aa60850a29e176de6aa11479b61db26a720985135eb7645c",
+    "packages/core/src/providers.test.ts": "1ab8cd9c413b00a90596f33899e20303cce96b7c7e924937f696eb3fdd1d5860",
+    "packages/core/src/models.ts": "47419ab6638afe31bb6e52c0944abc368a68e297a69060096930325bdcd9ea4d",
+    "packages/core/src/index.ts": "09ce81539381f42d5e81a03ece0ade59e9a14a194b50c725e6ec8f4882e99b69",
+    "packages/core/src/host-compatibility.ts": "59e69b519592fabde0635b52731c5c58e41105f1c39d50667623b9120ccb51fe",
+    "packages/core/src/host-compatibility.test.ts": "72d795e15a887acb0d4cb3c18d7b357162243c88954ac1f0971cf15cb473080b",
+    "packages/core/src/events.ts": "41459341c2a42565cf4ebc09d7d78d2b2e9b552c6919e08820f3f5f669e724b9",
+    "packages/core/src/capability.ts": "465de1a9b53ce8f8cfa5a50cd3e818188df208dd60112b3b4c8592b5c53732d7",
+    "packages/core/src/capability.test.ts": "da21911a0ec8d4f33e16bb6cec726930f31e219e3c59fc3aa225900568b5ca8c",
+    "packages/host/src/standalone.ts": "816aa026d6a2fd57b48b9a02ec09aaf5aac6a98cd1dce4bbbbcd2e01b075f83f",
+    "packages/host/src/index.ts": "460050beb1e61f731835e9563b3a657e9c7d7ad4982aac3bd8914fc5042221f2",
+    "packages/host/src/app.ts": "d2a4f47c563be0a74eac79657fb9e241ced9ae08de7f0004dee7e1036c50b1be",
+    "packages/host/src/app.test.ts": "f9ac0a268c7e43cf7af5bf5e99bb23fa7a0cbe756119e31c4a11b376006536d6",
+    "packages/host/src/tasks/task-service.ts": "2e05cb8451871cd240729cbf2dcf84bc94ce97bcaefe60998f77b61035893fa7",
+    "packages/host/src/tasks/evidence.ts": "4b3833a34e6f12c6ac3ca8616f9acf82c5a36b42a195fb464e1378eb712bb1a5",
+    "packages/host/src/tasks/evidence.test.ts": "948df4d63415eddec9bc8ecce0755fcf4bf73eb006de616ac13f3d05a1ab3d79",
+    "packages/host/src/store/task-store.ts": "cfacd649852890702e3631ce68216982b3bd0a921f100d1e8e7fcd1dd75067af",
+    "packages/host/src/store/demo-store.ts": "3134f9884cd16d73e43663d2ef72d3918fb1a6d931a05dd072346f3c09cc4275",
+    "packages/host/src/store/demo-store.test.ts": "ad58f0e622127637a251803b2aa8dcd5699b0691fbb4f17c21078b4e996fb036",
+    "packages/host/src/sessions/session-hub.ts": "cfcaa02585879267d591364f360d0de23a0cb7cc082c59b0743712602d22317b",
+    "packages/host/src/sessions/session-hub.test.ts": "ac4f9665f4c2924505f2060d0ae5fbf37c194abc11e71fd9295edd4ee1eac6d1",
+    "packages/host/src/routes/tasks.ts": "78a2d038cb8d95f8b06e399372d41386e28fea8a52ce89d333ff8d561a2e3e12",
+    "packages/host/src/routes/nodes.ts": "5854c98af444b6b60b202e40bfbd1922ff9d24c6c1b8c81585f815bd28d1e35e",
+    "packages/host/src/routes/events.ts": "4cbdb4c2f8bc21e96c931bc6bdf94184f2d8e75772f32547c6fce8d2f66d7ec2",
+    "packages/host/src/pty/ssh-pty-service.ts": "6a2d37fde12249f13e158a0d4c8e52f0050432919c68af8b4be531342d9a30c2",
+    "packages/host/src/pty/ssh-pty-service.test.ts": "1c2b99ea59a323e933ecb26b602af5ac1629736b9bff422345ab6f9e43cc2583",
+    "packages/host/src/providers/instabox-provider.ts": "c03eb196bd3718ad8c2059b95d2ac1570753bcb136b3f5276733a025b5d076d2",
+    "packages/host/src/providers/instabox-provider.test.ts": "7caf03b981c69167eada4599cf773659194ac87c3016485ada9270bceb7b9a1c",
+    "packages/host/src/providers/index.ts": "2d61be0f3fdd2ef2bbe31d3afe8b5a5786b54056e873ad330f207c5ae68cb4b9",
+    "packages/host/src/providers/huawei-ssh-provider.ts": "2316c033c69d96c68d6d04f5b32de495247eadc193a03391da9cd2214c86cf68",
+    "packages/host/src/providers/huawei-ssh-provider.test.ts": "728ee04d24f879e4fe54e1173c0ec8ac47a4777b60c145dcb731b7ab1a851a90",
+    "packages/host/src/providers/fleet-provider.ts": "1cc361212746c0bbc1d2df0eeebbee4c3a5ceb4c5cf97e64190b731f5c956aed",
+    "packages/host/src/providers/exec-capability-probe.ts": "27e74d8639493165e1a25238cd898834ea71d758b6f96567c94024c3562d04ae",
+    "packages/host/src/providers/exec-capability-probe.test.ts": "61e11b1b20473fb71ff5acf4d0ffe09897ddb63304f6335c506da1167ddcec77",
+    "packages/host/src/events/fusion-state-hub.ts": "353267f86058e4bcb29df09d27b56d5b84178856f6b795ea4770fb5a9e6eb928",
+    "packages/host/src/events/fusion-state-hub.test.ts": "c7904986f59105d71d1088f9ce0d5a78d0f9f68c11a6dc371ec937588548f5e5",
+    "packages/host/src/events/event-bus.ts": "cd059b45c4c02e7afa44161d877c0c790a90d0c9b9ef3c938cb72da795f20391",
+    "packages/host/src/events/event-bus.test.ts": "d9349f09bc61db59628a818f4ec45b6ff93a27847f1229ef1991f123116583f0",
+    "packages/host/src/doctor/fusion-doctor.ts": "6ce5a53c30bab1b99ba9d3d3e1e3011e9dc631b3697d0ba97d9dee3a0b17d6a8",
+    "packages/host/src/doctor/fusion-doctor.test.ts": "5ec7de1f10763c5a05b182c4061efe5b0d46456927d3daab3b958bd9aa36eff7",
+    "packages/host/src/config/remote-node-config.ts": "b430f65d77b1e05a548adee0aac1a11bed79eacfc49ad7f2f7870a7aa9ae6142",
+    "packages/host/src/config/remote-node-config.test.ts": "1dc76991df355f0c149cd4d931d78a811bad74c31b7348f2a95c214f4eadf4ac",
+    "packages/host/src/config/fleet-node-config.ts": "7f7803d0ff55322627178994bd75c41054c7fdf8b53c21e47e23371f06844e7f",
+    "packages/host/src/config/fleet-node-config.test.ts": "63359ab097cef51d87195d34b748bc0450f4b6b853767b3e5259d749dfc30e7b",
+    "packages/host/src/bridges/domain.ts": "9e93b3bae89030182b4089fe0eacaf534dd3129946a7b896f7cc37f4f0b663a6",
+    "packages/host/src/bridges/domain.test.ts": "79e0511b9bce489baca631e1fa9d6a9447155f5c2c4b72159776fe1baeb579ca",
+    "packages/plugin/tests/native-client.contract.mjs": "df9954f934f0ba035aeceabc8715c5e1e67c58a664729348456aa3b33dc6dad8",
+    "packages/plugin/tests/setup.contract.mjs": "a002a376f8f99fd152eed8f64ec5815a361cb574d0c11e3202981f53dc0862cb",
+    "packages/plugin/tests/native-package.contract.mjs": "1a7d5ab1efe23900d99bbb01efa6a9d54a6c3ac64c1d453fef8a986cf5cbdbb8",
+    "packages/plugin/src/client.ocean-scene.ts": "32bd61b8863132f0a5b524e84145a558b8d9d6f39e4cf1c2b4e1529d3ac403ad",
+    "packages/plugin/src/client.habitat.tsx": "7ad3cdb7e01d761065f57b7e405c84a0db1f0ecaf49325f7fbc2b8053df02c4f",
+    "packages/plugin/src/write-capabilities.ts": "a7cbd1337c33700e74b06746f6dd479dad04cb614133cdf74433e5f5e4cdd512",
+    "packages/plugin/src/write-capabilities.test.ts": "bffb1eac088f793c03b632fc4949c5aef114147e0fe92a6c1ae99dc73f14f069",
+    "packages/plugin/src/upstream-tools.ts": "389e7ac6eb8cc0324faa089e06cf1db4cf235e96b23f97b02d65e34cbaed5928",
+    "packages/plugin/src/upstream-tools.test.ts": "582460453635375c215af962ae6134b577f3bfdefc3163504a1a915140b70718",
+    "packages/plugin/src/task-ledger.ts": "ac907f2e45b4667177dc8c09c236d3f16a476242bc95a750523836237e4900e5",
+    "packages/plugin/src/task-ledger.test.ts": "ea0a899cc4c7c872adc745c8689f7051ff782c39a0264ac4be6f61e386d7e33d",
+    "packages/plugin/src/standalone.ts": "bf467d838c3d0b67fbd5713db2a29a0520e42f695f9ada35378065d4544d95d0",
+    "packages/plugin/src/room-upstream-tools.ts": "c87f441d13e0933ed7ff1dc6efdfca295a026fa2dacf2af9cbf8f229a87d5e11",
+    "packages/plugin/src/room-upstream-tools.test.ts": "5b23e1307271f4cbf95c338929d7a48a4ed8e2fff6285074c40b0511754bb6a7",
+    "packages/plugin/src/read-counts.ts": "67d476cbb854bd6e945a691cc1dfe243752b262d01b9121a21d378d16e93dbc1",
+    "packages/plugin/src/read-counts.test.ts": "b0e50c7ce3e0d56645326418b499ef80e8bbdf72a1ec8f6b0c56c9d7536d7c3d",
+    "packages/plugin/src/pty-protocol.ts": "6971d73262fcca7a11d78fee7ee782c16bced15b1cf7313cb9d8946573b82ea4",
+    "packages/plugin/src/pty-protocol.test.ts": "075d1f42b60195f0057aea2be3f66e6f7c898e15bac57efa3e8da4cc433d27e9",
+    "packages/plugin/src/plugin-runtime.ts": "983ccb0575b9a6c7f58ba298b2fc9a3b2c186a79f9dd78ac782c17d51ea4515f",
+    "packages/plugin/src/plugin-runtime.test.ts": "b291981b95ac6373e3503fa380733c2129d5d6d4273abbdfb5c2e752ad7d8831",
+    "packages/plugin/src/optional-native-unavailable.ts": "07ddc99297e309728ac42317b75372aedc111d55a276a0740b401bfb71a08276",
+    "packages/plugin/src/native-agent-teams.ts": "5b4125f5bebb44bb22964e83b4aa732dcef2305ae0207322c853cfc48663ebd8",
+    "packages/plugin/src/native-agent-teams.test.ts": "fc937e904303e84ac2c35f57c7be7d035cf7e95b9ec69bb0403f38719522f312",
+    "packages/plugin/src/index.ts": "a309ffd214807bb8712fffee48a8b874d969b681ac9a6588ca39086f2742b7fc",
+    "packages/plugin/src/http.ts": "39d8136a42b5156dd4f7bf3547c7c4fd4cbc6f0e5f8f6a978fabe9ac78c4b973",
+    "packages/plugin/src/fleet-router.ts": "5358a35db93b282e70189a6eafa41c5526e86781c3fbb44d623959d1d1355d7f",
+    "packages/plugin/src/fleet-router.test.ts": "57591a3a179ee32b11c314bdb0474c2dc09eb80f0d0d804e371bc9cf694f799b",
+    "packages/plugin/src/fleet-node-definitions.ts": "6d515b998187c314d7c776d3db0048c89c908bf405ea794fb65c06dce58db96d",
+    "packages/plugin/src/fleet-node-definitions.test.ts": "f21d62c293632b342a45d828db58ed59c6adc6a229a52f062cb8bf4f58732b56",
+    "packages/plugin/src/fleet-cache.ts": "297c960aad3ffc926ded4e2fea1a263421a865ccdb4743226d9828863d0109b0",
+    "packages/plugin/src/fleet-cache.test.ts": "aa076c3a6a8e768bc7cf6666affa25530a6b87a7d7ea016017960e512062346b",
+    "packages/plugin/src/dispatch-preview.ts": "9216b587218e790a10dde11acde809677a751e4aea251ac0c341e8106f620e9e",
+    "packages/plugin/src/dispatch-preview.test.ts": "1c0f4ae5da9a2537361b6212cafb337dd9a96acdda13f0bd24a41c5b27ce1f9b",
+    "packages/plugin/src/compatibility.ts": "06494777159c079c5c7cef82df80a9c146e24764a967ea35de86bac6dfedcea8",
+    "packages/plugin/src/compatibility.test.ts": "4c48b0c8ff9e8944ee25468dfdd3ff4d25765c27138d994dc0423148a9b0a186",
+    "packages/plugin/src/client.workspace.tsx": "8cca34eb869456eaeb4a2575104cba373b9acab9b1468976e3aa5a0a43febc4d",
+    "packages/plugin/src/client.workspace-loader.ts": "4040704c5f3091ec8702e3bdc23f5c5dc2e2a964c10d791aa0335154540c4c7b",
+    "packages/plugin/src/client.workspace-loader.test.ts": "b918098645a5ad46ddfabec47d23215e4a0f8dc3d5a62427505ba0c7ca994bfd",
+    "packages/plugin/src/client.tsx": "e9431ac06c8c84f94af0a443ca93c9c211cd7f83979713762a2a152aa1f4319a",
+    "packages/plugin/src/client.terminal.tsx": "5765f32feefd19ab3ceb77de5a751c6e408d60e06de04bda71d43c1f3c39fa73",
+    "packages/plugin/src/client.styles.ts": "dcf2daaf50862820762c154af1acc50513b5bde86c01fd2ff12972d2c261b536",
+    "packages/plugin/src/bridge-round-cache.ts": "6a56e4331c6c8b4228f71111e7b3e5084ee1156588f0d0c47eb751c93fe892a5",
+    "packages/plugin/src/bridge-round-cache.test.ts": "5b061a28d7e9cab831e3fd5eebb75f487f6e8962811854b2b6efe722e95e5740",
+    "packages/plugin/src/auth.ts": "ab72ff4fe0bcc4d3dee6d1453e13c6adda22f5c73ab71fe52bfefc3cafc0caf1",
+    "packages/plugin/src/auth.test.ts": "dfd3e49b40ab241ff5636baf0880c680d15592c31e4928bc7e09427fce50f06f",
+    "packages/plugin/src/agent-bus-upstream-tools.ts": "eaa9c3b44cea86259c016d1cb1ac05570bba8c6db1bb722a2f00501c8e302b08",
+    "packages/plugin/src/agent-bus-upstream-tools.test.ts": "0ebc148684660005f74a1511e0a2126f3e57d59f80218d2ac4ac796e964494ea",
+    "packages/plugin/scripts/verify-release.mjs": "5fc5d5e46d9f568e009df6fdbe6214f4b272b02e41abc8e1df66e3c73c010602",
+    "packages/plugin/scripts/third-party-notices.mjs": "1da38e7ff6ba43d1b8502c610ffd0600aa4df2a7e8846a568196d3777c039a47",
+    "packages/plugin/scripts/build.mjs": "238c249b1f7606b57263f6b41ee05b97d65e4962b680d95914ed83b4c5bce560",
+    "packages/plugin/scripts/setup.mjs": "9e567e361a2809ed9d18bfe58ece4655a1aea28b3908808c42e60c970dbb3a93",
+    "packages/plugin/scripts/report-client-size.mjs": "13135ac0ddfd64b2dfd6d1f6bf10c3fd7100ba79bf2a727d40b58d23bbc0ec73",
+    "packages/plugin/scripts/release-contract.mjs": "0e5e859c5bd313545149a5b05452bab6b82cd9669f749d4afddf322569bba7a5",
+    "packages/plugin/scripts/public-types.mjs": "f2fc10a1c3099b88ff42496866afd08152e8edcc175e660a4cc710b4721e6646",
+    "packages/plugin/scripts/installer.mjs": "f2fdc5a36d32172399ccc433b6f3ad54efac2ee9027d66331a276ad60bd9b5e9"
+  },
+  "files": {
+    "assets/TerminalWindow-DFuMZ0ql.css": "554060ecb62d0cd186b6db5056b8dcf9ac16faff135cabf09e8fa9675f1776a1",
+    "assets/TerminalWindow-nodZt21s.js": "e0d55152afc9bae61f0d7242787df61626373dd73744359170bc70b91bf5b3ba",
+    "assets/WhaleBridge-Bljbid31.js": "bd002ed240d232f4e4d4f3a14b5a3840e9bcac75720e24b09221f3e4d4714a37",
+    "assets/WhaleBridge-i4lPsBbd.css": "384d0a605e1f5e57cd341066326840fc694e81c8d49c5f25f77c37ed1fe6a8e7",
+    "assets/WhaleLivingPanel-Cuc02if2.css": "49418b5b50d1a2554cf1b26361b3ed4f917ddfcf68af59ec5e02efe53173b860",
+    "assets/WhaleLivingPanel-DiJpH3Yg.js": "a417371aaf3531785d80c029d54f60a734594bbb05dd595be446e6c499a02748",
+    "assets/arrow-left-xmkf-pR1.js": "cc33f60d398e3aef7c7242a4cfece2bb334ec5d275af372ec70634d0b755c00e",
+    "assets/client-CaSH42ol.js": "b37170e276d207756ed5d940084eed677a12e620d71520d9b98679fbd5ff9428",
+    "assets/demo-fixture-ClAfVQbn.js": "e8a94922dc8dce458c4bdadc0aa089cbfdb2306247ec5f44de0446061c9c1dec",
+    "assets/dive-B6-gC4wq.js": "b308904dc097f2da38023c258d3ac87b5db4bf04020062709112afc7b1c84980",
+    "assets/dive-BheBY-wM.css": "08c0670c0c4749a6c340ca6692820368db68b88357dac3ae0815c0f6cc6a36f1",
+    "assets/gallery-C9g4a-1I.css": "af20f846ae390948b0f0de866d0a789ead3eb2f5588ff73a57b02645913a00f6",
+    "assets/gallery-DbZtEP4o.js": "2999a691a581b81cbca9c2efd14be8e20f58076e7f59d48934dc7a1759a24721",
+    "assets/habitat-D5IyfESd.css": "10267924a518f5221aa2f1be559330bdc1cd6266bb150445e61e24b43bd49c9f",
+    "assets/habitat-YLd3KD-e.js": "b0807a21ed79118809b0093711dcbb832b1b461daa9eea503047966fd956c7b2",
+    "assets/main-BUK3wJz7.js": "ec5010e3b090e04b2d556cc4766c5510b55400244eb76526160c2fb199efce51",
+    "assets/main-JdJTaHTZ.css": "0cdfea31bf1e46d98f323d20a8b80bf927e5ad3172b635b1e3e711ae1e2b81a1",
+    "assets/model-BH0aNvJ2.js": "764a1b4c418f02caf748b0bea85b283e63d95551c05bad59d03cc49d6456f2a4",
+    "assets/poster-CLpiXT4R.jpg": "6d8af7b153d1b73bb3c81361f9c808956d830f7422b1023c2c522bbdc7bdb3f7",
+    "assets/preload-helper-PPVm8Dsz.js": "0bcb72f8ec0d95f592f3a84b3554b9ef5a5325ff5416a9114d6913e03c1c9eb4",
+    "assets/rotate-ccw-CvVolEmF.js": "0423f33a4f5e85aa499588429a8034354b36082053257556e67072aa0b1025a9",
+    "assets/scene-C0lEKXjX.js": "ad670ba9530981cf144421d842971c3e77295aae2f5ceb27bc4ee43e12fff956",
+    "assets/whale-panel-Ck6WgMJm.glb": "229882ccf3110a551792482ab8e913121238fb44d87b9c1a14c6674ee5fbd7ed",
+    "assets/x-DHKKHHvK.js": "49c518db661d310b37ec6721736f45a1af0c5fc1806abbc95e48206f15c0ee5c",
+    "design-gallery.html": "1562b9ebe1b6ca4028b1796cb62e646004f18fa55869de6ff60b77935f643320",
+    "index.html": "e138d782c9ca4c77f2331ed32d5c1687013b75defb22ad803a62db91b5fa6e8f",
+    "whale-assets/CREDITS.md": "a3a55246cc423ae0301b173fec2196ff3f05a9d928bcc68dbb2d466f1c442491",
+    "whale-assets/LICENSE.txt": "a15412842aa03ed7746551767e80808a9303edbbca02a06cfbcf354dfbd0ad27",
+    "whale-assets/THREE-LICENSE.txt": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+    "whale-assets/humpback-whale-light.glb": "c07b1cec69fb3292165c51d00acf224809476b6d9d899c3a810d6050e9611c58",
+    "whale-assets/manifest.json": "bda663730ce194b51eb52f965fffbb75e55f265d38b1537cee440309b1aaa70e",
+    "whale-assets/whale-dive-poster.jpg": "6d8af7b153d1b73bb3c81361f9c808956d830f7422b1023c2c522bbdc7bdb3f7",
+    "whale-dive.html": "2d98ffc9619efa5e5bfdf49b623a07205248efe7a9cd3b6235bba60fd4e48ab3",
+    "whale-habitat.html": "e138d782c9ca4c77f2331ed32d5c1687013b75defb22ad803a62db91b5fa6e8f"
+  },
+  "unshippedOptimizationCandidates": [
+    "packages/client/src/features/whale/ambient/assets/humpback-whale-panel-512.glb",
+    "packages/client/src/features/whale/ambient/assets/humpback-whale-panel-1024.glb.json",
+    "packages/client/src/features/whale/ambient/assets/humpback-whale-panel-1024.glb"
+  ]
+}
