@@ -6,10 +6,11 @@
 运行与终端组件及 host API 保留在源码中，尚未全部迁入新入口；不承诺与 beta.13 UI 功能完全等价。
 
 当前候选：**0.2.0-beta.14**，MIT，可试验的原生面板预发布。任务默认显示，海域按需打开。
-[候选发布说明与验证范围](docs/releases/2026-11-17-beta14.md)。
-最近已发布版本为 **0.2.0-beta.13**；[历史发布说明](docs/releases/2026-11-16-beta13.md)
+[下载 beta.14 安装包与校验值](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.14) ·
+[发布说明与验证范围](docs/releases/2026-11-17-beta14.md)。
+当前公开预发布为 **0.2.0-beta.14**；历史版本 **0.2.0-beta.13**；[历史发布说明](docs/releases/2026-11-16-beta13.md)
 与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
-beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26`，尚未宣称公开发布。
+beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26`，已公开为 GitHub 预发布。
 海域分页按钮已调整以避免 companion 浮动控件拦截；同一新包的真实来源 / 公开扩展、修后性能 / 分页、
 420px DEMO 任务 / 海域预览三组运行均完成，`QA_EXIT=0`、`DSH_STOPPED=True`。
 较早候选的 UI 通过记录单独保留，beta.13 包或独立动画预览不代替本候选验收。

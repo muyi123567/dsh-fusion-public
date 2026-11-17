@@ -12,7 +12,7 @@
 集合视图接入的生命周期已恢复并通过 18 项原生加载契约及本次显式 DEMO 扩展实际运行检查，
 不改成单任务详情扩展，也不删除既有承诺。
 
-当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26`，尚未宣称公开发布。
+当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26`，已公开为 GitHub 预发布。
 海域分页按钮已移至左侧组中，避免 AgentBus 固定右侧 capsule 拦截；仅调整按钮位置。
 新包已由官方 `dsh plugin add` 更新，退出 0，模块 / schema / activation 错误标记均为 false；
 build、18 项原生加载契约、13 项 package 契约与 doctor 重验通过。
@@ -20,7 +20,7 @@ build、18 项原生加载契约、13 项 package 契约与 doctor 重验通过�
 未将此次最小复验写成重新跑过完整 suite。
 源码分组：root 68、core 33、config 3、client 378、host 337、plugin 337，合计 1156。
 分页位置调整前，CUE / Instabox 的全部 packages 输入摘要一致：
-`180de5e31cf17c2ef91fa2f20f77998ea74d857cb608a89d6a497062da0db26d`。
+`26825881c3c02564d8425cc1484b1605f32e9420d7da55ffd8e4873479e46cf4`。
 该历史摘要不作为新候选输入身份；新摘要待来源收据更新，不替代完整公开来源清单或运行验收。
 既有 E2E 在 `CHROME_PATH=/usr/bin/chromium` 下 3/3 通过、skip 0；
 生产依赖审计退出 0，58 项依赖的五级 vulnerabilities 均为 0。
@@ -73,3 +73,5 @@ fencing 租约、绑定精确代码版本的独立 reviewer 和候选补丁自�
 后续独立「鲸入深海」动态原型及鲸群场景预览使用显式合成情境，
 不代表真实多集群执行或当前原生面板已经验收。
 原始比选、提示词与验收资料继续保留在 docs/design；当前产品以原生面板候选为准。
+
+公开预发布：https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.14
