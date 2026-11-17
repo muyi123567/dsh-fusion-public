@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FusionLauncher, FusionOverlay } from "../../plugin/src/client.js";
+import { FusionLauncher, FusionNativeTab } from "../../plugin/src/client.js";
+import { createWorkspaceLoader } from "../../plugin/src/client.workspace-loader.js";
 import { FusionApp } from "./app.js";
 
 const stream = vi.hoisted(() => ({ onChange: () => {} }));
@@ -385,106 +386,67 @@ describe("Fusion shared snapshots", () => {
 });
 
 describe("DSH client slot components", () => {
-  it("renders a valid launcher component", async () => {
-    render(<FusionLauncher />);
-
-    await userEvent.click(screen.getByRole("button", { name: "打开鲸插件" }));
-    expect(screen.getByRole("button", { name: "打开鲸插件" })).toBeInTheDocument();
+  it("opens the native panel through the launcher callback", async () => {
+    const open = vi.fn();
+    render(<FusionLauncher open={open} />);
+    await userEvent.click(screen.getByRole("button", { name: "打开鲸面板" }));
+    expect(open).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("mounts and unmounts the overlay on the native toggle event", async () => {
-    render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
-    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
-
-    window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("鲸")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "关闭鲸插件" }));
-    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
+  it("explains unavailable native services without opening content", async () => {
+    const open = vi.fn();
+    render(<FusionLauncher open={open} unavailable="当前 DSH 不支持原生右侧面板，请升级宿主。" />);
+    await userEvent.click(screen.getByRole("button", { name: "打开鲸面板" }));
+    expect(screen.getByRole("status")).toHaveTextContent("不支持原生右侧面板");
+    expect(open).not.toHaveBeenCalled();
   });
 
-  it("closes the overlay with Escape", async () => {
-    render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
+  it("presents a missing-session refusal instead of a modal", async () => {
+    render(<FusionLauncher open={() => { throw new Error("请先选择一个 DSH 会话，再打开鲸面板。"); }} />);
+    await userEvent.click(screen.getByRole("button", { name: "打开鲸面板" }));
+    expect(screen.getByRole("status")).toHaveTextContent("请先选择");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 
-    window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("鲸")).toBeInTheDocument();
+  it("reads nested tab visibility and unloads content when the native tab hides", async () => {
+    const Workspace = ({ sessionId }: { sessionId?: string }) => <div>原生会话 {sessionId}</div>;
+    const load = vi.fn(async () => ({ FusionWorkspace: Workspace }));
+    const loader = createWorkspaceLoader(load);
+    const props = (visible: boolean) => ({
+      sessionId: "native-session",
+      useTabInfo: () => ({
+        sidebar: { expanded: true, fullscreen: false },
+        panel: { id: "native-pane", isFloating: false },
+        tab: { id: "native-tab", visible },
+      }),
+      loader,
+    });
+    const view = render(<FusionNativeTab {...props(false)} />);
+    expect(load).not.toHaveBeenCalled();
+    view.rerender(<FusionNativeTab {...props(true)} />);
+    expect(await screen.findByText("原生会话 native-session")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    view.rerender(<FusionNativeTab {...props(false)} />);
+    expect(screen.queryByText("原生会话 native-session")).not.toBeInTheDocument();
+    view.rerender(<FusionNativeTab {...props(true)} />);
+    expect(await screen.findByText("原生会话 native-session")).toBeInTheDocument();
+    expect(load).toHaveBeenCalledOnce();
+    loader.dispose();
+  });
+
+  it("leaves host focus and Escape handling to the native shell", async () => {
+    const loader = createWorkspaceLoader(async () => ({ FusionWorkspace: () => <div>原生正文</div> }));
+    render(<><button>宿主按钮</button><FusionNativeTab sessionId="native-session"
+      useTabInfo={() => ({ tab: { visible: true } })} loader={loader} /></>);
+    const host = screen.getByRole("button", { name: "宿主按钮" });
+    host.focus();
+    await screen.findByText("原生正文");
+    expect(host).toHaveFocus();
     await userEvent.keyboard("{Escape}");
-    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
-  });
-
-  it("presents the overlay as a modal dialog and restores focus on close", async () => {
-    render(
-      <>
-        <button type="button">宿主按钮</button>
-        <FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />
-      </>,
-    );
-    const hostButton = screen.getByRole("button", { name: "宿主按钮" });
-    hostButton.focus();
-    expect(hostButton).toHaveFocus();
-    window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("鲸")).toBeInTheDocument();
-    const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(screen.getByRole("button", { name: "关闭鲸插件" })).toHaveFocus();
-    await userEvent.click(screen.getByRole("button", { name: "关闭鲸插件" }));
-    expect(screen.queryByText("鲸")).not.toBeInTheDocument();
-    expect(hostButton).toHaveFocus();
-  });
-
-  it("keeps Tab focus inside the modal overlay", async () => {
-    render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
-    window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("鲸")).toBeInTheDocument();
-    const dialog = screen.getByRole("dialog");
-    const focusables = [...dialog.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")]
-      .filter((element) => !element.hasAttribute("disabled"));
-    expect(focusables.length).toBeGreaterThan(1);
-    const first = focusables[0]!;
-    const last = focusables[focusables.length - 1]!;
-    expect(first).toHaveFocus();
-    await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
-    expect(last).toHaveFocus();
-    await userEvent.keyboard("{Tab}");
-    expect(first).toHaveFocus();
-  });
-
-  it("keeps non-tabbable elements out of the overlay trap cycle", async () => {
-    render(<FusionOverlay loadWorkspace={() => import("../../plugin/src/client.workspace.js")} />);
-    window.dispatchEvent(new CustomEvent("dsh-fusion:toggle"));
-    expect(await screen.findByText("鲸")).toBeInTheDocument();
-    const dialog = screen.getByRole("dialog");
-    const realFocusables = [...dialog.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")]
-      .filter((element) => !element.hasAttribute("disabled"));
-    const first = realFocusables[0]!;
-    const last = realFocusables[realFocusables.length - 1]!;
-
-    // Elements that must never join the cycle, appended
-    // after the real last element in DOM order.
-    const ariaHiddenWrap = document.createElement("span");
-    ariaHiddenWrap.setAttribute("aria-hidden", "true");
-    ariaHiddenWrap.innerHTML = "<button type='button'>aria 隐藏</button>";
-    const inertWrap = document.createElement("span");
-    inertWrap.setAttribute("inert", "");
-    inertWrap.innerHTML = "<button type='button'>inert</button>";
-    const fieldset = document.createElement("fieldset");
-    fieldset.disabled = true;
-    fieldset.innerHTML = "<button type='button'>字段集</button>";
-    const hiddenButton = document.createElement("button");
-    hiddenButton.type = "button";
-    hiddenButton.hidden = true;
-    hiddenButton.textContent = "隐藏";
-    dialog.append(ariaHiddenWrap, inertWrap, fieldset, hiddenButton);
-
-    // Tab from the real last element still wraps to the
-    // first: the injected elements do not count as the end
-    // of the cycle.
-    last.focus();
-    expect(fireEvent.keyDown(last, { key: "Tab" })).toBe(false);
-    expect(first).toHaveFocus();
-    // And Shift+Tab from the first wraps to the real last,
-    // not to an injected non-tabbable element.
-    expect(fireEvent.keyDown(first, { key: "Tab", shiftKey: true })).toBe(false);
-    expect(last).toHaveFocus();
+    expect(screen.getByText("原生正文")).toBeInTheDocument();
+    expect(host).toHaveFocus();
+    loader.dispose();
   });
 });
 
@@ -514,19 +476,5 @@ describe("鲸群总览真实快照", () => {
     const back=await screen.findByRole("button",{name:"← 返回 鲸群总览"});
     await userEvent.click(back);
     expect(await screen.findByRole("heading",{name:"深海舰桥"})).toBeInTheDocument();
-  });
-});
-
-describe("鲸工作区嵌套浮层Escape",()=>{
-  it("先保留主工作区供嵌套导航处理，再允许下一次Escape关闭",async()=>{
-    const Workspace=()=> <div className="fusion-sidebar is-mobile-open">嵌套导航</div>;
-    render(<><FusionLauncher/><FusionOverlay loadWorkspace={async()=>({FusionWorkspace:Workspace})}/></>);
-    await userEvent.click(screen.getByRole("button",{name:"打开鲸插件"}));
-    const nested=await screen.findByText("嵌套导航");
-    await userEvent.keyboard("{Escape}");
-    expect(screen.getByRole("dialog",{name:"鲸 · 深海工作区"})).toBeInTheDocument();
-    nested.classList.remove("is-mobile-open");
-    await userEvent.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog",{name:"鲸 · 深海工作区"})).not.toBeInTheDocument();
   });
 });

@@ -1,0 +1,230 @@
+{
+  "demo": true,
+  "nodes": [
+    {
+      "id": "demo-build",
+      "externalId": "demo-build",
+      "providerId": "design-demo",
+      "name": "构建机",
+      "platform": "linux",
+      "roles": [
+        "worker"
+      ],
+      "status": "online",
+      "configState": "current",
+      "transports": [
+        "ssh"
+      ],
+      "capabilities": [
+        "build"
+      ],
+      "cpuPercent": 32,
+      "memoryPercent": 48
+    },
+    {
+      "id": "demo-test",
+      "externalId": "demo-test",
+      "providerId": "design-demo",
+      "name": "测试机",
+      "platform": "linux",
+      "roles": [
+        "worker"
+      ],
+      "status": "online",
+      "configState": "drift",
+      "transports": [
+        "ssh"
+      ],
+      "capabilities": [
+        "test"
+      ],
+      "cpuPercent": 18,
+      "memoryPercent": 36
+    },
+    {
+      "id": "demo-review",
+      "externalId": "demo-review",
+      "providerId": "design-demo",
+      "name": "审查机",
+      "platform": "linux",
+      "roles": [
+        "reviewer"
+      ],
+      "status": "offline",
+      "configState": "unknown",
+      "transports": [
+        "ssh"
+      ],
+      "capabilities": [],
+      "unavailableReason": "演示记录：主机暂不可达"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "demo-task-1",
+      "goal": "DEMO · 等待构建产物",
+      "status": "queued",
+      "targetNodeIds": [
+        "demo-build"
+      ],
+      "transport": "ssh",
+      "evidence": [],
+      "createdAt": "2026-11-17T00:00:00.000Z",
+      "updatedAt": "2026-11-17T00:00:00.000Z",
+      "dependsOnTaskIds": [
+        "demo-task-4"
+      ]
+    },
+    {
+      "id": "demo-task-2",
+      "goal": "核对测试机配置",
+      "status": "failed",
+      "targetNodeIds": [
+        "demo-test"
+      ],
+      "transport": "ssh",
+      "evidence": [],
+      "createdAt": "2026-11-17T00:00:00.000Z",
+      "updatedAt": "2026-11-17T00:00:00.000Z",
+      "error": "演示记录：配置校验未通过。"
+    },
+    {
+      "id": "demo-task-3",
+      "goal": "审查交互回归结果",
+      "status": "verifying",
+      "targetNodeIds": [
+        "demo-test"
+      ],
+      "transport": "ssh",
+      "evidence": [
+        {
+          "kind": "summary",
+          "label": "演示检查摘要",
+          "value": "等待独立验收"
+        }
+      ],
+      "createdAt": "2026-11-17T00:00:00.000Z",
+      "updatedAt": "2026-11-17T00:00:00.000Z",
+      "progress": 100
+    },
+    {
+      "id": "demo-task-4",
+      "goal": "构建面板候选",
+      "status": "running",
+      "targetNodeIds": [
+        "demo-build"
+      ],
+      "transport": "ssh",
+      "evidence": [],
+      "createdAt": "2026-11-17T00:00:00.000Z",
+      "updatedAt": "2026-11-17T00:00:00.000Z",
+      "progress": 64
+    },
+    {
+      "id": "demo-task-5",
+      "goal": "整理变更说明",
+      "status": "completed",
+      "targetNodeIds": [
+        "demo-build"
+      ],
+      "transport": "ssh",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "label": "演示产物地址",
+          "value": "https://example.invalid/whale-demo/artifact"
+        }
+      ],
+      "createdAt": "2026-11-17T00:00:00.000Z",
+      "updatedAt": "2026-11-17T00:00:00.000Z",
+      "progress": 100
+    },
+    {
+      "id": "demo-task-6",
+      "goal": "准备独立审查",
+      "status": "queued",
+      "targetNodeIds": [
+        "demo-review"
+      ],
+      "transport": "ssh",
+      "evidence": [],
+      "createdAt": "2026-11-17T00:00:00.000Z",
+      "updatedAt": "2026-11-17T00:00:00.000Z"
+    }
+  ],
+  "agentTeams": [
+    {
+      "id": "demo-team-1",
+      "providerId": "design-demo",
+      "name": "远航",
+      "workspace": "演示工作区",
+      "phase": "running",
+      "captainSessionId": "demo-captain-1",
+      "memberIds": [
+        "demo-captain-1",
+        "demo-worker-1"
+      ],
+      "taskIds": [
+        "demo-task-1",
+        "demo-task-4"
+      ]
+    },
+    {
+      "id": "demo-team-2",
+      "providerId": "design-demo",
+      "name": "回声",
+      "workspace": "演示工作区",
+      "phase": "running",
+      "captainSessionId": "demo-captain-2",
+      "memberIds": [
+        "demo-captain-2",
+        "demo-worker-2"
+      ],
+      "taskIds": [
+        "demo-task-2",
+        "demo-task-3"
+      ]
+    },
+    {
+      "id": "demo-team-3",
+      "providerId": "design-demo",
+      "name": "蓝湾",
+      "workspace": "演示工作区",
+      "phase": "running",
+      "captainSessionId": "demo-captain-3",
+      "memberIds": [
+        "demo-captain-3",
+        "demo-worker-3"
+      ],
+      "taskIds": [
+        "demo-task-5",
+        "demo-task-6"
+      ]
+    }
+  ],
+  "sessionHub": {
+    "provider": "available",
+    "checkedAt": 1,
+    "sources": [
+      {
+        "sourceId": "demo-source",
+        "state": "available",
+        "sessionCount": 1
+      }
+    ],
+    "sessions": [
+      {
+        "id": "demo-subagent",
+        "sourceId": "demo-source",
+        "nativeSessionId": "demo-subagent",
+        "parentNativeId": "demo-captain-1",
+        "title": "演示子代理",
+        "origin": "subagent",
+        "running": true,
+        "agentAvailable": true,
+        "blank": false,
+        "updatedAt": 1
+      }
+    ]
+  }
+}

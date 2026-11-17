@@ -15,6 +15,7 @@ const required = [
   "dist/client.workspace.js",
   "dist/client.terminal.js",
   "dist/client.habitat.js",
+  "dist/client.native-ocean.js",
   "dist/client.ocean-scene.js",
   "dist/standalone.js",
   "cordis.patch.yml",

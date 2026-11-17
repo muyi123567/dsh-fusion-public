@@ -1,0 +1,19 @@
+.ocean { font: inherit; color: var(--dsw-alias-label-primary, inherit); min-width: 0; }
+.toolbar, .teams { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
+.ocean button, .ocean select { font: inherit; color: inherit; background: var(--dsw-alias-button-ghost-fill, transparent); border: .5px solid var(--dsw-alias-border-l2, currentColor); border-radius: 4px; padding: 3px 7px; max-width: 100%; }
+.ocean button { cursor: pointer; overflow-wrap: anywhere; }
+.ocean button:disabled { opacity: .4; cursor: default; }
+.ocean button[aria-pressed="true"] { background: var(--dsw-alias-button-ghost-active-fill, transparent); font-weight: 600; }
+.ocean button:focus-visible, .ocean select:focus-visible, .legend summary:focus-visible { outline: 2px solid var(--dsw-alias-label-primary, currentColor); outline-offset: 2px; }
+.viewport { position: relative; height: clamp(200px, 30vh, 360px); overflow: hidden; }
+.viewport .habitat { height: 100%; min-height: 0; }
+.message { padding: 16px; margin: 0; }
+.note, .legend { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, inherit); }
+.note { margin: 4px 0; }
+.legend summary { cursor: pointer; padding: 4px 0; }
+.legend p { margin: 4px 0; overflow-wrap: anywhere; }
+
+.teams { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)) auto; }
+.teams button { min-width: 0; white-space: normal; line-height: inherit; }
+.toolbar select { min-width: 0; }
+.ocean { line-height: inherit; }

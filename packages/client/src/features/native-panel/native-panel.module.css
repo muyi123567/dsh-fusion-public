@@ -1,0 +1,28 @@
+.panel { display:flex; flex-direction:column; height:100%; min-height:0; min-width:0; background:var(--dsw-alias-bg-base); color:var(--dsw-alias-label-primary); font-family:var(--dsw-font-family); font-size:14px; line-height:20px; }
+.panel[hidden] { display:none; }
+.panel button,.panel input,.panel select { box-sizing:border-box; min-height:28px; font:inherit; color:inherit; background:var(--dsw-alias-bg-base); border:0.5px solid var(--dsw-alias-border-l4); border-radius:8px; }
+.panel button { cursor:pointer; padding:4px 8px; }
+.panel button:disabled { cursor:default; color:var(--dsw-alias-label-secondary); }
+.panel :is(button,input,select):focus-visible { outline:2px solid var(--dsw-focus-ring-color); outline-offset:-2px; }
+.toolbar { display:flex; align-items:center; gap:8px; padding:8px; border-bottom:0.5px solid var(--dsw-alias-border-l4); }
+.source { flex:1; min-width:0; font-size:12px; line-height:18px; color:var(--dsw-alias-label-secondary); }
+.tabs { display:flex; gap:4px; padding:6px 8px; }
+.tabs button { flex:1; border-color:transparent; }
+.tabs button[aria-pressed=true] { border-color:var(--dsw-alias-border-l4); font-weight:600; }
+.filters { display:flex; gap:6px; padding:4px 8px 8px; }
+.filters input { flex:1; min-width:0; padding:3px 8px; }
+.filters select { min-width:0; max-width:45%; padding:3px 8px; }
+.content { flex:1; min-height:0; min-width:0; overflow:auto; }
+.list { list-style:none; margin:0; padding:0; }
+.panel .row { width:100%; display:flex; flex-direction:column; gap:2px; text-align:left; min-height:44px; padding:5px 12px; border:0; border-radius:0; border-bottom:0.5px solid var(--dsw-alias-border-l4); }
+.heading { display:flex; align-items:baseline; gap:8px; width:100%; }
+.title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.state { flex-shrink:0; font-size:12px; line-height:18px; }
+.secondary { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary); font-size:12px; line-height:18px; }
+.message { margin:12px; color:var(--dsw-alias-label-secondary); }
+@media (hover:hover) { .panel button:hover { background:var(--dsw-alias-interactive-bg-hover); } }
+
+.filters input,.filters select { height:28px; }
+@media (pointer:coarse) { .panel button,.panel input,.panel select { min-height:36px; } }
+
+.content[hidden] { display:none; }

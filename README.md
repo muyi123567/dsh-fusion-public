@@ -30,6 +30,18 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.13.tgz
 
 安装范围不等于所有组合均已通过业务验收。
 
+## DSH 原生面板（本分支候选）
+
+本分支将入口接入 DSH 原生右侧面板。默认展示任务，另有主机、团队和按需加载的海域。
+会话保持在旁边；标签、关闭和调整宽度由 DSH 管理，颜色与字体使用宿主主题。
+快照目前属于 Fusion 全局来源，界面会明确标记。
+
+[产品说明](docs/design/2026-11-17-native-panel-product.md) ·
+[接入与五路规划](docs/design/2026-11-17-whale-native-panel-plan.md) ·
+[原生验收](docs/design/2026-11-17-native-panel-acceptance.md)
+
+本分支候选与下方 beta.13 安装包、独立动画预览分别交付。
+
 ## 鲸群场景面板（候选源码）
 
 [打开场景预览](https://whale-panel.whale-muyi123567.workers.dev/whale-habitat.html)。

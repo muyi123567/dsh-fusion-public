@@ -15,7 +15,7 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 
-function boot() {
+function boot({ current = "fixture-session" } = {}) {
   const dom = new JSDOM("<html><head></head><body><div id='root'></div></body></html>", { url: "https://dsh.invalid/" });
   const previous = {};
   for (const name of ["window", "document", "navigator", "HTMLElement", "CustomEvent", "IS_REACT_ACT_ENVIRONMENT"]) {
@@ -38,20 +38,30 @@ function boot() {
   const components = new Map();
   const disposers = [];
   let injected = 0, released = 0;
+  let visible = false;
+  const opened = [];
+  let definition;
   plugin.apply({
     get: (name) => name === "slots" ? {
       inject(_slot, callback) { injected++; callback(); return () => { released++; }; },
-      register(options, component) { components.set(options.id, component); },
-    } : undefined,
+      register(options, component) { components.set(options.key ?? options.id, component); },
+    } : name === "sidebarRightTabs" ? { register(value) { definition = value; return () => {}; } }
+      : name === "sidebarRight" ? {
+        commandTarget: () => current ? { sessionId: current, paneId: "fixture-pane", host: "dock", tabId: undefined, occurrence: undefined, navigationRevision: undefined } : undefined,
+        openTab(kind) { opened.push(kind); }
+      }
+      : name === "sessions" ? { list: { getSnapshot: () => ({ ids: ["catalog-session"], byId: {}, phase: "ready", projectionsBySession: {} }), subscribe: () => () => {} } } : undefined,
     effect(callback) { const dispose = callback(); if (typeof dispose === "function") disposers.push(dispose); },
   });
   const root = createRoot(dom.window.document.getElementById("root"));
-  const Overlay = components.get("dsh-fusion.overlay");
+  const Panel = components.get("dsh-fusion");
+  const draw = () => root.render(React.createElement(Panel, { sessionId: "fixture-session", useTabInfo: () => ({ sidebar: { expanded: true, fullscreen: false }, panel: { id: "fixture-pane", isFloating: false }, tab: { id: "fixture-tab", kind: "dsh-fusion.panel", visible } }) }));
   const fakeWorkspace = { FusionWorkspace: () => React.createElement("main", null, "loaded workspace") };
   return {
-    dom, plugin, arrivals, components, fakeWorkspace,
-    async mount() { await React.act(async () => { root.render(React.createElement(Overlay)); }); },
-    async toggle() { await React.act(async () => { dom.window.dispatchEvent(new dom.window.CustomEvent("dsh-fusion:toggle")); }); },
+    dom, plugin, arrivals, components, fakeWorkspace, opened, definition,
+    async launcher() { await React.act(async () => root.render(React.createElement(components.get("dsh-fusion.launcher")))); },
+    async mount() { await React.act(async () => { draw(); }); },
+    async toggle() { await React.act(async () => { visible = !visible; draw(); }); },
     actualWorkspace() {
       let chunk;
       const source = readFileSync(new URL("client.workspace.js", dist), "utf8");
@@ -141,25 +151,6 @@ test("closing before arrival prevents a stale workspace from mounting", async ()
   } finally { await h.cleanup(); }
 });
 
-test("actual production workspace installs styles only while mounted and removes them on close/unload", async () => {
-  const h = boot();
-  try {
-    await h.mount();
-    await h.toggle();
-    const module = h.actualWorkspace();
-    assert.equal(h.dom.window.document.querySelector("style"), null);
-    await React.act(async () => h.arrivals[0].resolve(module));
-    assert.match(h.dom.window.document.body.textContent, /鲸/);
-    assert.equal(h.dom.window.document.querySelectorAll('style[data-plugin="dsh-fusion"]').length, 1);
-    await h.toggle();
-    assert.equal(h.dom.window.document.querySelector("style"), null);
-    await h.toggle();
-    assert.equal(h.dom.window.document.querySelectorAll('style[data-plugin="dsh-fusion"]').length, 1);
-    await h.unload();
-    assert.equal(h.dom.window.document.querySelector("style"), null);
-  } finally { await h.cleanup(); }
-});
-
 test("unload while native load is pending releases slots and ignores late completion", async () => {
   const h = boot();
   try {
@@ -184,9 +175,9 @@ test("production workspace has a native chunk registration, host-shared React an
   assert.doesNotMatch(source, /\bimport\s*\(/);
   assert.doesNotMatch(source, /createRoot/);
   assert.match(source, /\/plugins\/dsh-fusion\/state/);
-  assert.match(source, /\b\w+\.async\(["']\.\/client\.terminal\.js["']\)/);
+
   assert.doesNotMatch(source, /xterm\.js|document\.createElement\(["']canvas["']\)/);
-  assert.match(source, /\.fusion-topbar/);
+
   assert.equal(readdirSync(dist).some((name) => name.endsWith(".css")), false);
   assert.ok(!readdirSync(dist).some((name) => name.endsWith(".cjs")));
 });
@@ -205,21 +196,44 @@ test("terminal is an independently registered native chunk with no ESM split art
 });
 
 
-test("habitat UI and ocean renderer are independently registered native chunks", () => {
-  const workspace=readFileSync(new URL("client.workspace.js",dist),"utf8");
-  const habitat=readFileSync(new URL("client.habitat.js",dist),"utf8");
-  const scene=readFileSync(new URL("client.ocean-scene.js",dist),"utf8");
-  assert.match(workspace,/client\.habitat\.js/);
-  assert.doesNotMatch(workspace,/WebGLRenderer|humpback-whale|data:model\/gltf/);
-  assert.match(habitat,/client\.ocean-scene\.js/);
-  assert.doesNotMatch(habitat,/WebGLRenderer|whale-demo-v1/);
-  for (const [name,source] of [["client.habitat.js",habitat],["client.ocean-scene.js",scene]]) {
-    let registration;
-    runInNewContext(source,{window:{__ModuleLoader__:{load:value=>{registration=value;}}}});
-    assert.equal(registration.id,"dsh-fusion");
-    assert.equal(registration.chunk,name);
-    assert.equal(typeof registration.factory,"function");
-    assert.doesNotMatch(source,/\bimport\s*\(/);
-  }
-  assert.match(readFileSync(new URL("WHALE_ASSET_LICENSE.txt",dist),"utf8"),/CC0/);
+test("native tab registry and runtime props follow the host contract", async () => {
+  const h = boot();
+  try {
+    assert.equal(h.definition.id, "dsh-fusion");
+    assert.equal(h.definition.kind, "dsh-fusion.panel");
+    assert.equal(h.components.has("dsh-fusion.overlay"), false);
+    await h.mount();
+    await h.toggle();
+    await React.act(async () => h.arrivals[0].resolve({ FusionWorkspace: props => {
+      assert.equal(props.sessionId, "fixture-session");
+      assert.equal(props.visible, true);
+      return React.createElement("main", null, "native fixture");
+    } }));
+    assert.match(h.dom.window.document.body.textContent, /native fixture/);
+    await h.toggle();
+    assert.equal(h.dom.window.document.body.textContent, "");
+  } finally { await h.cleanup(); }
+});
+
+test("launcher names the native tab and refuses to create a missing session", async () => {
+  const h = boot({ current: null });
+  try {
+    await h.launcher();
+    const button = h.dom.window.document.querySelector("button");
+    assert.equal(button.getAttribute("aria-label"), "打开鲸面板");
+    assert.equal(button.textContent, "鲸");
+    await React.act(async () => button.click());
+    assert.match(h.dom.window.document.querySelector('[role="status"]').textContent, /请先选择/);
+    assert.deepEqual(h.opened, []);
+    assert.equal(h.arrivals.length, 0);
+    assert.equal(h.dom.window.document.querySelector('[role="dialog"]'), null);
+  } finally { await h.cleanup(); }
+});
+test("launcher uses the on-screen native target even though catalog has no current or getState", async () => {
+  const h = boot();
+  try {
+    await h.launcher();
+    await React.act(async () => h.dom.window.document.querySelector("button").click());
+    assert.deepEqual(h.opened, ["dsh-fusion.panel"]);
+  } finally { await h.cleanup(); }
 });

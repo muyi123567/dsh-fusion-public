@@ -1,6 +1,6 @@
 {
   "name": "dsh-fusion",
-  "version": "0.2.0-beta.13",
+  "version": "0.2.0-beta.14",
   "description": "\u9cb8 \u00b7 Whale \u2014 DSH-native multi-host and multi-agent deep-sea workspace",
   "repository": {
     "type": "git",
@@ -60,7 +60,7 @@
     "build": "node scripts/build.mjs",
     "setup": "node scripts/setup.mjs",
     "test:setup": "node --test tests/setup.contract.mjs",
-    "test:native-client": "node --test tests/native-client.contract.mjs",
+    "test:native-client": "node --test tests/native-client.contract.mjs tests/native-ocean.contract.mjs",
     "test:package": "node --test tests/native-package.contract.mjs tests/setup.contract.mjs && node scripts/verify-release.mjs",
     "prepack": "pnpm build && node scripts/verify-release.mjs"
   },
@@ -72,7 +72,8 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-api-session-controller"
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
       ],
       "immediately": false
     },

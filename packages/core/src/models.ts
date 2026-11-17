@@ -1,4 +1,4 @@
-export const FUSION_PLUGIN_VERSION = "0.2.0-beta.13";
+export const FUSION_PLUGIN_VERSION = "0.2.0-beta.14";
 export const FUSION_DEFAULT_MODEL_PROVIDER = "ccs-wb";
 export const FUSION_DEFAULT_MODEL_ID = "cn:deepseek-v4.1-flash";
 export const FUSION_DEFAULT_MODEL_ROUTE =

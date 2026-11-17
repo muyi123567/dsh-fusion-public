@@ -28,7 +28,8 @@ check(
 );
 check("client-dependencies", JSON.stringify(pkg.dsh?.client?.inject) === JSON.stringify([
   "@deepseek-ai/dsh-client-ui-renderer", "@deepseek-ai/dsh-api-session-controller",
-]), "client package dependencies provide slots and sessions");
+  "@deepseek-ai/dsh-client-ui-sidebar-right",
+]), "client package dependencies provide slots, sessions and native rightbar");
 for (const [name, entry] of Object.entries(pkg.exports)) {
   for (const file of typeof entry === "string" ? [entry] : Object.values(entry)) {
     check(`export:${name}:${file}`, existsSync(resolve(root, "packages/plugin", file)), `declared export ${file} exists`);
@@ -60,15 +61,15 @@ try {
   let registration;
   runInNewContext(workspaceSource, { window: { __ModuleLoader__: { load: (value) => { registration = value; } } } });
   check("workspace-native", registration?.id === "dsh-fusion" && registration?.chunk === "client.workspace.js" && typeof registration?.factory === "function", "workspace registers a package-local native chunk");
-  check("workspace-styles", workspaceSource.includes(".fusion-topbar") && !workspaceSource.includes("__DSH_FUSION_WORKSPACE_CSS__"), "workspace owns its collected styles");
+  check("workspace-styles", workspaceSource.includes("--dsw-alias-bg-base") && !workspaceSource.includes("__DSH_FUSION_WORKSPACE_CSS__"), "workspace owns its collected styles");
   check("workspace-self-contained", !/\bimport\s*\(|(?<![.\w])\w+\(["']\.\//.test(workspaceSource), "workspace has no unresolved ESM or relative shared chunks");
   const runtimeFiles = readdirSync(resolve(root, "packages/plugin/dist")).filter((name) => /\.(?:js|cjs|css|map)$/.test(name)).sort();
-  check("clean-runtime-files", JSON.stringify(runtimeFiles) === JSON.stringify(["client.habitat.js", "client.js", "client.ocean-scene.js", "client.terminal.js", "client.workspace.js", "index.js", "standalone.js"]), "runtime output is exactly the launcher, workspace, terminal, habitat, ocean renderer, host and standalone entries");
+  check("clean-runtime-files", JSON.stringify(runtimeFiles) === JSON.stringify(["client.habitat.js", "client.js", "client.native-ocean.js", "client.ocean-scene.js", "client.terminal.js", "client.workspace.js", "index.js", "standalone.js"]), "runtime output is exactly the launcher, workspace, terminal, habitat, native sea panel, ocean renderer, host and standalone entries");
   const terminalSource = readFileSync(resolve(root, "packages/plugin/dist/client.terminal.js"), "utf8");
   let terminal;
   runInNewContext(terminalSource, { window: { __ModuleLoader__: { load: (value) => { terminal = value; } } } });
   check("terminal-native", terminal?.id === "dsh-fusion" && terminal?.chunk === "client.terminal.js", "terminal registers a separate native capability chunk");
-  check("terminal-lazy", /\b\w+\.async\(["']\.\/client\.terminal\.js["']\)/.test(workspaceSource), "workspace loads xterm through native arrival only when needed");
+  check("native-ocean-lazy", /\b\w+\.async\(["']\.\/client\.native-ocean\.js["']\)/.test(workspaceSource), "workspace loads the sea panel through native arrival only when selected");
 } catch (error) {
   check("client-load", false, error instanceof Error ? error.message : String(error));
 }

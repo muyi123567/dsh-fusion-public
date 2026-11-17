@@ -32,14 +32,14 @@ test("published public declarations typecheck in a consumer with no private work
 import { apply, resolveRemoteConfig, type FusionHostConfig } from "dsh-fusion";
 import {
   FusionLauncher,
-  FusionOverlay,
+  FusionNativeTab,
   type FusionTaskViewDefinition,
   type FusionTaskViewProps,
   type FusionWorkspaceProps,
 } from "dsh-fusion/client";
 import { startStandalone, type StandaloneOptions } from "dsh-fusion/standalone";
 const config: FusionHostConfig = { dshVersion: "0.2.0-rc.2" };
-const props: FusionWorkspaceProps = { roomCommand: async (input: string) => { void input; } };
+const props: FusionWorkspaceProps = { sessionId: "consumer-session", visible: true };
 const standalone: StandaloneOptions = { port: 0 };
 const view: FusionTaskViewDefinition = {
   id: "consumer-view",
@@ -51,7 +51,7 @@ const view: FusionTaskViewDefinition = {
 const invalidView: FusionTaskViewDefinition = { ...view, actions: ["remote-shell"] };
 // @ts-expect-error the public config remains strongly typed after closure
 const invalid: FusionHostConfig = { dshVersion: 123 };
-void [apply, resolveRemoteConfig, FusionLauncher, FusionOverlay, startStandalone, config, props, standalone, view, invalidView, invalid];
+void [apply, resolveRemoteConfig, FusionLauncher, FusionNativeTab, startStandalone, config, props, standalone, view, invalidView, invalid];
 `);
     const program = ts.createProgram([entry], {
       module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext,

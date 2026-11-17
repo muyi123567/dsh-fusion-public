@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
 const entry = process.env.DSH_FUSION_CLIENT_ENTRY ?? "launcher";
-if (!["launcher", "workspace", "terminal", "habitat", "ocean-scene"].includes(entry)) throw new Error("DSH_FUSION_CLIENT_ENTRY_INVALID");
+if (!["launcher", "workspace", "terminal", "habitat", "native-ocean", "ocean-scene"].includes(entry)) throw new Error("DSH_FUSION_CLIENT_ENTRY_INVALID");
 const fileName = entry === "launcher" ? "client.js" : `client.${entry}.js`;
 
 function nativeTerminalImport(): Plugin {
@@ -13,6 +13,11 @@ function nativeTerminalImport(): Plugin {
     enforce: "pre",
     transform(code, id) {
       const normalized=id.replaceAll("\\","/");
+      if (normalized.endsWith("/features/native-panel/NativeOceanBoundary.tsx")) {
+        const pattern = /import\(["']\.\/NativeOcean\.js["']\)/g;
+        if (!pattern.test(code)) throw new Error("NATIVE_OCEAN_IMPORT_CHANGED");
+        return code.replace(pattern, 'require.async("./client.native-ocean.js")');
+      }
       if(normalized.endsWith("/features/whale/WhalePanel.tsx")){
         const target='import("./ambient/WhaleLivingPanel.js")';
         if(!code.includes(target))throw new Error("HABITAT_IMPORT_CHANGED");
