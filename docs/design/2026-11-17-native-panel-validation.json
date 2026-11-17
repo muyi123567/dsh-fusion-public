@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0-beta.14",
+  "date": "2026-11-17",
+  "sourceCheckpoint": "dec1bac",
+  "package": {
+    "name": "dsh-fusion-0.2.0-beta.14.tgz",
+    "sha256": "3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26"
+  },
+  "runtimeInputs": {
+    "scheme": "SHA256(sorted repository-relative package path+NUL+file SHA256+LF)",
+    "sha256": "26825881c3c02564d8425cc1484b1605f32e9420d7da55ffd8e4873479e46cf4",
+    "cueAndTestSourceMatch": true
+  },
+  "environment": {
+    "location": "authorized isolated Instabox",
+    "os": "Linux",
+    "node": "24.19.0",
+    "pnpm": "11.21.0",
+    "dsh": "0.2.2-rc.3"
+  },
+  "checks": {
+    "typecheck": {
+      "status": "passed"
+    },
+    "sourceTests": {
+      "status": "passed",
+      "passed": 1156,
+      "skipped": 0,
+      "groups": {
+        "root": 68,
+        "core": 33,
+        "config": 3,
+        "client": 378,
+        "host": 337,
+        "plugin": 337
+      }
+    },
+    "nativeClientContracts": {
+      "status": "passed",
+      "passed": 18,
+      "skipped": 0
+    },
+    "pluginContracts": {
+      "status": "passed",
+      "passed": 27,
+      "skipped": 0
+    },
+    "packageContracts": {
+      "status": "passed",
+      "passed": 13,
+      "skipped": 0
+    },
+    "artifactDoctor": {
+      "status": "passed"
+    },
+    "standaloneE2e": {
+      "status": "passed",
+      "passed": 3,
+      "skipped": 0,
+      "scope": "existing standalone flow tests, not native business cluster validation"
+    },
+    "dependencyAudit": {
+      "status": "passed",
+      "productionVulnerabilities": 0,
+      "allVulnerabilities": 0,
+      "scope": "known advisory audit of current frozen lockfile"
+    }
+  },
+  "chunks": {
+    "client.js": {
+      "bytes": 3549,
+      "sha256": "15971a4ff25e4f0785b4cd1a1a30e1104a7c6a3d31e14e6d82d1141b282342a3"
+    },
+    "client.workspace.js": {
+      "bytes": 32625,
+      "sha256": "3acf6a6ae3fc554ba8272d16b931dc2b9ce6aac1d1107e4c0cd69ef23ba45ca4"
+    },
+    "client.native-ocean.js": {
+      "bytes": 148168,
+      "sha256": "8fee9848fd0abb4755d3376deda51855045ca2077d9dfb471143679452d26447"
+    },
+    "client.ocean-scene.js": {
+      "bytes": 1891630,
+      "sha256": "81ef1f285d85f5df7847f06ba23fd597870b02856cf7a581d6fab6fd5a87b1a6"
+    }
+  },
+  "runtimeValidation": "2026-11-17-native-panel-runtime-validation.json; final package source/extension/preview passed, browser lifecycle 14 passed/0 failed/3 pending.",
+  "limits": [
+    "Legacy dispatch/configuration/terminal screens are not all migrated to this focused native panel.",
+    "Real model execution, multi-host business collaboration, restart persistence and hardware GPU power/VRAM are not established by these checks.",
+    "Dependency priority projection is bounded at 600 tasks; raw task records remain available."
+  ]
+}

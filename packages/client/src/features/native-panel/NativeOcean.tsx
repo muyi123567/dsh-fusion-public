@@ -55,8 +55,8 @@ export function NativeOcean({ model, visible, onSelectTeam }: {
   </div>
   <div className={styles.teams} aria-label="海域团队选择">
    <button type="button" aria-label="上一组团队" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>‹</button>
-   {pods.map(p => <button type="button" key={p.id} aria-pressed={selected === p.id} disabled={model.demo || !hasSource} aria-label={"查看团队详情：" + p.name} onClick={() => select(p.id)}>{p.name}</button>)}
    <button type="button" aria-label="下一组团队" disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}>›</button>
+   {pods.map(p => <button type="button" key={p.id} aria-pressed={selected === p.id} disabled={model.demo || !hasSource} aria-label={"查看团队详情：" + p.name} onClick={() => select(p.id)}>{p.name}</button>)}
   </div>
   <p className={styles.note} role="status">{model.freshness === "stale" ? "来源陈旧 · " : ""}{!visible ? "海域已停止。" : !hasSource ? "尚未观测到来源，无法判断任务状态。" : !pods.length ? "当前没有团队记录，不代表任务完成。" : state === "error" ? "海域加载失败，请在任务或主机页查看记录。" : "自然巡游与呼吸不代表任务完成。"}</p>
   <details className={styles.legend}><summary>海域图例与主机连接</summary>

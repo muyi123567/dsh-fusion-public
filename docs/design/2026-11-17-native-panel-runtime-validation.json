@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0-beta.14",
+  "artifactSha256": "3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26",
+  "host": "DSH 0.2.2-rc.3",
+  "environment": "authorized isolated Instabox",
+  "productionProfileModified": false,
+  "finalPackage": {
+    "installedArtifacts": {
+      "artifactSha256": "3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26",
+      "bindings": [
+        {
+          "name": "client.js",
+          "bytes": 3549,
+          "sha256": "15971a4ff25e4f0785b4cd1a1a30e1104a7c6a3d31e14e6d82d1141b282342a3",
+          "exactBytesEqual": true
+        },
+        {
+          "name": "client.workspace.js",
+          "bytes": 32625,
+          "sha256": "3acf6a6ae3fc554ba8272d16b931dc2b9ce6aac1d1107e4c0cd69ef23ba45ca4",
+          "exactBytesEqual": true
+        },
+        {
+          "name": "client.native-ocean.js",
+          "bytes": 148168,
+          "sha256": "8fee9848fd0abb4755d3376deda51855045ca2077d9dfb471143679452d26447",
+          "exactBytesEqual": true
+        },
+        {
+          "name": "client.ocean-scene.js",
+          "bytes": 1891630,
+          "sha256": "81ef1f285d85f5df7847f06ba23fd597870b02856cf7a581d6fab6fd5a87b1a6",
+          "exactBytesEqual": true
+        }
+      ],
+      "installedFilesModified": false
+    },
+    "sourceAndExtension": {
+      "status": "passed",
+      "checks": [
+        "real sources.nodes=unavailable and nodes=[]; precise unavailable notice replaces legal-empty text",
+        "native push sidebar at 420px; original chat/composer remain visible without overlay",
+        "public global ready and API major 1; provided fixture registers/renders DEMO tasks/nodes/topology with write callbacks absent"
+      ],
+      "realSource": {
+        "demo": false,
+        "nodesSource": "unavailable",
+        "nodes": 0,
+        "tasks": 0
+      },
+      "publicReady": {
+        "ready": true,
+        "version": 1,
+        "api": {
+          "major": 1,
+          "minor": 1
+        },
+        "register": true,
+        "list": true
+      },
+      "extension": {
+        "input": "explicit demo:true; only same-origin exact state GET intercepted",
+        "generations": [
+          1
+        ],
+        "taskCount": 6,
+        "nodeCount": 3,
+        "topologyVersion": 1,
+        "dispatchAvailable": false,
+        "cancelAvailable": false,
+        "readiness": [
+          true
+        ]
+      },
+      "realStateAfter": {
+        "demo": false,
+        "tasks": 0,
+        "nodes": 0
+      },
+      "modelOrTaskWriteAttempts": 0,
+      "pageErrors": 0,
+      "consoleErrors": 0
+    },
+    "performance": {
+      "status": "incomplete",
+      "counts": {
+        "passed": 14,
+        "failed": 0,
+        "pending": 3
+      },
+      "cases": [
+        {
+          "name": "default tasks/hosts/teams never request ocean or Three chunks",
+          "status": "passed"
+        },
+        {
+          "name": "first reduced-motion entry and explicit still create no WebGL",
+          "status": "passed"
+        },
+        {
+          "name": "balanced mode advances real WebGL draws",
+          "status": "passed"
+        },
+        {
+          "name": "pause stops actual submissions",
+          "status": "passed"
+        },
+        {
+          "name": "task tab unmounts habitat and releases real context",
+          "status": "passed"
+        },
+        {
+          "name": "native rightbar hide stops submissions",
+          "status": "passed"
+        },
+        {
+          "name": "dynamic to still releases context without creating another",
+          "status": "passed"
+        },
+        {
+          "name": "preferences survive task-tab return",
+          "status": "passed"
+        },
+        {
+          "name": "real team detail/back preserves preferences and identity",
+          "status": "pending",
+          "reason": "No selectable real team; DEMO buttons intentionally disabled, never falsify demo flag"
+        },
+        {
+          "name": "served compiled chunks match candidate bytes",
+          "status": "passed"
+        },
+        {
+          "name": "physical GPU utilization, energy and VRAM reclamation",
+          "status": "pending",
+          "reason": "No OS/GPU profiler data; GL draws and context-lost events do not measure these."
+        },
+        {
+          "name": "full native tab removal and real OS backgrounding",
+          "status": "pending",
+          "reason": "Only native rightbar hide and habitat unmount exercised; no guessed close-tab API or forged document.hidden."
+        }
+      ]
+    },
+    "performanceModelOrTaskWrites": 0,
+    "performancePageErrors": 0,
+    "performanceConsoleErrors": 0,
+    "preview": {
+      "status": "passed",
+      "input": "explicit demo:true snapshot; real DSH host",
+      "writes": 0,
+      "pageErrors": 0
+    },
+    "runtimeStoppedAfterEveryRun": true,
+    "qaExitCodes": [
+      0,
+      0,
+      0
+    ]
+  },
+  "priorR3UI": {
+    "artifactSha256": "440e65daf591f3346c9906410a1756a837b407f8a2281f50b4e06c69711fa0da",
+    "scope": "Prior candidate: real native settings, detailed navigation, unsent draft and desktop widths; not all repeated on final package.",
+    "status": "passed",
+    "checks": [
+      "installed rc3 chat region visible, not inert, same Session as native rightbar",
+      "native Session/workspace and footer launcher; real task-free state",
+      "actual native settings light/dark and conversation font control; original values restored",
+      "DEMO task -> host/team -> task -> list; Escape detail absent and row focused; evidence link inspected without navigation",
+      "close/reopen keeps Session/tab and unsent composer draft; input focus restored"
+    ],
+    "themes": {
+      "method": "native-settings",
+      "samples": [
+        {
+          "mode": "light",
+          "color": "rgb(15, 17, 21)",
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "mode": "dark",
+          "color": "rgb(249, 250, 251)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "font": {
+        "scope": "native setting explicitly affects conversation content only",
+        "original": 14,
+        "changed": 15,
+        "before": {
+          "panel": "14px",
+          "composer": "14px"
+        },
+        "after": {
+          "panel": "14px",
+          "composer": "15px"
+        },
+        "nativeChrome": "14px"
+      },
+      "restoration": "native controls in finally",
+      "persistence": "selection verified after closing and reopening settings; restart not tested"
+    },
+    "details": {
+      "fixture": "explicit demo:true; only same-origin exact state pathname intercepted",
+      "taskHostBack": true,
+      "taskTeamBack": true,
+      "escapeDetailAbsent": true,
+      "escapeRowFocused": true,
+      "evidenceVisible": true,
+      "evidenceLinksFollowed": false,
+      "listBackRowFocused": true
+    },
+    "modelOrTaskWriteAttempts": 0
+  },
+  "limits": [
+    "Performance remains incomplete for real-team detail, physical GPU/energy/VRAM, whole native tab removal and OS backgrounding.",
+    "Full native panel close unloads internal UI preferences; reopening starts at tasks.",
+    "Real model execution and multi-host business collaboration remain unverified.",
+    "Legacy dispatch/configuration/terminal screens are not all migrated to the focused native panel."
+  ]
+}

@@ -6,7 +6,7 @@ afterEach(() => { vi.unstubAllGlobals(); });
 const response = (value: unknown) => ({ok:true,json:async()=>value}) as Response;
 
 it("accepts missing teams, preserves demo and reports unknown team source", async()=>{
- vi.stubGlobal("fetch",vi.fn().mockResolvedValue(response({nodes:[],tasks:[],demo:true})));
+ vi.stubGlobal("fetch",vi.fn().mockResolvedValue(response({nodes:[],tasks:[],demo:true,sources:{nodes:"demo",tasks:"demo"}})));
  const {result,unmount}=renderHook(()=>useNativeData("/state",true));
  await waitFor(()=>expect(result.current.data.loaded).toBe(true));
  expect(result.current.data.model.demo).toBe(true);
@@ -46,4 +46,22 @@ it("aborts hidden reads and ignores late results from a replaced source",async()
  expect(result.current.data.model.demo).toBe(false);
  unmount();
  expect(pending[1]!.signal.aborted).toBe(true);
+});
+
+it("reopens the same source with a fresh read and ignores the hidden request's late result",async()=>{
+ const pending:Array<{signal:AbortSignal;resolve:(value:Response)=>void}>=[];
+ const fetcher=vi.fn((_url:unknown,options:{signal:AbortSignal})=>new Promise<Response>(resolve=>pending.push({signal:options.signal,resolve})));
+ vi.stubGlobal("fetch",fetcher);
+ const {result,rerender,unmount}=renderHook(({visible})=>useNativeData("/state",visible),{initialProps:{visible:true}});
+ rerender({visible:false});
+ expect(pending[0]!.signal.aborted).toBe(true);
+ act(()=>result.current.refresh());
+ expect(fetcher).toHaveBeenCalledTimes(1);
+ rerender({visible:true});
+ expect(fetcher).toHaveBeenCalledTimes(2);
+ await act(async()=>pending[1]!.resolve(response({nodes:[],tasks:[],agentTeams:[],demo:false})));
+ await waitFor(()=>expect(result.current.data.loaded).toBe(true));
+ await act(async()=>pending[0]!.resolve(response({nodes:[],tasks:[],demo:true})));
+ expect(result.current.data.model.demo).toBe(false);
+ unmount();
 });

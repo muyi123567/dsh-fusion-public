@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "runtime": {
     "dsh": ">=0.2.0-rc.2 <0.3.0",
-    "recommendedDsh": "0.2.2-rc.1",
+    "recommendedDsh": "0.2.2-rc.3",
     "testedDsh": [
-      "0.2.0-rc.2",
-      "0.2.2-rc.1"
+      "0.2.2-rc.3"
     ],
     "candidateDsh": [
-      "0.2.2-rc.3"
+      "0.2.0-rc.2",
+      "0.2.2-rc.1"
     ],
     "node": ">=24.9.0"
   },

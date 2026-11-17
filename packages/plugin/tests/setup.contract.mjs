@@ -190,7 +190,7 @@ test("dry-run validates release, DSH version and bundle plan without writes", ()
     assert.equal(result.status, 0, result.stderr);
     const plan = JSON.parse(result.stdout);
     assert.equal(plan.dshVersion, "0.2.0-rc.2");
-    assert.equal(plan.hostCompatibility.state, "verified");
+    assert.equal(plan.hostCompatibility.state, "untested");
     assert.equal(plan.dryRun, true);
     assert.equal(plan.bundles.length, 0);
     assert.equal(calls(fixture).some((args) => args.includes("add")), false);
@@ -266,12 +266,12 @@ test("verified latest DSH version installs without an untested warning", () => {
     const result = runSetup(
       fixture,
       ["--dsh-bin", fixture.fakeDsh, "--profile", "web", "--without-companions", "--dry-run"],
-      { FAKE_DSH_VERSION: "0.2.2-rc.1" },
+      { FAKE_DSH_VERSION: "0.2.2-rc.3" },
     );
     assert.equal(result.status, 0, result.stderr);
     assert.doesNotMatch(result.stderr, /DSH_FUSION_DSH_HOST_UNTESTED/u);
     const plan = JSON.parse(result.stdout);
-    assert.equal(plan.dshVersion, "0.2.2-rc.1");
+    assert.equal(plan.dshVersion, "0.2.2-rc.3");
     assert.equal(plan.hostCompatibility.state, "verified");
     assert.equal(plan.hostCompatibility.reasonCode, "TESTED_HOST");
   } finally {
@@ -286,7 +286,7 @@ test("setup installs all companions, verifies the package contract and writes a 
     assert.equal(result.status, 0, result.stderr);
     const receipt = JSON.parse(result.stdout);
     assert.equal(receipt.status, "ok");
-    assert.equal(receipt.hostCompatibility.state, "verified");
+    assert.equal(receipt.hostCompatibility.state, "untested");
     assert.equal(receipt.hostCompatibility.version, "0.2.0-rc.2");
     assert.equal(receipt.verification.ok, true);
     assert.deepEqual(receipt.companionActions, {

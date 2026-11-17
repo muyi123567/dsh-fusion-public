@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { NativeTaskViews } from "./NativeTaskViews.js";
 import { NativePanelDetails } from "./NativePanelDetails.js";
 import { useNativeData } from "./use-native-data.js";
 import type { NativePanelSelection, NativeWhalePanelProps } from "./types.js";
@@ -8,16 +9,17 @@ import { NativeOceanBoundary } from "./NativeOceanBoundary.js";
 const labels: Record<string,string> = {blocked:"受阻",queued:"排队",claimed:"已认领",running:"运行中",verifying:"待验收",completed:"已完成",failed:"失败",cancelled:"已取消",online:"在线",offline:"离线",degraded:"降级",staged:"准备中",archived:"已归档"};
 const tabs = [{id:"task",label:"任务"},{id:"host",label:"主机"},{id:"team",label:"团队"},{id:"ocean",label:"海域"}] as const;
 export function NativeWhalePanel({snapshotUrl="/plugins/dsh-fusion/state",visible=true}:NativeWhalePanelProps) {
- const {data,refresh,refreshing,sourceWarning}=useNativeData(snapshotUrl,visible);
- const [tab,setTab]=useState<string>("task");
+ const {data,refresh,refreshing,sourceWarning,sourceNotices}=useNativeData(snapshotUrl,visible);
+ const [tab,setTab]=useState<(typeof tabs)[number]["id"]>("task");
  const [oceanVisited,setOceanVisited]=useState(false);
+ const [taskView,setTaskView]=useState("");
  const [query,setQuery]=useState("");
  const [status,setStatus]=useState("");
  const [history,setHistory]=useState<NativePanelSelection[]>([]);
  const selection=history[history.length-1];
  const root=useRef<HTMLElement>(null);
  const detail=useRef<HTMLDivElement>(null);
- const oceanTab=useRef<HTMLButtonElement>(null);
+ const tabsRef=useRef(new Map<string,HTMLButtonElement>());
  const rowsRef=useRef(new Map<string,HTMLButtonElement>());
  const originRow=useRef<string>();
  const focusPending=useRef(false);
@@ -40,8 +42,10 @@ export function NativeWhalePanel({snapshotUrl="/plugins/dsh-fusion/state",visibl
   // A removed row leaves body active; never take focus from another DSH pane.
   if (active && active!==panel.ownerDocument.body && !panel.contains(active)) return;
   if (selection) detail.current?.focus({preventScroll:true});
-  else if (tab==="ocean") oceanTab.current?.focus({preventScroll:true});
-  else if (originRow.current) rowsRef.current.get(originRow.current)?.focus({preventScroll:true});
+  else {
+   const row=tab!=="ocean" && originRow.current ? rowsRef.current.get(originRow.current) : undefined;
+   (row ?? tabsRef.current.get(tab))?.focus({preventScroll:true});
+  }
  },[history,visible,selection]);
  const projected = new Map(data.model.krill.map(task=>[task.id,task]));
  const priority = (task:typeof data.tasks[number]) => projected.get(task.id)?.blocked ? 0 : task.status==="failed" ? 1 : task.status==="verifying" ? 2 : 3;
@@ -56,14 +60,20 @@ export function NativeWhalePanel({snapshotUrl="/plugins/dsh-fusion/state",visibl
  : data.teams.map(team=>({id:team.id,title:team.name,status:team.phase,detail:team.workspace,evidence:team.taskIds.length+" 个任务"}));
  useEffect(()=>{setHistory([]);setStatus("");},[snapshotUrl]);
  const effectiveStatus=rows.some(row=>row.status===status) ? status : "";
+ useEffect(()=>{if(status && !effectiveStatus) setStatus("");},[status,effectiveStatus]);
  const filtered=rows.filter(row=>(!effectiveStatus || row.status===effectiveStatus) && (row.title+" "+row.detail+" "+row.id).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+ const tasksById=new Map(data.tasks.map(task=>[task.id,task]));
+ const visibleTasks=filtered.flatMap(row=>{const task=tasksById.get(row.id);return task ? [task] : [];});
+ const listSourceNotice=sourceNotices?.[tab==="ocean" ? "team" : tab];
+ const sourceNotice=listSourceNotice ?? ((tab==="task" || tab==="ocean") ? sourceWarning : undefined);
+ const nativeList=<>{!data.loaded ? <p className={styles.message}>{data.error ? "读取失败，点击刷新重试。" : "正在加载…"}</p> : filtered.length===0 ? <p className={styles.message}>{rows.length ? "没有符合筛选条件的记录。" : data.error ? "来源读取失败，最后快照中没有记录。" : listSourceNotice ? listSourceNotice+"，暂不能确认当前记录。" : "当前来源暂无记录。"}</p> : <ul className={styles.list}>{filtered.map(row=><li key={row.id}><button ref={element=>{if(element) rowsRef.current.set(row.id,element);else rowsRef.current.delete(row.id);}} className={styles.row} type="button" onClick={()=>select({kind:tab as NativePanelSelection["kind"],id:row.id})}><span className={styles.heading}><span className={styles.title}>{row.title}</span><span className={styles.state}>{labels[row.status] ?? row.status}</span></span><span className={styles.secondary} title={row.detail+" · "+row.evidence}>{row.detail} · {row.evidence}</span></button></li>)}</ul>}</>;
  return <section ref={root} className={styles.panel} aria-label="鲸" hidden={!visible} onKeyDown={event=>{if(event.key==="Escape" && selection && !event.nativeEvent.isComposing){event.stopPropagation();back();}}}>
-  <div className={styles.toolbar}><span className={styles.source} role="status">{data.error ? (data.loaded ? "全局来源不可用 · 显示陈旧快照" : "全局来源不可用 · 请重试") : data.loaded ? ["全局来源：DSH Fusion",data.model.demo ? "演示数据" : "",sourceWarning].filter(Boolean).join(" · ") : "正在读取来源…"}</span><button type="button" disabled={!visible || refreshing} onClick={refresh}>{refreshing?"读取中…":"刷新"}</button></div>
+  <div className={styles.toolbar}><span className={styles.source} role="status">{data.error ? (data.loaded ? "全局来源不可用 · 显示陈旧快照" : "全局来源不可用 · 请重试") : data.loaded ? ["全局来源：DSH Fusion",data.model.demo ? "演示数据" : "",sourceNotice].filter(Boolean).join(" · ") : "正在读取来源…"}</span><button type="button" disabled={!visible || refreshing} onClick={refresh}>{refreshing?"读取中…":"刷新"}</button></div>
   {selection ? <div ref={detail} tabIndex={-1} aria-label="详情导航" className={styles.content}><NativePanelDetails selection={selection} data={data} onBack={back} onSelect={select} backLabel={history.length>1 ? "返回"+({task:"任务",host:"主机",team:"团队"}[history[history.length-2]!.kind])+"详情" : tab==="ocean" ? "返回海域" : "返回"+({task:"任务",host:"主机",team:"团队"}[tab] ?? "")+"列表"}/></div> : <>
-   <nav className={styles.tabs} aria-label="面板视图">{tabs.map(item=><button type="button" key={item.id} ref={item.id==="ocean" ? oceanTab : undefined} aria-pressed={tab===item.id} onClick={()=>{setTab(item.id);if(item.id==="ocean") setOceanVisited(true);setStatus("");}}>{item.label}</button>)}</nav>
+   <nav className={styles.tabs} aria-label="面板视图">{tabs.map(item=><button type="button" key={item.id} ref={element=>{if(element) tabsRef.current.set(item.id,element);else tabsRef.current.delete(item.id);}} aria-pressed={tab===item.id} onClick={()=>{if(item.id===tab)return;setTab(item.id);if(item.id==="ocean") setOceanVisited(true);setStatus("");}}>{item.label}</button>)}</nav>
    {tab!=="ocean" && <>
     <div className={styles.filters}><input aria-label="搜索名称或归属" placeholder="搜索名称或归属" value={query} onChange={event=>setQuery(event.target.value)}/><select aria-label="状态筛选" value={effectiveStatus} onChange={event=>setStatus(event.target.value)}><option value="">全部状态</option>{[...new Set(rows.map(row=>row.status))].map(value=><option key={value} value={value}>{labels[value] ?? value}</option>)}</select></div>
-    <div className={styles.content} aria-busy={refreshing}>{!data.loaded ? <p className={styles.message}>{data.error ? "读取失败，点击刷新重试。" : "正在加载…"}</p> : filtered.length===0 ? <p className={styles.message}>{rows.length ? "没有符合筛选条件的记录。" : "当前来源暂无记录。"}</p> : <ul className={styles.list}>{filtered.map(row=><li key={row.id}><button ref={element=>{if(element) rowsRef.current.set(row.id,element);else rowsRef.current.delete(row.id);}} className={styles.row} type="button" onClick={()=>select({kind:tab as NativePanelSelection["kind"],id:row.id})}><span className={styles.heading}><span className={styles.title}>{row.title}</span><span className={styles.state}>{labels[row.status] ?? row.status}</span></span><span className={styles.secondary} title={row.detail+" · "+row.evidence}>{row.detail} · {row.evidence}</span></button></li>)}</ul>}</div>
+    <div className={styles.content} aria-busy={refreshing}>{tab==="task" ? <NativeTaskViews view={taskView} onViewChange={setTaskView} tasks={visibleTasks} nodes={data.nodes} connectionStale={!data.loaded || !!data.error || data.model.freshness!=="current"} onSelectTask={id=>select({kind:"task",id})}>{nativeList}</NativeTaskViews> : nativeList}</div>
    </>}
   </>}
   {oceanVisited && <div className={styles.content} hidden={!visible || !!selection || tab!=="ocean"}>

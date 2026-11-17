@@ -15,7 +15,9 @@ const adapter = (await import(adapterPath ? pathToFileURL(path.resolve(adapterPa
 for (const key of (firstpass === '1' ? [] : ['prepareEmptySession', 'openPanel', 'closePanel', 'composer', 'chat', 'panel']))
   assert.equal(typeof adapter[key], 'function', 'Missing rc3 adapter: ' + key);
 await mkdir(evidenceDir, { recursive: true });
-const browser = await chromium.launch({ executablePath, headless: true });
+const browser = await chromium.launch({ executablePath, headless: true,
+  args: ['--disable-dev-shm-usage', ...(process.env.WHALE_QA_NO_SANDBOX === '1' ? ['--no-sandbox'] : [])],
+});
 const context = await browser.newContext({ viewport: { width: 1536, height: 1000 } });
 if (cookie && !loginUrl) await context.addCookies(cookie.split(';').map(pair => {
   const i = pair.indexOf('=');

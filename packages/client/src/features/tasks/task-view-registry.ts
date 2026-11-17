@@ -14,7 +14,7 @@ export type FusionTaskViewDefinition = CoreFusionTaskViewDefinition<
 
 const knownActions = new Set<string>(["dispatch", "cancel"]);
 
-const builtinIds = new Set<string>();
+const builtinIds = new Set<string>(["bridge", "satellite", "radial"]);
 const definitions = new Map<string, FusionTaskViewDefinition>();
 const listeners = new Set<() => void>();
 let cachedDefinitions: readonly FusionTaskViewDefinition[] = [];
@@ -124,7 +124,29 @@ function assertCurrentRegistry(global: FusionTaskViewGlobal): void {
   }
 }
 
+
+/** One facade for all simultaneously mounted native workspaces. */
+let retained: { global: FusionTaskViewGlobal; count: number } | undefined;
+const generationCleanups = new WeakMap<FusionTaskViewGlobal, Set<() => void>>();
+
+export function retainTaskViewRegistry(): () => void {
+  if (!retained || !retained.global.ready) retained = { global: activateTaskViewRegistry(), count: 0 };
+  const lease = retained;
+  lease.count++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    if (--lease.count !== 0) return;
+    if (retained === lease) retained = undefined;
+    disposeTaskViewRegistry(lease.global);
+  };
+}
+
 export function activateTaskViewRegistry(): FusionTaskViewGlobal {
+  const previous = window.__DSH_FUSION_TASK_VIEWS__;
+  if (previous) disposeTaskViewRegistry(previous);
+  const cleanups = new Set<() => void>();
   const generation = ++nextGeneration;
   const global: FusionTaskViewGlobal = {
     version: 1,
@@ -138,7 +160,10 @@ export function activateTaskViewRegistry(): FusionTaskViewGlobal {
       && (method === "register" || method === "unregister" || method === "list"),
     register: (definition) => {
       assertCurrentRegistry(global);
-      return registerTaskView(definition);
+      const unregister = registerTaskView(definition);
+      const cleanup = () => { cleanups.delete(cleanup); unregister(); };
+      cleanups.add(cleanup);
+      return cleanup;
     },
     unregister: (id) => {
       assertCurrentRegistry(global);
@@ -149,6 +174,7 @@ export function activateTaskViewRegistry(): FusionTaskViewGlobal {
       return listTaskViewDefinitions();
     },
   };
+  generationCleanups.set(global, cleanups);
   window.__DSH_FUSION_TASK_VIEWS__ = global;
   window.dispatchEvent(new CustomEvent("dsh-fusion:task-views-ready", {
     detail: { generation, api: global.api },
@@ -157,6 +183,9 @@ export function activateTaskViewRegistry(): FusionTaskViewGlobal {
 }
 
 export function disposeTaskViewRegistry(global: FusionTaskViewGlobal): void {
+  const cleanups = generationCleanups.get(global);
+  generationCleanups.delete(global);
+  for (const cleanup of cleanups ?? []) cleanup();
   if (window.__DSH_FUSION_TASK_VIEWS__ === global) {
     delete window.__DSH_FUSION_TASK_VIEWS__;
   }

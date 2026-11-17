@@ -3,12 +3,12 @@
   "installRange": ">=0.2.0-rc.2 <0.3.0",
   "minimum": "0.2.0-rc.2",
   "maximumExclusive": "0.3.0",
-  "recommended": "0.2.2-rc.1",
+  "recommended": "0.2.2-rc.3",
   "tested": [
-    "0.2.0-rc.2",
-    "0.2.2-rc.1"
+    "0.2.2-rc.3"
   ],
   "candidates": [
-    "0.2.2-rc.3"
+    "0.2.0-rc.2",
+    "0.2.2-rc.1"
   ]
 }

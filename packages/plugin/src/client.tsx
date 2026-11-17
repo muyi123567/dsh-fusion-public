@@ -10,7 +10,7 @@ import type {
   FusionTaskTopologyRelation,
 } from "@dsh-fusion/core";
 export const PLUGIN_ID = "dsh-fusion" as const;
-export const inject = ["slots", "sessions", "sidebarRight", "sidebarRightTabs"] as const;
+export const inject = ["slots"] as const;
 
 export type {
   FusionTaskViewAction,
@@ -64,9 +64,14 @@ interface SlotsService {
   inject(slot: string, callback: () => unknown): () => void;
   register(options: { name: string; id?: string; key?: string; order?: number }, component: ComponentType<any>): unknown;
 }
+interface SidebarRightService {
+  openTab(kind: string): unknown;
+  commandTarget(): { readonly sessionId: string } | undefined;
+}
 interface FusionClientContext {
   readonly slots?: SlotsService;
   readonly get?: (name: string) => unknown;
+  readonly inject?: (services: string[], callback: (context: FusionClientContext) => void) => unknown;
   readonly effect?: (callback: () => (() => void), label?: string) => unknown;
 }
 export const PANEL_KIND = "dsh-fusion.panel";
@@ -109,27 +114,43 @@ function LoadedPanel({ sessionId, loader }: { sessionId: string; loader: ReturnT
 export function apply(ctx: FusionClientContext = {}): void {
   const slots = (ctx.get?.("slots") ?? ctx.slots) as SlotsService | undefined;
   if (!slots) throw new Error("DSH_FUSION_SLOTS_UNAVAILABLE");
-  const sidebarRight = ctx.get?.("sidebarRight") as { openTab(kind: string): unknown; commandTarget(): { readonly sessionId: string } | undefined } | undefined;
-  const tabs = ctx.get?.("sidebarRightTabs") as { register(definition: unknown): () => void } | undefined;
-  const register = () => {
-    const loader = createWorkspaceLoader(nativeWorkspace);
-    const disposers: Array<() => void> = [];
-    try {
-      const Launcher = () => <FusionLauncher {...(!sidebarRight || !tabs ? { unavailable: "当前 DSH 不支持原生右侧面板，请升级宿主。" } : { open: () => {
-        if (sidebarRight.commandTarget() === undefined) throw new Error("请先选择一个 DSH 会话，再打开鲸面板。");
-        sidebarRight.openTab(PANEL_KIND);
-      } })} />;
-      disposers.push(slots.inject("sidebar.footer.action", () => slots.register({ name: "sidebar.footer.action", id: "dsh-fusion.launcher", order: 95 }, Launcher)));
-      if (sidebarRight && tabs) {
-        disposers.push(tabs.register({ id: PLUGIN_ID, kind: PANEL_KIND, title: () => "鲸",
+  let native: { sidebarRight: SidebarRightService } | undefined;
+  const Launcher = () => <FusionLauncher open={() => {
+    if (!native) throw new Error("当前 DSH 不支持原生右侧面板，请升级宿主。");
+    if (native.sidebarRight.commandTarget() === undefined) throw new Error("请先选择一个 DSH 会话，再打开鲸面板。");
+    native.sidebarRight.openTab(PANEL_KIND);
+  }} />;
+  const registerLauncher = () => slots.inject("sidebar.footer.action", () => slots.register(
+    { name: "sidebar.footer.action", id: "dsh-fusion.launcher", order: 95 }, Launcher,
+  ));
+  if (ctx.effect) ctx.effect(registerLauncher, "dsh-fusion: launcher"); else registerLauncher();
+
+  const registerNative = (context: FusionClientContext) => {
+    const sidebarRight = context.get?.("sidebarRight") as SidebarRightService | undefined;
+    const tabs = context.get?.("sidebarRightTabs") as { register(definition: unknown): () => void } | undefined;
+    if (typeof sidebarRight?.commandTarget !== "function" || typeof sidebarRight.openTab !== "function" || typeof tabs?.register !== "function") return;
+    const register = () => {
+      const loader = createWorkspaceLoader(nativeWorkspace);
+      const disposers: Array<() => void> = [];
+      const binding = { sidebarRight };
+      try {
+        disposers.push(tabs.register({ id: PLUGIN_ID, kind: PANEL_KIND, title: () => "鲸", keepMounted: false,
           guide: [{ id: "panel", order: 95, title: () => "鲸", description: () => "查看任务、主机、团队与海域" }] }));
         const Panel = (props: NativeTabProps) => <FusionNativeTab {...props} loader={loader} />;
         disposers.push(slots.inject("sidebar.right.pane.tab", () => slots.register({ name: "sidebar.right.pane.tab", key: PLUGIN_ID }, Panel)));
+        native = binding;
+      } catch (error) {
+        loader.dispose(); for (const dispose of disposers.reverse()) dispose(); throw error;
       }
-    } catch (error) {
-      loader.dispose(); for (const dispose of disposers.reverse()) dispose(); throw error;
-    }
-    return () => { loader.dispose(); for (const dispose of disposers.reverse()) dispose(); };
+      return () => {
+        if (native === binding) native = undefined;
+        loader.dispose(); for (const dispose of disposers.reverse()) dispose();
+      };
+    };
+    if (context.effect) context.effect(register, "dsh-fusion: native panel"); else register();
   };
-  if (ctx.effect) ctx.effect(register, "dsh-fusion: native panel"); else register();
+  // Keep the launcher available while native services are absent. Cordis owns
+  // this child scope and recreates it when both services become available again.
+  if (ctx.inject) ctx.inject(["sidebarRight", "sidebarRightTabs"], registerNative);
+  else registerNative(ctx);
 }

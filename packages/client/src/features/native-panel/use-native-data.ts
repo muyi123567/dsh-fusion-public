@@ -5,7 +5,28 @@ import { createSnapshotCoordinator } from "../../stream/snapshot-coordinator.js"
 import { fusionBrowserUrl } from "../../routes.js";
 import type { NativePanelData } from "./types.js";
 
-interface Snapshot { nodes: NodeRecord[]; tasks: TaskRecord[]; agentTeams?: AgentTeamRecord[]; demo?: boolean; sessionHub?: SessionHubSnapshot; }
+type SourceKey = "nodes" | "tasks" | "agentTeams";
+interface Snapshot {
+ nodes: NodeRecord[]; tasks: TaskRecord[]; agentTeams?: AgentTeamRecord[]; demo?: boolean; sessionHub?: SessionHubSnapshot;
+ sources?: Partial<Record<SourceKey, "live" | "demo" | "unavailable">>;
+ providers?: Record<string, {state?: string}>;
+ fleet?: {stale?: boolean};
+}
+
+function collectionNotice(snapshot: Snapshot, key: SourceKey): string | undefined {
+ const label = {nodes:"主机", tasks:"任务", agentTeams:"团队"}[key];
+ const source = snapshot.sources?.[key];
+ if (source === "demo" || (snapshot.demo === true && snapshot.sources === undefined)) return undefined;
+ if (key === "agentTeams" && !Array.isArray(snapshot.agentTeams)) return "团队来源未提供，归属未知";
+ // Tasks aggregate independent providers: a node/bridge failure must not mark
+ // a separately live task collection as unavailable.
+ const provider = key === "tasks" ? undefined : snapshot.providers?.[key];
+ if (provider?.state === "not-configured") return label + "来源未配置";
+ if (source === "unavailable" || provider?.state === "offline") return label + "来源不可用";
+ if (key === "nodes" && snapshot.fleet?.stale) return label + "来源已陈旧";
+ if (source === undefined) return label + "来源状态未提供";
+ return undefined;
+}
 export function useNativeData(snapshotUrl: string, visible: boolean) {
  const [snapshot, setSnapshot] = useState<Snapshot>({nodes:[], tasks:[], agentTeams:[]});
  const [loaded, setLoaded] = useState(false);
@@ -37,9 +58,16 @@ export function useNativeData(snapshotUrl: string, visible: boolean) {
   return () => { active=false; clearInterval(timer); reader.current=undefined; coordinator.dispose(); setRefreshing(false); };
  }, [snapshotUrl, visible, refresh]);
  const data = useMemo<NativePanelData>(() => ({
-  model: buildWhalePanelModel({...snapshot, demo:snapshot.demo === true, loaded, stale:!!error}),
+  model: buildWhalePanelModel({...snapshot, demo:snapshot.demo === true, loaded, stale:!!error || (["nodes","tasks","agentTeams"] as const).some(key=>(snapshot[key]?.length ?? 0)>0 && collectionNotice(snapshot,key)!==undefined)}),
   tasks:snapshot.tasks, nodes:snapshot.nodes, teams:snapshot.agentTeams ?? [], loaded,
   ...(error ? {error} : {}),
  }), [snapshot, loaded, error]);
- return {data,refresh,refreshing, sourceWarning: loaded && !Array.isArray(snapshot.agentTeams) ? "团队来源未提供，归属未知" : undefined};
+ return {data,refresh,refreshing,
+  sourceNotices: {
+   task: loaded ? collectionNotice(snapshot,"tasks") : undefined,
+   host: loaded ? collectionNotice(snapshot,"nodes") : undefined,
+   team: loaded ? collectionNotice(snapshot,"agentTeams") : undefined,
+  },
+  sourceWarning: loaded && !Array.isArray(snapshot.agentTeams) && !(snapshot.demo === true && snapshot.sources === undefined) ? "团队来源未提供，归属未知" : undefined,
+ };
 }

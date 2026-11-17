@@ -21,8 +21,10 @@ vi.mock("./NativeOceanBoundary.js",async()=>{
 });
 const task:TaskRecord={id:"task-1",goal:"验证任务",targetNodeIds:["host-1"],transport:"ssh",status:"running",evidence:[],createdAt:"",updatedAt:""};
 const host:NodeRecord={id:"host-1",externalId:"host-1",providerId:"test",name:"测试主机",platform:"linux",roles:["worker"],status:"online",transports:["ssh"],capabilities:[],configState:"unknown"};
-const data={tasks:[task],nodes:[host],teams:[],loaded:true,model:buildWhalePanelModel({nodes:[host],tasks:[task],demo:false,loaded:true,stale:false})};
-afterEach(cleanup);
+const initialData={tasks:[task],nodes:[host],teams:[],loaded:true,model:buildWhalePanelModel({nodes:[host],tasks:[task],demo:false,loaded:true,stale:false})};
+let data=initialData;
+const setTasks=(tasks:TaskRecord[])=>{data={...data,tasks,model:buildWhalePanelModel({nodes:data.nodes,tasks,agentTeams:data.teams,demo:false,loaded:true,stale:false})};};
+afterEach(()=>{cleanup();data=initialData;});
 
 it("click then Escape returns to the list row with focus",async()=>{
  const user=userEvent.setup();
@@ -83,4 +85,55 @@ it("mounts ocean on demand, retains preferences through details and stops while 
  rerender(<NativeWhalePanel visible/>);
  expect(screen.getByRole("button",{name:"继续海域"})).toBeVisible();
  expect(screen.getByText("海域页码 2")).toBeVisible();
+});
+
+it("keeps the visible search across tabs and lets clearing it recover the new list",async()=>{
+ const user=userEvent.setup();
+ render(<NativeWhalePanel/>);
+ await user.type(screen.getByRole("textbox",{name:"搜索名称或归属"}),"验证任务");
+ await user.click(screen.getByRole("button",{name:"主机"}));
+ expect(screen.getByRole("textbox",{name:"搜索名称或归属"})).toHaveValue("验证任务");
+ expect(screen.getByText("没有符合筛选条件的记录。")).toBeVisible();
+ await user.clear(screen.getByRole("textbox",{name:"搜索名称或归属"}));
+ expect(screen.getByRole("button",{name:/测试主机/})).toBeVisible();
+});
+
+it("does not silently restore an invalidated status filter when matching records return",async()=>{
+ const user=userEvent.setup();
+ const failed:TaskRecord={...task,id:"failed-1",goal:"失败任务",status:"failed"};
+ setTasks([task,failed]);
+ const {rerender}=render(<NativeWhalePanel/>);
+ await user.selectOptions(screen.getByRole("combobox",{name:"状态筛选"}),"failed");
+ expect(screen.queryByRole("button",{name:/验证任务/})).not.toBeInTheDocument();
+ setTasks([task]);
+ rerender(<NativeWhalePanel/>);
+ expect(screen.getByRole("combobox",{name:"状态筛选"})).toHaveValue("");
+ expect(screen.getByRole("button",{name:/验证任务/})).toBeVisible();
+ setTasks([task,failed]);
+ rerender(<NativeWhalePanel/>);
+ expect(screen.getByRole("combobox",{name:"状态筛选"})).toHaveValue("");
+ expect(screen.getByRole("button",{name:/验证任务/})).toBeVisible();
+ expect(screen.getByRole("button",{name:/失败任务/})).toBeVisible();
+});
+
+it("keeps the status filter when the selected tab is clicked again",async()=>{
+ const user=userEvent.setup();
+ setTasks([task,{...task,id:"failed-1",goal:"失败任务",status:"failed"}]);
+ render(<NativeWhalePanel/>);
+ await user.selectOptions(screen.getByRole("combobox",{name:"状态筛选"}),"failed");
+ await user.click(screen.getByRole("button",{name:"任务"}));
+ expect(screen.getByRole("combobox",{name:"状态筛选"})).toHaveValue("failed");
+ expect(screen.queryByRole("button",{name:/验证任务/})).not.toBeInTheDocument();
+});
+
+it("keeps a removed record explicit and returns focus to its tab when its row is gone",async()=>{
+ const user=userEvent.setup();
+ const {rerender}=render(<NativeWhalePanel/>);
+ await user.click(screen.getByRole("button",{name:/验证任务/}));
+ setTasks([]);
+ rerender(<NativeWhalePanel/>);
+ expect(screen.getByRole("alert")).toHaveTextContent("记录已移除或未返回");
+ await user.click(screen.getByRole("button",{name:"返回任务列表"}));
+ expect(screen.getByRole("button",{name:"任务"})).toHaveFocus();
+ expect(screen.queryByLabelText("详情导航")).not.toBeInTheDocument();
 });

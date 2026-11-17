@@ -26,7 +26,7 @@ describe("Fusion DSH compatibility", () => {
       environmentVersion: "0.2.0-rc.2",
       packageVersion: "0.2.1-rc.5",
     })).toMatchObject({
-      state: "verified",
+      state: "untested",
       version: "0.2.0-rc.2",
       source: "environment",
     });
@@ -36,7 +36,7 @@ describe("Fusion DSH compatibility", () => {
     expect(resolveDshCompatibility({
       packageVersion: "0.2.2-rc.1",
     })).toMatchObject({
-      state: "verified",
+      state: "untested",
       version: "0.2.2-rc.1",
       source: "package",
     });
@@ -64,25 +64,25 @@ describe("Fusion DSH compatibility", () => {
     expect(FUSION_DSH_COMPATIBILITY_MATRIX).toEqual({
       minimum: "0.2.0-rc.2",
       maximumExclusive: "0.3.0",
-      recommended: "0.2.2-rc.1",
-      tested: ["0.2.0-rc.2", "0.2.2-rc.1"],
-      candidates: ["0.2.1-rc.5"],
+      recommended: "0.2.2-rc.3",
+      tested: ["0.2.2-rc.3"],
+      candidates: ["0.2.0-rc.2", "0.2.2-rc.1"],
     });
   });
 
-  it("verifies 0.2.2-rc.1 and leaves the older candidate untested", () => {
+  it("verifies this native candidate on rc.3 and leaves older hosts untested", () => {
     const report = resolveDshCompatibility({
-      packageVersion: "0.2.2-rc.1",
+      packageVersion: "0.2.2-rc.3",
     });
 
     expect(report).toMatchObject({
       state: "verified",
-      version: "0.2.2-rc.1",
+      version: "0.2.2-rc.3",
       source: "package",
       reasonCode: "TESTED_HOST",
     });
     expect(resolveDshCompatibility({
-      packageVersion: "0.2.1-rc.5",
+      packageVersion: "0.2.2-rc.1",
     })).toMatchObject({
       state: "untested",
       reasonCode: "UNTESTED_HOST",
