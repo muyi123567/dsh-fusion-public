@@ -54,6 +54,15 @@ describe("whaleFleet service", () => {
     expect(report.reason).toContain("期望");
   });
 
+  it("matches a digest-only expectation without a lock file", async () => {
+    const service = createWhaleFleetService({
+      collect: async () => manifest(SHA), directory: mkdtempSync(join(tmpdir(), "fleet-service-")),
+    });
+    expect((await service.diff(SHA, SHA)).overall).toBe("match");
+    const other = `sha256:${"b".repeat(64)}`;
+    expect((await service.diff(SHA, other)).overall).toBe("drift");
+  });
+
   it("diffs against a configured expected manifest", async () => {
     const dir = mkdtempSync(join(tmpdir(), "fleet-service-"));
     const expectedPath = join(dir, "expected.json");

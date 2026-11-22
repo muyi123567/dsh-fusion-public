@@ -132,14 +132,15 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     }
     const expected = loadExpected();
     const verified = verifyOne(observed);
-    if (expected?.manifest === undefined && expected?.digest === undefined) {
+    const expectedDigestValue = expectedDigest ?? expected?.digest;
+    if (expected?.manifest === undefined && expectedDigestValue === undefined) {
       return unknown(observed, expectedDigest ?? null, "未配置期望环境，无法判断漂移", verified);
     }
-    if (expectedDigest !== undefined && expected.digest !== undefined && expected.digest !== expectedDigest) {
+    if (expectedDigest !== undefined && expected?.digest !== undefined && expected.digest !== expectedDigest) {
       return unknown(observed, expectedDigest, "期望清单摘要与锁不一致", verified);
     }
-    if (expected.manifest === undefined) {
-      const digest = expectedDigest ?? expected.digest;
+    if (expected?.manifest === undefined) {
+      const digest = expectedDigestValue;
       if (digest === observed.environmentDigest) {
         return {
           contractVersion: FLEET_CONTRACT_VERSION,
