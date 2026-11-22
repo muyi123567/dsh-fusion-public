@@ -57,8 +57,13 @@ attempt 保存控制面观测；同一 request 重试复用，改变要求为 at
 该回执摘要。面板可读取本机环境、填写主机/摘要/策略并随启动发送。签名工具与 smoke 覆盖
 v3 及环境篡改失败。
 
-验证：插件全量 414 项、原生面板 63 项、v1/v2/v3 签名 smoke 通过；双端类型检查与构建通过。
-真实远端清单采集、worker 内部环境证明与自动对齐仍未交付。
+实机验收：Instabox `muse-logged-in` 隔离 profile 中，真实 AgentTeams `task-2` + loopback SSH
+`m3-local`；错误摘要 `409 environment-drift`，正确摘要 `202`，exit 0，stdout `m3-v3-ok` 摘要匹配；
+v3 回执 `a7971cf4...96bc` 含 environment，离线验签 `verified=true`、`receiptBound=true`。
+证据：`/data/openlet/evidence/dsh-fusion-m3-20261122/`（含 SHA256SUMS）。
+
+验证：插件全量 415 项、原生面板 63 项、v1/v2/v3 签名 smoke 通过；双端类型检查与构建通过。
+真实远端清单采集、worker 内部环境证明、双物理机与自动对齐仍未交付。
 
 ## 开发分支：协作上下文与工作台候选（2026-11-20）
 

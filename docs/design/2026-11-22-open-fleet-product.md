@@ -612,4 +612,10 @@ fleetEnvironment:
 - 回执环境观测是控制面在派发门禁时记录的事实，不是 worker 自报；它证明门禁看到的清单，
   不额外证明 worker 内部运行时与清单完全一致。
 
-验证：插件全量 414 项、原生面板 63 项通过；插件与 client 类型检查、构建、v1/v2/v3 签名 smoke 通过。
+实机验收（2026-11-22）：Instabox `muse-logged-in` 的隔离 profile 中，真实 AgentTeams `task-2`
+与 loopback SSH `m3-local` 完成一次门禁派发。错误摘要返回 `409 environment-drift`，
+正确摘要返回 `202`；worker exit 0，stdout `m3-v3-ok` 的 SHA-256 与回执一致；v3 回执
+`a7971cf4...96bc` 含 environment 观测，离线验签 `verified: true` / `receiptBound: true`。
+证据见 `/data/openlet/evidence/dsh-fusion-m3-20261122/`。
+
+验证：插件全量 415 项、原生面板 63 项通过；插件与 client 类型检查、构建、v1/v2/v3 签名 smoke 通过。
