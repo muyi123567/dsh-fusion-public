@@ -44,9 +44,11 @@ beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e731461
 | 标准槽位 | 宿主 UI | `sidebar.panellist`、`main`、`plugins.detail.section` |
 | JSON Schema | 任意实现 | `docs/design/contracts/` 下的清单、漂移、派发契约 |
 
-M1 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
-`/plugins/dsh-fusion/fleet/{environment,hosts,diff}` 只读路由，以及面板顶部的环境条。
-派发、MCP 工具与自动对齐仍是设计稿；当前执行仍走既有面板与执行路由。
+M1/M2 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
+`/plugins/dsh-fusion/fleet/{environment,hosts,diff}` 只读路由、面板顶部的环境条，
+以及本机 MCP 的四个只读工具：
+`whale_list_hosts`、`whale_host_manifest`、`whale_environment_diff`、`whale_receipt`。
+派发工具、环境门禁与自动对齐仍是设计稿；当前执行仍走既有面板与执行路由。
 
 ```yaml
 - id: dsh-fusion
@@ -56,11 +58,24 @@ M1 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
       expectedManifestPath: /var/lib/dsh-fusion/fleet/expected-manifest.json
       staleAfterSeconds: 900
       secretNames: [DEEPSEEK_API_KEY]
+    fleetMcp:
+      enabled: true
+      port: 8797
 ```
 
 `secretNames` 只记录名称是否存在，不读取值。首次采集会在 `directory` 生成 Ed25519
 主机密钥；远端清单从 `directory/hosts/*.json` 只读加载，过期或无法验签一律显示为
 “环境未知”，不会当作匹配。
+
+`fleetMcp` 默认关闭，只监听 `127.0.0.1`；浏览器 Origin 请求和非本机 Host 一律 403。
+插件会给同 profile 的 `mcpManager` 注册内部只读客户端，DS-Bot Bot 因此能看到
+`mcp__whale-fleet__whale_list_hosts` 等工具。给 Claude、Codex 或脚本发放独立令牌：
+
+```sh
+node packages/plugin/scripts/fleet-mcp-token.mjs --file /var/lib/dsh-fusion/fleet/mcp.json --name chief
+```
+
+令牌只在创建时输出一次，文件只保存 SHA-256；`--list` 查看客户端，`--revoke <id>` 立即失效。
 
 设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·

@@ -30,6 +30,21 @@ task/attempt 回执；签名不符、摘要被改、未签名字段或回执不�
 插件与 client 类型检查、插件 build、client vite build 通过。真实双机、远端公钥信任表和
 自动对齐仍未交付。
 
+### M2：本机 MCP 只读工具（2026-11-22）
+
+已实现 `fleetMcp`：本机 Streamable HTTP、POST-only、无 MCP 会话；带 Origin 头 403，
+Host 必须 loopback，Bearer 令牌按客户端校验。`mcp.json` 只存 SHA-256（0600），
+内部客户端每次激活轮换；`packages/plugin/scripts/fleet-mcp-token.mjs` 创建/列出/撤销外部客户端。
+
+四个只读工具：`whale_list_hosts`、`whale_host_manifest`、`whale_environment_diff`、
+`whale_receipt`。插件通过 `ctx.mcpManager.register('whale-fleet', ...)` 注册给同 profile 的
+DS-Bot Bot 与 DSH Agent；没有 mcpManager 时仅外部客户端可用。
+
+验证：MCP 存储/HTTP 回归 8 项、插件全量 409 项通过；插件类型检查与构建通过。
+`muse-instabox` 在 2026-11-22 21:25 UTC 仍为 Tailscale offline，本机无 Instabox API key，
+因此 DS-Bot Chief 实机调用尚未执行；隔离 profile runbook 已写入
+[DS-Bot M2 runbook](../design/2026-11-22-dsbot-chief-m2-runbook.md)。
+
 ## 开发分支：协作上下文与工作台候选（2026-11-20）
 
 本轮从公开 main `db0cfad` / beta.14 继续开发，尚未提交、推送、发布或替换 production 入口。

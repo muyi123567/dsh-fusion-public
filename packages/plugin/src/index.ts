@@ -78,6 +78,8 @@ import { collectFleetManifest } from "./fleet-environment-collector.js";
 import { hostIdFromPublicKey, verifyFleetManifest } from "./fleet-environment.js";
 import { createWhaleFleetService } from "./fleet-service.js";
 import { createFleetRoutes } from "./fleet-routes.js";
+import { createFleetMcpServer } from "./fleet-mcp.js";
+import { FleetMcpStore } from "./fleet-mcp-store.js";
 
 export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
 export type {
@@ -230,6 +232,15 @@ export interface FusionHostConfig {
     staleAfterSeconds?: number;
     secretNames?: string[];
     displayName?: string;
+  };
+  /**
+   * Local read-only MCP endpoint for DS-Bot bots and external agents. Disabled
+   * by default; tokens are stored as SHA-256 only.
+   */
+  fleetMcp?: {
+    enabled?: boolean;
+    port?: number;
+    tokenFile?: string;
   };
   modelTaskCommands?: string[];
   /**
@@ -1252,6 +1263,58 @@ export async function apply(
       }
     } else {
       ctx.logger?.info?.("dsh-fusion: host has no ctx.provide; whaleFleet stays local to this plugin");
+    }
+    const fleetMcpConfig = config.fleetMcp;
+    let fleetMcpStore: FleetMcpStore | undefined;
+    try {
+      fleetMcpStore = new FleetMcpStore({
+        path: fleetMcpConfig?.tokenFile ?? join(fleetDirectory, "mcp.json"),
+        defaultPort: fleetMcpConfig?.port ?? 8797,
+        enabled: fleetMcpConfig?.enabled === true,
+      });
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-fusion: fleet MCP disabled: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    const mcpEnabled = fleetMcpConfig?.enabled ?? fleetMcpStore?.file.enabled ?? false;
+    if (mcpEnabled && fleetMcpStore !== undefined) {
+      const port = fleetMcpConfig?.port ?? fleetMcpStore.file.port;
+      if (!Number.isInteger(port) || port < 1024 || port > 65_535) {
+        ctx.logger?.warn?.(`dsh-fusion: fleet MCP port invalid: ${String(port)}`);
+      } else {
+        fleetMcpStore.file.enabled = true;
+        fleetMcpStore.file.port = port;
+        try {
+          fleetMcpStore.save();
+          const internalToken = fleetMcpStore.ensureInternalClient();
+          const server = createFleetMcpServer({
+            service: fleetService,
+            store: fleetMcpStore,
+            ...(executionService === undefined ? {} : { execution: executionService }),
+            version: FUSION_PLUGIN_VERSION,
+          });
+          const started = await server.start();
+          ctx.effect?.(() => () => { void server.stop(); });
+          const manager = ctx.get?.("mcpManager") as {
+            register?: (name: string, entry: Record<string, unknown>) => (() => void) | undefined;
+          } | undefined;
+          if (typeof manager?.register === "function") {
+            try {
+              const unregister = manager.register("whale-fleet", {
+                transport: "streamable-http",
+                url: `http://127.0.0.1:${started.port}/mcp`,
+                headers: { authorization: `Bearer ${internalToken}` },
+              });
+              if (typeof unregister === "function") ctx.effect?.(() => unregister);
+            } catch (error) {
+              ctx.logger?.warn?.(`dsh-fusion: MCP manager registration failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          } else {
+            ctx.logger?.info?.("dsh-fusion: mcpManager unavailable; fleet MCP is reachable by external clients only");
+          }
+        } catch (error) {
+          ctx.logger?.warn?.(`dsh-fusion: fleet MCP failed to start: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
     }
     const dispatchPreview = fleetRouter === undefined ? undefined : createDispatchPreviewService({
       configuredNodeIds,

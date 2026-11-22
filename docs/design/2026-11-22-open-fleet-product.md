@@ -554,3 +554,33 @@ fleetEnvironment:
 验证：`fleet-environment`、`fleet-environment-collector`、`fleet-service`、`fleet-routes`
 共 24 项；client 环境条与面板回归 17 项；插件全量 401 项通过；插件与 client 类型检查、
 插件 build、client vite build 通过。以上只证明本地实现，不证明真实双机。
+
+## 18. M2 落地记录（本机 MCP 只读）
+
+已实现：
+
+- `packages/plugin/src/fleet-mcp-store.ts`：`mcp.json` 只存客户端令牌 SHA-256；
+  支持创建、撤销、内部客户端轮换；文件 0600、目录 0700、原子替换。
+- `packages/plugin/src/fleet-mcp.ts`：Streamable HTTP、POST-only、无 MCP 会话；
+  有 `Origin` 头即 403，Host 必须是 loopback；Bearer 令牌按客户端校验；1 MiB 请求上限。
+- 四个只读工具：
+  - `whale_list_hosts`
+  - `whale_host_manifest`（可裁剪 section）
+  - `whale_environment_diff`
+  - `whale_receipt`（taskId/attemptId，只返回回执 hash、退出事实与复核状态）
+- 插件在 `fleetMcp.enabled` 时启动本机服务器，并通过 `ctx.mcpManager.register` 注册
+  `whale-fleet`，让同 profile 的 DS-Bot Bot 与 DSH Agent 自动获得工具。
+- 外部客户端令牌：`packages/plugin/scripts/fleet-mcp-token.mjs --file <mcp.json> --name <client>`；
+  明文只输出一次，`--list`/`--revoke` 管理。
+
+语义边界：
+
+- 只读；没有 dispatch、approval、settings、密钥或任意命令工具。
+- `whale_receipt` 不返回命令文本、脚本正文或文件内容，只返回摘要与状态。
+- 内部令牌每次插件激活轮换，旧令牌立即失效；mcpManager 注册随插件卸载撤销。
+- 没有 `mcpManager` 的宿主仍可通过外部客户端令牌访问本机 MCP，但 Bot 不会自动获得工具。
+- 真实 DS-Bot Chief 调用需要隔离 profile、DS-Bot、mcpManager 与运行中的开发机；
+  本地单元/HTTP 测试不等同该验收。
+
+验证：MCP 存储与 HTTP 回归 8 项；插件全量 409 项通过；类型检查与构建通过。
+真实 Chief 调用见 [DS-Bot M2 runbook](2026-11-22-dsbot-chief-m2-runbook.md)。
