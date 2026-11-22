@@ -582,5 +582,5 @@ fleetEnvironment:
 - 真实 DS-Bot Chief 调用需要隔离 profile、DS-Bot、mcpManager 与运行中的开发机；
   本地单元/HTTP 测试不等同该验收。
 
-验证：MCP 存储与 HTTP 回归 8 项；插件全量 409 项通过；类型检查与构建通过。
+验证：MCP 存储与 HTTP 回归 9 项；插件全量 410 项通过；类型检查与构建通过。
 真实 Chief 调用见 [DS-Bot M2 runbook](2026-11-22-dsbot-chief-m2-runbook.md)。

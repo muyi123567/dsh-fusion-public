@@ -106,6 +106,14 @@ export class FleetMcpStore {
 
   authorize(token: string | undefined): FleetMcpClient | undefined {
     if (token === undefined || token === "") return undefined;
+    // Clients are created and revoked by a local operator (or the token
+    // script) while the server runs. Read the file on each request so a new
+    // grant applies and a revocation fails closed without a plugin reload.
+    try {
+      this.refresh();
+    } catch {
+      return undefined;
+    }
     const digest = Buffer.from(sha256(token), "hex");
     for (const client of this.data.clients) {
       const expected = Buffer.from(client.tokenSha256, "hex");

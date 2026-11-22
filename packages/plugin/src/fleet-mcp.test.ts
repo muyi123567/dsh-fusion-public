@@ -118,6 +118,14 @@ describe("fleet MCP server", () => {
     expect((await fetch(url, { headers: { authorization: `Bearer ${token}` } })).status).toBe(405);
   });
 
+  it("applies newly created and revoked client tokens without a restart", async () => {
+    const { url, store } = await start();
+    const created = store.createClient({ name: "late-client" });
+    expect((await post(url, created.token, rpc(1, "ping"))).status).toBe(200);
+    store.revokeClient(created.client.id);
+    expect((await post(url, created.token, rpc(2, "ping"))).status).toBe(401);
+  });
+
   it("calls list_hosts, manifest, diff and receipt with structured results", async () => {
     const execution = {
       read: vi.fn(async () => ({

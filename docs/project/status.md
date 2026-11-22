@@ -40,7 +40,7 @@ Host 必须 loopback，Bearer 令牌按客户端校验。`mcp.json` 只存 SHA-2
 `whale_receipt`。插件通过 `ctx.mcpManager.register('whale-fleet', ...)` 注册给同 profile 的
 DS-Bot Bot 与 DSH Agent；没有 mcpManager 时仅外部客户端可用。
 
-验证：MCP 存储/HTTP 回归 8 项、插件全量 409 项通过；插件类型检查与构建通过。
+验证：MCP 存储/HTTP 回归 9 项、插件全量 410 项通过；插件类型检查与构建通过。
 `muse-instabox` 在 2026-11-22 21:25 UTC 仍为 Tailscale offline，本机无 Instabox API key，
 因此 DS-Bot Chief 实机调用尚未执行；隔离 profile runbook 已写入
 [DS-Bot M2 runbook](../design/2026-11-22-dsbot-chief-m2-runbook.md)。
