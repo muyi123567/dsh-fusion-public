@@ -1294,22 +1294,31 @@ export async function apply(
           });
           const started = await server.start();
           ctx.effect?.(() => () => { void server.stop(); });
-          const manager = ctx.get?.("mcpManager") as {
-            register?: (name: string, entry: Record<string, unknown>) => (() => void) | undefined;
-          } | undefined;
-          if (typeof manager?.register === "function") {
+          const registerWithManager = (scope: FusionHostContext) => {
+            const manager = ((scope as FusionHostContext & {
+              mcpManager?: { register?: (name: string, entry: Record<string, unknown>) => (() => void) | undefined };
+            }).mcpManager ?? scope.get?.("mcpManager")) as {
+              register?: (name: string, entry: Record<string, unknown>) => (() => void) | undefined;
+            } | undefined;
+            if (typeof manager?.register !== "function") return;
             try {
               const unregister = manager.register("whale-fleet", {
                 transport: "streamable-http",
                 url: `http://127.0.0.1:${started.port}/mcp`,
-                headers: { authorization: `Bearer ${internalToken}` },
+                headers: { Authorization: `Bearer ${internalToken}` },
               });
-              if (typeof unregister === "function") ctx.effect?.(() => unregister);
+              if (typeof unregister === "function") (scope.effect ?? ctx.effect)?.(() => unregister);
             } catch (error) {
               ctx.logger?.warn?.(`dsh-fusion: MCP manager registration failed: ${error instanceof Error ? error.message : String(error)}`);
             }
+          };
+          if (typeof ctx.inject === "function") {
+            ctx.inject(["mcpManager"], (scope) => registerWithManager(scope));
           } else {
-            ctx.logger?.info?.("dsh-fusion: mcpManager unavailable; fleet MCP is reachable by external clients only");
+            registerWithManager(ctx);
+            if (ctx.get?.("mcpManager") === undefined) {
+              ctx.logger?.info?.("dsh-fusion: mcpManager unavailable; fleet MCP is reachable by external clients only");
+            }
           }
         } catch (error) {
           ctx.logger?.warn?.(`dsh-fusion: fleet MCP failed to start: ${error instanceof Error ? error.message : String(error)}`);
