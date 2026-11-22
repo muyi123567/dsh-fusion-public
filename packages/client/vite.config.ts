@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   base: "./",
-  build: {rollupOptions:{input:{main:resolve(import.meta.dirname,"index.html"),gallery:resolve(import.meta.dirname,"design-gallery.html"),dive:resolve(import.meta.dirname,"whale-dive.html"),habitat:resolve(import.meta.dirname,"whale-habitat.html")}}},
+  build: {rollupOptions:{input:{main:resolve(import.meta.dirname,"index.html"),gallery:resolve(import.meta.dirname,"design-gallery.html"),dive:resolve(import.meta.dirname,"whale-dive.html"),habitat:resolve(import.meta.dirname,"whale-habitat.html"),workbench:resolve(import.meta.dirname,"workbench-preview.html"),study:resolve(import.meta.dirname,"design-study.html")}}},
   plugins: [react()],
   test: {
     environment: "jsdom",

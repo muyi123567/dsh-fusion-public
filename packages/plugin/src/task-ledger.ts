@@ -3,7 +3,13 @@ import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { dirname } from "node:path";
 import type { RuntimeTaskRecord } from "./plugin-runtime.js";
 
-const TASK_LEDGER_LIMIT = 200;
+const TASK_LEDGER_TERMINAL_LIMIT = 200;
+
+const TERMINAL_TASK_STATUSES = new Set<RuntimeTaskRecord["status"]>([
+  "completed",
+  "failed",
+  "cancelled",
+]);
 
 const TASK_STATUSES = new Set<RuntimeTaskRecord["status"]>([
   "queued",
@@ -176,10 +182,16 @@ async function renameWithRetry(source: string, target: string): Promise<void> {
 export async function writeTaskLedger(path: string, tasks: RuntimeTaskRecord[]): Promise<void> {
   const directory = dirname(path);
   const tempPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  let terminalCount = 0;
   const records = tasks
     .map(ledgerTask)
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-    .slice(0, TASK_LEDGER_LIMIT);
+    .filter((task) => {
+      // Active tasks must survive restart for inspection and host admission.
+      if (!TERMINAL_TASK_STATUSES.has(task.status)) return true;
+      terminalCount += 1;
+      return terminalCount <= TASK_LEDGER_TERMINAL_LIMIT;
+    });
   await mkdir(directory, { recursive: true, mode: 0o700 });
   try {
     await writeFile(tempPath, `${JSON.stringify({ version: 1, tasks: records }, null, 2)}\n`, {

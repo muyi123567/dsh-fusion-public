@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readdirSync, symlinkSync } from "node:fs";
-import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import {
   HuaweiSshProvider,
   buildHuaweiSshArguments,
+  createHuaweiSshRunner,
   HUAWEI_JOB_REQUIRED_TOOLS,
 } from "./huawei-ssh-provider.js";
 
@@ -117,6 +119,38 @@ describe("HuaweiSshProvider", () => {
     expect(args).toContain("UserKnownHostsFile=C:\\keys\\huawei_known_hosts");
     expect(args).toContain("GlobalKnownHostsFile=/dev/null");
     expect(args).toContain("UpdateHostKeys=no");
+  });
+  it("runs provider scripts in a non-login bash so logout hooks cannot rewrite status", () => {
+    const args = buildHuaweiSshArguments({
+      host: "root@example-huawei",
+      keyPath: "C:\\keys\\huawei",
+    }, "set -eu\nprintf 'result\\n'\nexit 0");
+
+    expect(args.at(-1)).toContain("exec bash -c ");
+    expect(args.at(-1)).toContain("set -eu");
+    expect(args.at(-1)).toContain("exit 0");
+    expect(args.at(-1)).not.toContain("bash -lc");
+  });
+  it.each([0, 1])("preserves a multiline provider script exit status of %i", async (exitCode) => {
+    const root = await mkdtemp(join(tmpdir(), "fusion-ssh-runner-"));
+    const fakeSsh = join(root, "ssh");
+    await writeFile(fakeSsh, "#!/bin/sh\nfor remote_command do :; done\nexec /bin/sh -c \"$remote_command\"\n");
+    await chmod(fakeSsh, 0o700);
+    try {
+      const runner = createHuaweiSshRunner({ host: "fixture", keyPath: "unused", sshPath: fakeSsh });
+      const result = await runner([
+        "set -eu",
+        "if true; then",
+        "  printf 'result\\n'",
+        `  exit ${exitCode}`,
+        "fi",
+      ].join("\n"));
+
+      expect(result.exitCode).toBe(exitCode);
+      expect(result.stdout).toBe("result\n");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
   it("uses a deterministic task id and persists dispatch idempotency metadata", async () => {
     let startCommand = "";
@@ -966,7 +1000,7 @@ describe("Huawei detached job script identity", () => {
     expect(result.signals).toBe("");
   });
 
-  async function workerScenario(options: { pendingCancel?: boolean; cancelWinsLock?: boolean; supervisorTerm?: boolean; childDefaultTerm?: boolean } = {}) {
+  async function workerScenario(options: { pendingCancel?: boolean; cancelWinsLock?: boolean; supervisorTerm?: boolean; childDefaultTerm?: boolean; loginLogoutFailureExitCode?: 0 | 1 } = {}) {
     const root = await mkdtemp(join(tmpdir(), "fusion-huawei-worker-"));
     const jobDir = root.replaceAll("\\", "/");
     let startScript = "";
@@ -974,11 +1008,35 @@ describe("Huawei detached job script identity", () => {
       startScript = script;
       return startOutput();
     } });
-    await provider.dispatch({ goal: "identity fixture", nodeIds: ["huawei-hs-monitor-cn"], command: "true" });
+    const command = options.loginLogoutFailureExitCode === undefined
+      ? "true"
+      : `printf 'result evidence'; exit ${options.loginLogoutFailureExitCode}`;
+    await provider.dispatch({ goal: "identity fixture", nodeIds: ["huawei-hs-monitor-cn"], command });
     const worker = startScript.split("<<'HUAWEI_JOB_WORKER' &\n")[1]?.split("\nHUAWEI_JOB_WORKER\n")[0];
     if (!worker) throw new Error("Missing worker script");
     const prefix = worker.slice(0, worker.indexOf("limit_stream() {"));
     const finalization = worker.slice(worker.indexOf('exec 9>"$job_dir/state.lock"'));
+    const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+    let shellPrelude = "";
+    if (options.loginLogoutFailureExitCode !== undefined) {
+      const fakeBin = join(root, "bin");
+      const fakeHome = join(root, "home");
+      await mkdir(fakeBin);
+      await mkdir(fakeHome);
+      await writeFile(join(fakeHome, ".bash_logout"), "exit 1\n");
+      await writeFile(join(fakeBin, "bash"), [
+        "#!/bin/sh",
+        'if [ "${1:-}" = "-lc" ]; then',
+        "  /bin/bash \"$@\"",
+        '  if [ -f "$HOME/.bash_logout" ]; then . "$HOME/.bash_logout"; fi',
+        '  exit "$?"',
+        "fi",
+        'exec /bin/bash "$@"',
+        "",
+      ].join("\n"));
+      await chmod(join(fakeBin, "bash"), 0o700);
+      shellPrelude = `HOME=${quote(fakeHome)}\nPATH=${quote(fakeBin)}:$PATH`;
+    }
     const prelude = [
       "sync() { :; }",
       options.cancelWinsLock
@@ -989,17 +1047,22 @@ describe("Huawei detached job script identity", () => {
       `    /proc/sys/kernel/random/boot_id) printf '%s\\n' '${bootId}' ;;`,
       `    /proc/*/stat) printf '%s (worker ) special name) S 1 %s %s ${Array(15).fill("0").join(" ")} 987654\\n' "$$" "$$" "$$" ;;`,
       '    *) command cat "$@" ;;', "  esac", "}",
-      "exec 3<<<'dHJ1ZQ=='",
     ].join("\n");
     try {
       await writeFile(join(root, "status"), "STARTING");
+      const commandB64 = Buffer.from(command).toString("base64");
+      if (options.loginLogoutFailureExitCode !== undefined) {
+        const script = `${shellPrelude}\n${prelude}\nexec 3<<<'${commandB64}'\n${worker}`;
+        await execute(process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "bash", ["-c", script, "worker-test", jobDir, "65536"], { timeout: 10_000 });
+      } else {
       if (options.pendingCancel) await writeFile(join(root, "cancel.requested"), "1");
       const childProbe = options.childDefaultTerm
         ? `bash -c 'kill -TERM "$$"; exit 0'\nchild_exit=$?\nif [ "$child_exit" -eq 0 ]; then exit 124; fi`
         : "";
-      const script = `${prelude}\n${prefix}\n${options.supervisorTerm ? 'kill -TERM "$$"' : ''}\n${childProbe}\nprintf 'result evidence' > "$job_dir/stdout.part"\nexit_code=0\n${finalization}`;
+      const script = `${prelude}\nexec 3<<<'${commandB64}'\n${prefix}\n${options.supervisorTerm ? 'kill -TERM "$$"' : ''}\n${childProbe}\nprintf 'result evidence' > "$job_dir/stdout.part"\nexit_code=0\n${finalization}`;
       await execute(process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "bash", ["-c", script, "worker-test", jobDir, "65536"], { timeout: 10_000 });
-      const files = await Promise.all(["pid", "boot_id", "pid_starttime", "session_id", "process_group_id", "status", "exit", "stdout"].map(async (file) => [file, await readFile(join(root, file), "utf8").catch(() => "")]));
+      }
+      const files = await Promise.all(["pid", "boot_id", "pid_starttime", "session_id", "process_group_id", "status", "exit", "stdout", "output.complete"].map(async (file) => [file, await readFile(join(root, file), "utf8").catch(() => "")]));
       return Object.fromEntries(files) as Record<string, string>;
     } finally { await rm(root, { recursive: true, force: true }); }
   }
@@ -1025,6 +1088,15 @@ describe("Huawei detached job script identity", () => {
     const files = await workerScenario({ childDefaultTerm: true });
     expect(files.status?.trim()).toBe("COMPLETED");
     expect(files.stdout).toBe("result evidence");
+  });
+
+  it.each([0, 1] as const)("keeps worker exit code %i when a login-shell logout hook would fail", async (exitCode) => {
+    const command = `printf 'result evidence'; exit ${exitCode}`;
+    const files = await workerScenario({ loginLogoutFailureExitCode: exitCode });
+    expect(files.status?.trim()).toBe(exitCode === 0 ? "COMPLETED" : "FAILED");
+    expect(files.exit?.trim()).toBe(String(exitCode));
+    expect(files.stdout).toBe("result evidence");
+    expect(files["output.complete"]?.trim()).toBe(createHash("sha256").update(command).digest("hex"));
   });
 
   it("does not overwrite a confirmed cancellation when the worker resumes finalization", async () => {
@@ -1386,6 +1458,93 @@ describe("Huawei cancel-time output totals (real local execution)", () => {
       } finally {
         await rm(root, { recursive: true, force: true });
         await rm(shim, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "isolates a material-aware execution workspace and hashes bounded file bytes",
+    async () => {
+      const root = await mkdtemp(join(tmpdir(), "fusion-huawei-material-workspace-"));
+      const provider = new HuaweiSshProvider({
+        host: "fake",
+        keyPath: "unused",
+        nodeId: "huawei-test-node",
+        jobRoot: root,
+        run: localRunner(process.env.PATH ?? "/usr/bin:/bin"),
+      });
+      const files = {
+        "src/revision.txt": "code bytes",
+        "inputs/test.json": "{\"case\":1}",
+        "runtime/identity.json": "runtime bytes",
+        "config/checks.json": "check bytes",
+        "dist/result.bin": "artifact bytes",
+      };
+      const command = `mkdir -p src inputs runtime config dist; printf 'code bytes' > src/revision.txt; printf '{"case":1}' > inputs/test.json; printf 'runtime bytes' > runtime/identity.json; printf 'check bytes' > config/checks.json; printf 'artifact bytes' > dist/result.bin; printf '%s|%s' "$FUSION_ATTEMPT_ID" "$FUSION_DSH_SOURCE_REVISION"`;
+      const executionWorkspace = { id: "attempt-material-1", sourceRevision: "3", sourceDigest: "a".repeat(64) };
+      const paths = Object.keys(files);
+      try {
+        const dispatched = await provider.dispatch({
+          goal: "material contract fixture",
+          nodeIds: ["huawei-test-node"],
+          command,
+          idempotencyKey: "material-attempt-1",
+          dispatchFingerprint: "b".repeat(64),
+          executionWorkspace,
+        });
+        let task = dispatched;
+        for (let attempt = 0; attempt < 100 && task.status === "running"; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          task = await provider.inspect(dispatched.id);
+        }
+        expect(task.status).toBe("completed");
+        const observed = await provider.readExecutionMaterialFiles(dispatched.id, executionWorkspace.id, paths);
+        expect(observed?.workspaceId).toBe(executionWorkspace.id);
+        expect(observed?.workspacePath).toBe(`${root}/${dispatched.id}/workspace`);
+        expect(observed?.sourceRevision).toBe(executionWorkspace.sourceRevision);
+        expect(observed?.sourceDigest).toBe(executionWorkspace.sourceDigest);
+        expect(observed?.files.map(({ path, digest, bytes }) => ({ path, digest, bytes }))).toEqual(
+          Object.entries(files).map(([path, content]) => ({
+            path,
+            digest: createHash("sha256").update(content).digest("hex"),
+            bytes: Buffer.byteLength(content),
+          })),
+        );
+
+        const spoofedProvider = new HuaweiSshProvider({
+          host: "fake",
+          keyPath: "unused",
+          nodeId: "huawei-test-node",
+          jobRoot: root,
+          run: async (script) => {
+            const result = await localRunner(process.env.PATH ?? "/usr/bin:/bin")(script);
+            if (script.includes("HUAWEI_EXECUTION_MATERIAL_READ")) {
+              return {
+                ...result,
+                stdout: result.stdout.replace(
+                  `WORKSPACE_PATH=${root}/${dispatched.id}/workspace`,
+                  `WORKSPACE_PATH=${root}/other-attempt/workspace`,
+                ),
+              };
+            }
+            return result;
+          },
+        });
+        await expect(spoofedProvider.readExecutionMaterialFiles(dispatched.id, executionWorkspace.id, paths))
+          .resolves.toBeUndefined();
+
+        const workspace = observed!.workspacePath;
+        const outside = join(root, "outside.txt");
+        await writeFile(outside, "outside bytes");
+        await rm(join(workspace, "src/revision.txt"));
+        symlinkSync(outside, join(workspace, "src/revision.txt"));
+        await expect(provider.readExecutionMaterialFiles(dispatched.id, executionWorkspace.id, paths))
+          .resolves.toBeUndefined();
+        await expect(provider.readExecutionMaterialFiles(dispatched.id, executionWorkspace.id, ["../outside.txt"]))
+          .resolves.toBeUndefined();
+      } finally {
+        await rm(root, { recursive: true, force: true });
       }
     },
     30_000,

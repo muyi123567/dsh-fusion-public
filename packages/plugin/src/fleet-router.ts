@@ -31,7 +31,20 @@ export interface RoutableFleetProvider {
    * sees the failing machine instead of a fleet that merely looks degraded.
    */
   providerHealth?(): Promise<Record<string, RuntimeProviderHealthStatus>>;
-  dispatch(input: { goal: string; nodeIds: string[]; command?: string }): Promise<RuntimeTaskRecord>;
+  dispatch(input: {
+    goal: string;
+    nodeIds: string[];
+    command?: string;
+    executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
+    executionMaterialsDigest?: string;
+  }): Promise<RuntimeTaskRecord>;
+  readExecutionMaterialFiles?(taskId: string, workspaceId: string, paths: readonly string[]): Promise<{
+    workspacePath: string;
+    workspaceId: string;
+    sourceRevision: string;
+    sourceDigest: string;
+    files: Array<{ path: string; digest: string; bytes: number }>;
+  } | undefined>;
   doctor(nodeId?: string): Promise<{ node: RuntimeNodeRecord; evidence: RuntimeTaskRecord["evidence"] }>;
   inspect?(taskId: string): Promise<RuntimeTaskRecord>;
   cancel?(taskId: string): Promise<void>;
@@ -42,9 +55,13 @@ export function createDispatchFingerprint(input: {
   goal: string;
   command?: string;
   nodeIds: string[];
+  executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
+  executionMaterialsDigest?: string;
 }): string {
   return createHash("sha256").update(JSON.stringify({
     command: input.command ?? "",
+    ...(input.executionWorkspace === undefined ? {} : { executionWorkspace: input.executionWorkspace }),
+    ...(input.executionMaterialsDigest === undefined ? {} : { executionMaterialsDigest: input.executionMaterialsDigest }),
     goal: input.goal,
     nodeIds: [...new Set(input.nodeIds)],
   })).digest("hex");
@@ -565,11 +582,40 @@ export class FleetRouter implements RoutableFleetProvider {
     return statuses;
   }
 
+  /** The single-worker address of an already bound execution intent. */
+  executionTaskId(nodeId: string, idempotencyKey: string): string {
+    const route = this.executionRoute(nodeId);
+    return deterministicTaskId(route, idempotencyKey, [nodeId]);
+  }
+
+  /** Read the identified worker directly, without cached ledger metadata. */
+  async inspectExecution(nodeId: string, taskId: string): Promise<RuntimeTaskRecord> {
+    return await this.inspectWithBudget(this.executionRoute(nodeId).provider, taskId);
+  }
+
+  async readRoutedExecutionMaterialFiles(nodeId: string, taskId: string, workspaceId: string, paths: readonly string[]) {
+    const provider = this.executionRoute(nodeId).provider;
+    if (provider.readExecutionMaterialFiles === undefined) return undefined;
+    return await provider.readExecutionMaterialFiles(taskId, workspaceId, paths);
+  }
+
+  supportsExecutionMaterials(nodeId: string): boolean {
+    return this.executionRoute(nodeId).provider.readExecutionMaterialFiles !== undefined;
+  }
+
+  private executionRoute(nodeId: string): FleetRoute {
+    const route = this.routes.find((candidate) => candidate.nodeIds.includes(nodeId));
+    if (route?.provider.inspect === undefined) throw new Error("FLEET_EXECUTION_WORKER_UNAVAILABLE");
+    return route;
+  }
+
   async dispatch(input: {
     goal: string;
     nodeIds: string[];
     command?: string;
     idempotencyKey?: string;
+    executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
+    executionMaterialsDigest?: string;
   }): Promise<RuntimeTaskRecord> {
     const key = input.idempotencyKey?.trim();
     if (key === undefined) return this.dispatchToFleet(input);
@@ -644,6 +690,8 @@ export class FleetRouter implements RoutableFleetProvider {
     command?: string;
     idempotencyKey?: string;
     dispatchFingerprint?: string;
+    executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
+    executionMaterialsDigest?: string;
   }, capacityReserved = false): Promise<RuntimeTaskRecord> {
     const requestedNodeIds = [...new Set(input.nodeIds)];
     const selected = this.routes.flatMap((route) => {

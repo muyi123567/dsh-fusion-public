@@ -1,9 +1,10 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { NativeWhalePanel } from "./NativeWhalePanel.js";
 import { buildWhalePanelModel } from "../whale/model.js";
 import type { NodeRecord, TaskRecord } from "@dsh-fusion/core";
+import type { NativePanelData } from "./types.js";
 
 vi.mock("./use-native-data.js",()=>({useNativeData:()=>({data,refresh:vi.fn(),refreshing:false})}));
 vi.mock("./NativeOceanBoundary.js",async()=>{
@@ -21,8 +22,8 @@ vi.mock("./NativeOceanBoundary.js",async()=>{
 });
 const task:TaskRecord={id:"task-1",goal:"验证任务",targetNodeIds:["host-1"],transport:"ssh",status:"running",evidence:[],createdAt:"",updatedAt:""};
 const host:NodeRecord={id:"host-1",externalId:"host-1",providerId:"test",name:"测试主机",platform:"linux",roles:["worker"],status:"online",transports:["ssh"],capabilities:[],configState:"unknown"};
-const initialData={tasks:[task],nodes:[host],teams:[],loaded:true,model:buildWhalePanelModel({nodes:[host],tasks:[task],demo:false,loaded:true,stale:false})};
-let data=initialData;
+const initialData:NativePanelData={tasks:[task],nodes:[host],teams:[],loaded:true,model:buildWhalePanelModel({nodes:[host],tasks:[task],demo:false,loaded:true,stale:false})};
+let data:NativePanelData=initialData;
 const setTasks=(tasks:TaskRecord[])=>{data={...data,tasks,model:buildWhalePanelModel({nodes:data.nodes,tasks,agentTeams:data.teams,demo:false,loaded:true,stale:false})};};
 afterEach(()=>{cleanup();data=initialData;});
 
@@ -57,6 +58,40 @@ it("does not handle Escape or move focus from the adjacent DSH session",async()=
  await user.keyboard("{Escape}");
  expect(screen.getByRole("textbox",{name:"DSH 会话"})).toHaveFocus();
  expect(screen.getByRole("region",{name:"任务详情"})).toBeInTheDocument();
+});
+
+it("shows environment drift from the snapshot without replacing task navigation",()=>{
+ data={...initialData,environment:{
+  hostId:`sha256:${"a".repeat(64)}`,displayName:"worker",observedAt:"2026-11-22T10:00:00Z",
+  digest:`sha256:${"a".repeat(64)}`,overall:"drift",stale:false,signed:true,
+  items:[{code:"bundle.version",severity:"block",path:"bundles[dsh-fusion].version",expected:"0.2.0-beta.15",actual:"0.2.0-beta.14",remedy:"升级并重启"}],
+ }};
+ render(<NativeWhalePanel/>);
+ const region=screen.getByLabelText("环境一致性");
+ expect(within(region).getByRole("status")).toHaveTextContent("环境漂移 · 1 项");
+ expect(screen.getByRole("button",{name:/验证任务/})).toBeVisible();
+});
+
+it("keeps the task browser beside the reader in a wide panel and leaves Escape in the search field",async()=>{
+ const width=vi.spyOn(HTMLElement.prototype,"clientWidth","get").mockReturnValue(850);
+ try {
+  const user=userEvent.setup();
+  render(<NativeWhalePanel/>);
+  const row=screen.getByRole("button",{name:/验证任务/});
+  await user.click(row);
+  expect(row).toHaveAttribute("aria-current","true");
+  expect(screen.getByRole("region",{name:"任务详情"})).toBeVisible();
+  await user.click(screen.getByRole("textbox",{name:"搜索名称或归属"}));
+  await user.keyboard("{Escape}");
+  expect(screen.getByRole("region",{name:"任务详情"})).toBeVisible();
+  expect(screen.getByRole("textbox",{name:"搜索名称或归属"})).toHaveFocus();
+  const navigation=screen.getByLabelText("详情导航");
+  fireEvent.keyDown(navigation,{key:"Escape",keyCode:229});
+  expect(screen.getByRole("region",{name:"任务详情"})).toBeVisible();
+  fireEvent.keyDown(navigation,{key:"Escape"});
+  expect(screen.queryByRole("region",{name:"任务详情"})).not.toBeInTheDocument();
+  expect(row).toHaveFocus();
+ } finally { width.mockRestore(); }
 });
 
 

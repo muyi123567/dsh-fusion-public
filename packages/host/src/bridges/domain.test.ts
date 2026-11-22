@@ -88,6 +88,8 @@ describe("fusion domain bridges", () => {
     });
     expect(result.tasks[0]).toMatchObject({
       id: "agent-teams:release:review",
+      goal: "Review release",
+      description: "Review the release candidate",
       status: "claimed",
       transport: "dsh-fleet",
       dependsOnTaskIds: ["agent-teams:release:implement"],
@@ -152,6 +154,55 @@ describe("fusion domain bridges", () => {
         writeScopeWarnings: ["packages/plugin/src overlaps design"],
       },
     });
+  });
+
+  it.each([
+    ["multiline", "\n  Preserve the task body.\r\n\r\nReview <details> literally.  \n"],
+    ["explicitly empty", ""],
+  ])("preserves %s legacy task descriptions alongside subjects", (_label, description) => {
+    const snapshot = { teams: [{
+      teamId: "release",
+      tasks: [{ id: "review", subject: "Review release", description, status: "pending" }],
+    }] };
+    const before = structuredClone(snapshot);
+    const result = mapAgentTeamsSnapshot(snapshot);
+
+    expect(result.tasks[0]).toHaveProperty("description", description);
+    expect(result.tasks[0]?.goal).toBe("Review release");
+    expect(snapshot).toEqual(before);
+  });
+
+  it.each([{}, { description: undefined }, { description: null }, { description: 42 }])(
+    "leaves unavailable legacy task descriptions absent %#",
+    (descriptionFields) => {
+      const result = mapAgentTeamsSnapshot({ teams: [{
+        teamId: "release",
+        tasks: [{ id: "review", subject: "Review release", status: "pending", ...descriptionFields }],
+      }] });
+
+      expect(result.tasks[0]).not.toHaveProperty("description");
+      expect(result.tasks[0]?.goal).toBe("Review release");
+    },
+  );
+
+  it("retains the legacy goal fallback when only a description is supplied", () => {
+    const result = mapAgentTeamsSnapshot({ teams: [{
+      teamId: "release",
+      tasks: [{ id: "review", description: "\nReview the release candidate.\n", status: "pending" }],
+    }] });
+
+    expect(result.tasks[0]?.goal).toBe("\nReview the release candidate.\n");
+    expect(result.tasks[0]).toHaveProperty("description", "\nReview the release candidate.\n");
+  });
+
+  it("keeps explicitly empty legacy subjects as the goal", () => {
+    const result = mapAgentTeamsSnapshot({ teams: [{
+      teamId: "release",
+      tasks: [{ id: "review", subject: "", description: "Review the release candidate.", status: "pending" }],
+    }] });
+
+    expect(result.tasks[0]?.goal).toBe("");
+    expect(result.tasks[0]).toHaveProperty("description", "Review the release candidate.");
   });
 
   it("maps Agent Bus tasks, reports, sessions, and flows", () => {

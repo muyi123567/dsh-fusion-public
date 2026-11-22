@@ -94,6 +94,7 @@ function mapTask(task: NativeTeamTask, root: NativeSessionSummary): TaskRecord {
   return {
     id: key + ":" + encodeURIComponent(task.id),
     goal: task.subject,
+    description: task.description,
     targetNodeIds: [],
     dependsOnTaskIds: task.blockedBy.map((id) => key + ":" + encodeURIComponent(id)),
     agentTeamTask: {

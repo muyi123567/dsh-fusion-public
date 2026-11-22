@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { posix } from "node:path";
 import type {
   ExecCapabilityObservation,
   NodeRecord,
@@ -9,9 +10,10 @@ import type {
   TaskRecord,
 } from "@dsh-fusion/core";
 import { createProviderStatus } from "@dsh-fusion/core";
-import type { FleetDispatchInput, FleetProvider } from "./fleet-provider.js";
+import type { ExecutionMaterialWorkspaceFiles, FleetDispatchInput, FleetProvider } from "./fleet-provider.js";
 import { normalizeEvidenceValue } from "../tasks/evidence.js";
 import { execCapabilityProbeCommand, parseExecCapabilityProbe } from "./exec-capability-probe.js";
+import { readWorkerExecutionObservation } from "./worker-execution.js";
 
 export interface SshCommandResult {
   stdout: string;
@@ -69,7 +71,11 @@ const DEFAULT_JOB_ROOT = "/var/lib/dsh-fusion/jobs";
 const DEFAULT_OUTPUT_LIMIT_BYTES = 64 * 1024;
 const MAX_OUTPUT_LIMIT_BYTES = 512 * 1024;
 const MIN_OUTPUT_LIMIT_BYTES = 16;
+const MAX_EXECUTION_MATERIAL_FILE_BYTES = 256 * 1024;
+const MAX_EXECUTION_MATERIAL_TOTAL_BYTES = 512 * 1024;
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const SAFE_WORKSPACE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const SAFE_MATERIAL_PATH = /^[A-Za-z0-9._/-]{1,512}$/;
 export const HUAWEI_JOB_REQUIRED_TOOLS = [
   "base64", "sha256sum", "sync", "date", "mkdir", "chmod", "cp", "mv", "rm", "sleep",
   "wc", "tr", "head", "cat", "mkfifo", "nohup", "setsid", "flock", "dd",
@@ -107,6 +113,64 @@ function parseKeyValueLines(stdout: string): Record<string, string> {
     result[key] = line.slice(separator + 1).trim();
   }
   return result;
+}
+
+function validExecutionMaterialPath(value: string): boolean {
+  return SAFE_MATERIAL_PATH.test(value) && !value.startsWith("/")
+    && !value.split("/").some(part => part === "" || part === "." || part === "..")
+    && !value.includes("\\");
+}
+
+function parseExecutionMaterialFiles(
+  stdout: string,
+  workspaceId: string,
+  paths: readonly string[],
+): ExecutionMaterialWorkspaceFiles | undefined {
+  const values = new Map<string, string>();
+  for (const line of stdout.split(/\r?\n/u)) {
+    if (line === "") continue;
+    const separator = line.indexOf("=");
+    if (separator < 1) return undefined;
+    const key = line.slice(0, separator);
+    if (values.has(key)) return undefined;
+    values.set(key, line.slice(separator + 1));
+  }
+  const workspacePath = values.get("WORKSPACE_PATH");
+  const sourceRevision = values.get("SOURCE_REVISION");
+  const sourceDigest = values.get("SOURCE_SHA256");
+  if (workspacePath === undefined || !workspacePath.startsWith("/") || workspacePath.length > 1024
+    || workspacePath.includes("\\") || /[\u0000-\u001f\u007f]/u.test(workspacePath)
+    || workspacePath.split("/").some(part => part === "." || part === "..")
+    || sourceRevision === undefined || !/^\d{1,16}$/u.test(sourceRevision)
+    || sourceDigest === undefined || !/^[a-f0-9]{64}$/u.test(sourceDigest)
+    || values.get("WORKSPACE_ID") !== workspaceId || values.get("MATERIAL_COUNT") !== String(paths.length)) return undefined;
+
+  const expectedKeys = new Set(["WORKSPACE_PATH", "WORKSPACE_ID", "SOURCE_REVISION", "SOURCE_SHA256", "MATERIAL_COUNT"]);
+  const files: Array<{ path: string; bytes: Buffer; digest: string }> = [];
+  let total = 0;
+  for (const [index, path] of paths.entries()) {
+    const prefix = `MATERIAL_${index}_`;
+    const returnedPath = values.get(`${prefix}PATH`);
+    const byteText = values.get(`${prefix}BYTES`);
+    const encoded = values.get(`${prefix}BASE64`);
+    if (returnedPath !== path || byteText === undefined || !/^(?:0|[1-9][0-9]*)$/u.test(byteText)
+      || encoded === undefined || encoded.length > 4 * Math.ceil(MAX_EXECUTION_MATERIAL_FILE_BYTES / 3)
+      || Buffer.from(encoded, "base64").toString("base64") !== encoded) return undefined;
+    const bytes = Buffer.from(encoded, "base64");
+    const size = Number(byteText);
+    if (!Number.isSafeInteger(size) || size !== bytes.length || size > MAX_EXECUTION_MATERIAL_FILE_BYTES) return undefined;
+    total += size;
+    if (total > MAX_EXECUTION_MATERIAL_TOTAL_BYTES) return undefined;
+    files.push({ path, bytes, digest: createHash("sha256").update(bytes).digest("hex") });
+    expectedKeys.add(`${prefix}PATH`);
+    expectedKeys.add(`${prefix}BYTES`);
+    expectedKeys.add(`${prefix}BASE64`);
+  }
+  if (values.size !== expectedKeys.size || [...values.keys()].some(key => !expectedKeys.has(key))) return undefined;
+  return {
+    workspaceId, workspacePath, sourceRevision, sourceDigest,
+    files: files.map(({ path, digest, bytes }) => ({ path, digest, bytes: bytes.length })),
+  };
 }
 
 function finiteNumber(value: string | undefined): number | undefined {
@@ -306,7 +370,11 @@ export function buildHuaweiSshArguments(
   args.push(
     "-o", "ConnectTimeout=12",
     options.host,
-    `bash -lc ${shellQuote(command)}`,
+    // Do not start a login shell for provider scripts. Some managed images
+    // run a logout hook that changes a successful `exit 0` into status 1
+    // after the command has already emitted its result. Replacing the SSH
+    // command shell also keeps the status owned by the script itself.
+    `exec bash -c ${shellQuote(command)}`,
   );
   return args;
 }
@@ -540,6 +608,9 @@ const JOB_WORKER_SCRIPT = [
   "trap ':' TERM",
   "job_dir=$1",
   "output_limit=$2",
+  "execution_workspace_id=$3",
+  "execution_source_revision=$4",
+  "execution_source_digest=$5",
   "IFS= read -r command_b64 <&3 || exit 125",
   "exec 3<&-",
   "command=$(printf '%s' \"$command_b64\" | base64 -d) || exit 125",
@@ -592,7 +663,10 @@ const JOB_WORKER_SCRIPT = [
   " total += len(chunk)",
   " tmp=open(sys.argv[3] + \".tmp\", \"w\"); tmp.write(str(total) + \"\\n\"); tmp.close()",
   " import os; os.replace(sys.argv[3] + \".tmp\", sys.argv[3])",
-  " if start < limit: out.write(chunk[:limit-start])' \"$limit\" \"$path\" \"$total_path\"",
+  " if start < limit: out.write(chunk[:limit-start])",
+  "if total == 0:",
+  " tmp=open(sys.argv[3] + \".tmp\", \"w\"); tmp.write(\"0\\n\"); tmp.close()",
+  " import os; os.replace(sys.argv[3] + \".tmp\", sys.argv[3])' \"$limit\" \"$path\" \"$total_path\"",
   "  else",
   // No-python3 fallback, chunked the same way: one dd block
   // is one raw read on a pipe (no fill-until-count loop like
@@ -603,17 +677,18 @@ const JOB_WORKER_SCRIPT = [
   "    kept=0",
   "    chunk_path=\"$total_path.chunk\"",
   "    while :; do",
-  "      dd bs=65536 count=1 of=\"$chunk_path\" 2>/dev/null",
-  "      n=$(wc -c < \"$chunk_path\" | tr -d \"[:space:]\")",
+  "      dd bs=65536 count=1 of=\"$chunk_path\" 2>/dev/null || return 1",
+  "      n=$(wc -c < \"$chunk_path\") || return 1",
   "      if [ \"$n\" -eq 0 ]; then break; fi",
   "      total=$((total + n))",
-  "      printf '%s\\n' \"$total\" > \"$total_path.tmp.$$\"",
-  "      mv -f -- \"$total_path.tmp.$$\" \"$total_path\"",
+  "      printf '%s\\n' \"$total\" > \"$total_path.tmp.$$\" || return 1",
+  "      mv -f -- \"$total_path.tmp.$$\" \"$total_path\" || return 1",
   "      room=$((limit - kept))",
   "      take=$n",
   "      if [ \"$take\" -gt \"$room\" ]; then take=$room; fi",
-  "      if [ \"$take\" -gt 0 ]; then head -c \"$take\" -- \"$chunk_path\" >> \"$path\"; kept=$((kept + take)); fi",
+  "      if [ \"$take\" -gt 0 ]; then head -c \"$take\" -- \"$chunk_path\" >> \"$path\" || return 1; kept=$((kept + take)); fi",
   "    done",
+  '    if [ "$total" -eq 0 ]; then write_atomic "$total_path" 0 || return 1; fi',
   "    rm -f -- \"$chunk_path\"",
   "  fi",
   "}",
@@ -625,19 +700,40 @@ const JOB_WORKER_SCRIPT = [
   "stdout_writer=$!",
   "limit_stream \"$output_limit\" \"$job_dir/stderr.part\" \"$job_dir/stderr.total\" < \"$stderr_pipe\" &",
   "stderr_writer=$!",
-  "bash -lc \"$command\" > \"$stdout_pipe\" 2> \"$stderr_pipe\"",
+  'command_digest=$(printf "%s" "$command" | sha256sum) || command_digest=""',
+  'command_digest=${command_digest%% *}',
+  'if [ -n "$execution_workspace_id" ]; then',
+  '  workspace_dir="$job_dir/workspace"',
+  '  [ -d "$workspace_dir" ] && [ ! -L "$workspace_dir" ] || exit 125',
+  '  workspace_path=$(cd -- "$workspace_dir" && pwd -P) || exit 125',
+  '  cd -- "$workspace_path" || exit 125',
+  '  export FUSION_ATTEMPT_WORKSPACE="$workspace_path"',
+  '  export FUSION_ATTEMPT_ID="$execution_workspace_id"',
+  '  export FUSION_DSH_SOURCE_REVISION="$execution_source_revision"',
+  '  export FUSION_DSH_SOURCE_SHA256="$execution_source_digest"',
+  'fi',
+  // The worker command is already bounded by Fusion's allowlist. Keep it in
+  // a non-login shell so a remote profile/logout hook cannot rewrite its
+  // terminal status after the command has emitted its output.
+  "bash -c \"$command\" > \"$stdout_pipe\" 2> \"$stderr_pipe\"",
   "exit_code=$?",
-  "wait \"$stdout_writer\" \"$stderr_writer\"",
+  'capture_ok=1',
+  'wait "$stdout_writer" || capture_ok=0',
+  'wait "$stderr_writer" || capture_ok=0',
   "rm -f -- \"$stdout_pipe\" \"$stderr_pipe\"",
   // Serialize terminal publication with cancellation, after command children
   // exit so they cannot retain the lock descriptor.
   'exec 9>"$job_dir/state.lock"',
   'flock -x -w 5 9 || exit 125',
   'if [ "$(cat -- "$job_dir/status")" = CANCELLED ]; then exit 0; fi',
-  "sync -- \"$job_dir/stdout.part\" \"$job_dir/stderr.part\"",
-  "cp -p -- \"$job_dir/stdout.part\" \"$job_dir/stdout\"",
-  "cp -p -- \"$job_dir/stderr.part\" \"$job_dir/stderr\"",
-  "sync -- \"$job_dir/stdout\" \"$job_dir/stderr\"",
+  'sync -- "$job_dir/stdout.part" "$job_dir/stderr.part" || capture_ok=0',
+  'cp -p -- "$job_dir/stdout.part" "$job_dir/stdout" || capture_ok=0',
+  'cp -p -- "$job_dir/stderr.part" "$job_dir/stderr" || capture_ok=0',
+  'sync -- "$job_dir/stdout" "$job_dir/stderr" || capture_ok=0',
+  // Publish a capture marker only after both streams have been read to EOF and copied.
+  'if [ "${capture_ok:-0}" = 1 ] && [ -n "$command_digest" ]; then',
+  '  write_atomic "$job_dir/output.complete" "$command_digest"',
+  'fi',
   "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   // A request alone is not a confirmed cancellation. The canceller publishes
   // CANCELLED only after observing that the process group has stopped.
@@ -660,6 +756,7 @@ function startJobCommand(
   limit: number,
   idempotencyKey?: string,
   requestFingerprint?: string,
+  executionWorkspace?: FleetDispatchInput["executionWorkspace"],
 ): string {
   const encodedCommand = Buffer.from(command, "utf8").toString("base64");
   return [
@@ -671,6 +768,9 @@ function startJobCommand(
     `command_sha256=${shellQuote(commandHash)}`,
     `idempotency_key=${shellQuote(idempotencyKey ?? "")}`,
     `request_sha256=${shellQuote(requestFingerprint ?? "")}`,
+    `execution_workspace_id=${shellQuote(executionWorkspace?.id ?? "")}`,
+    `execution_source_revision=${shellQuote(executionWorkspace?.sourceRevision ?? "")}`,
+    `execution_source_digest=${shellQuote(executionWorkspace?.sourceDigest ?? "")}`,
     `command_b64=${shellQuote(encodedCommand)}`,
     `for tool in ${HUAWEI_JOB_REQUIRED_TOOLS.join(" ")}; do`,
     '  if ! command -v "$tool" >/dev/null 2>&1; then',
@@ -678,6 +778,10 @@ function startJobCommand(
     "    exit 127",
     "  fi",
     "done",
+    'if [ -n "$execution_workspace_id" ] && ! command -v python3 >/dev/null 2>&1; then',
+    "  printf 'HUAWEI_MATERIAL_READER_UNAVAILABLE\\n' >&2",
+    "  exit 127",
+    "fi",
     "umask 077",
     'mkdir -p -- "$job_dir"',
     'chmod 700 -- "$job_dir"',
@@ -693,10 +797,23 @@ function startJobCommand(
     "  sync -- \"$tmp\"",
     "  mv -f -- \"$tmp\" \"$target\"",
     "}",
+    'write_atomic "$job_dir/task_id" "$task_id"',
     'write_atomic "$job_dir/command.sha256" "$command_sha256"',
     'if [ -n "$idempotency_key" ]; then write_atomic "$job_dir/idempotency.key" "$idempotency_key"; fi',
     'if [ -n "$request_sha256" ]; then write_atomic "$job_dir/request.sha256" "$request_sha256"; fi',
     'write_atomic "$job_dir/output.limit" "$output_limit"',
+    'if [ -n "$execution_workspace_id" ]; then',
+    '  case "$execution_workspace_id" in *[!A-Za-z0-9._:-]*) exit 2 ;; esac',
+    '  case "$execution_source_revision" in ""|*[!A-Za-z0-9._:-]*) exit 2 ;; esac',
+    '  case "$execution_source_digest" in *[!a-f0-9]*) exit 2 ;; esac',
+    '  [ "${#execution_source_digest}" -eq 64 ] || exit 2',
+    '  workspace_dir="$job_dir/workspace"',
+    '  [ ! -L "$workspace_dir" ] || exit 2',
+    '  mkdir -m 700 -- "$workspace_dir"',
+    '  write_atomic "$job_dir/workspace.id" "$execution_workspace_id"',
+    '  write_atomic "$job_dir/source.revision" "$execution_source_revision"',
+    '  write_atomic "$job_dir/source.sha256" "$execution_source_digest"',
+    'fi',
     'write_atomic "$job_dir/started_at" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"',
     // The status file is the start commit point, published only after
     // the full manifest above; inspect treats a directory without one
@@ -704,7 +821,7 @@ function startJobCommand(
     'write_atomic "$job_dir/status" STARTING',
     "export -f write_atomic",
     "export job_dir output_limit",
-    "nohup setsid bash -s -- \"$job_dir\" \"$output_limit\" 3<<<\"$command_b64\" >/dev/null 2>&1 <<'HUAWEI_JOB_WORKER' &",
+    "nohup setsid bash -s -- \"$job_dir\" \"$output_limit\" \"$execution_workspace_id\" \"$execution_source_revision\" \"$execution_source_digest\" 3<<<\"$command_b64\" >/dev/null 2>&1 <<'HUAWEI_JOB_WORKER' &",
     JOB_WORKER_SCRIPT,
     "HUAWEI_JOB_WORKER",
     "i=0",
@@ -778,10 +895,12 @@ function inspectJobCommand(
     'if [ ! -f "$stdout_file" ]; then stdout_file="$job_dir/stdout.part"; fi',
     'stderr_file="$job_dir/stderr"',
     'if [ ! -f "$stderr_file" ]; then stderr_file="$job_dir/stderr.part"; fi',
-    'stdout_size=0',
-    'if [ -f "$stdout_file" ]; then stdout_size=$(wc -c < "$stdout_file" | tr -d "[:space:]"); fi',
-    'stderr_size=0',
-    'if [ -f "$stderr_file" ]; then stderr_size=$(wc -c < "$stderr_file" | tr -d "[:space:]"); fi',
+    'stdout_saved=0',
+    'if [ -f "$stdout_file" ]; then stdout_saved=$(wc -c < "$stdout_file" | tr -d "[:space:]"); fi',
+    'stderr_saved=0',
+    'if [ -f "$stderr_file" ]; then stderr_saved=$(wc -c < "$stderr_file" | tr -d "[:space:]"); fi',
+    'stdout_size=$stdout_saved',
+    'stderr_size=$stderr_saved',
     // The worker records the true produced size next to the bounded
     // output (*.total); when present and numeric it is the size of
     // record, so truncation is reported from accounting, not
@@ -792,6 +911,7 @@ function inspectJobCommand(
     'case "$stderr_total" in ""|*[!0-9]*) ;; *) stderr_size=$stderr_total ;; esac',
     "printf 'EXISTS=1\\n'",
     "printf 'TASK_ID=%s\\n' \"$task_id\"",
+    "printf 'WORKER_TASK_ID=%s\\n' \"$(read_file \"$job_dir/task_id\")\"",
     "printf 'STATUS=%s\\n' \"$status\"",
     "printf 'PID=%s\\n' \"$pid\"",
     "printf 'LOST_REASON=%s\\n' \"$lost_reason\"",
@@ -802,13 +922,105 @@ function inspectJobCommand(
     "printf 'IDEMPOTENCY_KEY=%s\\n' \"$(read_file \"$job_dir/idempotency.key\")\"",
     "printf 'REQUEST_SHA256=%s\\n' \"$(read_file \"$job_dir/request.sha256\")\"",
     "printf 'STDOUT_SIZE=%s\\n' \"$stdout_size\"",
+    "printf 'STDOUT_TOTAL=%s\\n' \"$stdout_total\"",
     "printf 'STDOUT='",
-    'if [ -f "$stdout_file" ]; then head -c "$output_limit" -- "$stdout_file" | base64 -w0; fi',
+    'stdout_read=0',
+    'if [ -f "$stdout_file" ] && (set -o pipefail; head -c "$output_limit" -- "$stdout_file" | base64 -w0); then stdout_read=1; fi',
     "printf '\\n'",
     "printf 'STDERR_SIZE=%s\\n' \"$stderr_size\"",
+    "printf 'STDERR_TOTAL=%s\\n' \"$stderr_total\"",
     "printf 'STDERR='",
-    'if [ -f "$stderr_file" ]; then head -c "$output_limit" -- "$stderr_file" | base64 -w0; fi',
+    'stderr_read=0',
+    'if [ -f "$stderr_file" ] && (set -o pipefail; head -c "$output_limit" -- "$stderr_file" | base64 -w0); then stderr_read=1; fi',
     "printf '\\n'",
+    'capture_command_sha256=""',
+    'if [ "$stdout_read:$stderr_read" = "1:1" ] \\',
+    '  && [ "$stdout_file" = "$job_dir/stdout" ] && [ "$stderr_file" = "$job_dir/stderr" ] \\',
+    '  && [ "$stdout_saved:$stderr_saved" = "$stdout_total:$stderr_total" ]; then',
+    '  capture_command_sha256=$(read_file "$job_dir/output.complete")',
+    'fi',
+    "printf 'CAPTURE_COMMAND_SHA256=%s\\n' \"$capture_command_sha256\"",
+  ].join("\n");
+}
+
+function readExecutionMaterialsCommand(
+  jobDirectory: string,
+  taskId: string,
+  workspaceId: string,
+  paths: readonly string[],
+): string {
+  return [
+    "set -eu",
+    "# HUAWEI_EXECUTION_MATERIAL_READ",
+    `python3 - ${[jobDirectory, taskId, workspaceId, ...paths].map(shellQuote).join(" ")} <<'HUAWEI_MATERIAL_READER'`,
+    "import base64, hashlib, os, stat, sys",
+    "job_dir, task_id, workspace_id, *paths = sys.argv[1:]",
+    "O_DIR = os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) | getattr(os, 'O_NOFOLLOW', 0)",
+    "O_FILE = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0)",
+    "def open_dir_path(path):",
+    "    if not path.startswith('/') or any(part in ('.', '..') for part in path.split('/')): raise ValueError()",
+    "    fd = os.open('/', O_DIR)",
+    "    try:",
+    "        for part in [part for part in path.split('/') if part]:",
+    "            nxt = os.open(part, O_DIR, dir_fd=fd); os.close(fd); fd = nxt",
+    "        return fd",
+    "    except Exception:",
+    "        os.close(fd); raise",
+    "def read_small(dirfd, name, limit=256):",
+    "    fd = os.open(name, O_FILE, dir_fd=dirfd)",
+    "    try:",
+    "        info = os.fstat(fd)",
+    "        if not stat.S_ISREG(info.st_mode) or info.st_size > limit: raise ValueError()",
+    "        data = os.read(fd, limit + 1)",
+    "        if len(data) != info.st_size: raise ValueError()",
+    "        return data.decode('utf-8').rstrip('\\n')",
+    "    finally: os.close(fd)",
+    "jobfd = open_dir_path(job_dir)",
+    "try:",
+    "    if read_small(jobfd, 'task_id') != task_id: raise ValueError()",
+    "    if read_small(jobfd, 'status') not in ('COMPLETED', 'FAILED'): raise ValueError()",
+    "    if read_small(jobfd, 'workspace.id') != workspace_id: raise ValueError()",
+    "    revision = read_small(jobfd, 'source.revision')",
+    "    source_digest = read_small(jobfd, 'source.sha256')",
+    "    if not revision.isdigit() or len(revision) > 16 or len(source_digest) != 64 or any(c not in '0123456789abcdef' for c in source_digest): raise ValueError()",
+    "    workspacefd = os.open('workspace', O_DIR, dir_fd=jobfd)",
+    "    try:",
+    "        workspace_path = os.readlink('/proc/self/fd/' + str(workspacefd))",
+    "        if not workspace_path.startswith('/') or workspace_path.endswith(' (deleted)'): raise ValueError()",
+    "        print('WORKSPACE_PATH=' + workspace_path)",
+    "        print('WORKSPACE_ID=' + workspace_id)",
+    "        print('SOURCE_REVISION=' + revision)",
+    "        print('SOURCE_SHA256=' + source_digest)",
+    "        print('MATERIAL_COUNT=' + str(len(paths)))",
+    "        total = 0",
+    "        for index, relative in enumerate(paths):",
+    "            parts = relative.split('/')",
+    "            if not relative or relative.startswith('/') or any(part in ('', '.', '..') for part in parts): raise ValueError()",
+    "            parent = os.dup(workspacefd)",
+    "            try:",
+    "                for part in parts[:-1]:",
+    "                    nxt = os.open(part, O_DIR, dir_fd=parent); os.close(parent); parent = nxt",
+    "                fd = os.open(parts[-1], O_FILE, dir_fd=parent)",
+    "                try:",
+    "                    before = os.fstat(fd)",
+    "                    if not stat.S_ISREG(before.st_mode) or before.st_size > 262144: raise ValueError()",
+    "                    chunks=[]; remaining=262145",
+    "                    while remaining:",
+    "                        chunk=os.read(fd, min(65536, remaining))",
+    "                        if not chunk: break",
+    "                        chunks.append(chunk); remaining -= len(chunk)",
+    "                    data=b''.join(chunks); after=os.fstat(fd)",
+    "                    if len(data) != before.st_size or len(data) > 262144 or (before.st_ino, before.st_dev, before.st_size, before.st_mtime_ns) != (after.st_ino, after.st_dev, after.st_size, after.st_mtime_ns): raise ValueError()",
+    "                finally: os.close(fd)",
+    "            finally: os.close(parent)",
+    "            total += len(data)",
+    "            if total > 524288: raise ValueError()",
+    "            print('MATERIAL_' + str(index) + '_PATH=' + relative)",
+    "            print('MATERIAL_' + str(index) + '_BYTES=' + str(len(data)))",
+    "            print('MATERIAL_' + str(index) + '_BASE64=' + base64.b64encode(data).decode('ascii'))",
+    "    finally: os.close(workspacefd)",
+    "finally: os.close(jobfd)",
+    "HUAWEI_MATERIAL_READER",
   ].join("\n");
 }
 
@@ -1040,6 +1252,12 @@ export class HuaweiSshProvider implements FleetProvider {
     }
     const idempotencyKey = input.idempotencyKey?.trim();
     const requestFingerprint = input.dispatchFingerprint?.trim();
+    const executionWorkspace = input.executionWorkspace;
+    if (executionWorkspace !== undefined && (
+      !SAFE_WORKSPACE_ID.test(executionWorkspace.id)
+      || !/^\d{1,16}$/u.test(executionWorkspace.sourceRevision)
+      || !/^[a-f0-9]{64}$/u.test(executionWorkspace.sourceDigest)
+    )) throw new Error("HUAWEI_EXECUTION_WORKSPACE_INVALID");
     if ((idempotencyKey === undefined) !== (requestFingerprint === undefined)) {
       throw new Error("HUAWEI_TASK_IDEMPOTENCY_INVALID");
     }
@@ -1052,6 +1270,7 @@ export class HuaweiSshProvider implements FleetProvider {
       this.outputLimit,
       idempotencyKey,
       requestFingerprint,
+      executionWorkspace,
     ));
     if (result.exitCode !== 0) {
       throw sshFailureError(result, `Huawei job start exited ${result.exitCode}`);
@@ -1122,6 +1341,7 @@ export class HuaweiSshProvider implements FleetProvider {
     if (values.EXISTS !== "1") throw new Error("HUAWEI_TASK_INSPECT_INVALID");
 
     const status = remoteTaskStatus(values.STATUS);
+    const executionObservation = readWorkerExecutionObservation(result.stdout, taskId, this.nodeId, this.outputLimit);
     const stdout = decodeTaskOutput(
       values.STDOUT,
       finiteCount(values.STDOUT_SIZE),
@@ -1182,6 +1402,7 @@ export class HuaweiSshProvider implements FleetProvider {
       status: taskStatus,
       progress,
       evidence,
+      ...(executionObservation === undefined ? {} : { executionObservation }),
       expectedEvidence: ["summary", "command", "log"],
       createdAt: existing?.createdAt ?? startedAt,
       updatedAt: finishedAt ?? new Date().toISOString(),
@@ -1206,6 +1427,23 @@ export class HuaweiSshProvider implements FleetProvider {
     };
     this.tasks.set(taskId, task);
     return task;
+  }
+
+  async readExecutionMaterialFiles(
+    taskId: string,
+    workspaceId: string,
+    paths: readonly string[],
+  ): Promise<ExecutionMaterialWorkspaceFiles | undefined> {
+    assertTaskId(taskId);
+    if (!SAFE_WORKSPACE_ID.test(workspaceId) || paths.length === 0 || paths.length > 68
+      || new Set(paths).size !== paths.length || !paths.every(validExecutionMaterialPath)) return undefined;
+    const result = await this.runCommand(readExecutionMaterialsCommand(
+      this.jobDirectory(taskId), taskId, workspaceId, paths,
+    ));
+    if (result.exitCode !== 0) return undefined;
+    const materials = parseExecutionMaterialFiles(result.stdout, workspaceId, paths);
+    const expectedWorkspacePath = posix.normalize(`${this.jobDirectory(taskId)}/workspace`);
+    return materials?.workspacePath === expectedWorkspacePath ? materials : undefined;
   }
 
   async cancel(taskId: string): Promise<void> {

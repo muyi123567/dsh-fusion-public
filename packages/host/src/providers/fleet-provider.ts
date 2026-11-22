@@ -15,6 +15,18 @@ export interface FleetDispatchInput {
   /** Deterministic provider task id, supplied when retrying one dispatch intent. */
   taskId?: string;
   dispatchFingerprint?: string;
+  /** Attempt-bound isolated workspace context for versioned execution-material jobs. */
+  executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
+  /** Digest of the pinned material expectations; participates in dispatch idempotency. */
+  executionMaterialsDigest?: string;
+}
+
+export interface ExecutionMaterialWorkspaceFiles {
+  workspacePath: string;
+  workspaceId: string;
+  sourceRevision: string;
+  sourceDigest: string;
+  files: Array<{ path: string; digest: string; bytes: number }>;
 }
 
 export interface FleetProvider extends FusionProvider {
@@ -31,6 +43,12 @@ export interface FleetProvider extends FusionProvider {
   /** Explicit read-only observation; does not create a job or execute user input. */
   probeExecCapability?(): Promise<ExecCapabilityObservation>;
   dispatch(input: FleetDispatchInput): Promise<TaskRecord>;
+  /** Reads bounded file bytes from an isolated, terminal worker workspace. */
+  readExecutionMaterialFiles?(
+    taskId: string,
+    workspaceId: string,
+    paths: readonly string[],
+  ): Promise<ExecutionMaterialWorkspaceFiles | undefined>;
   cancel(taskId: string): Promise<void>;
 }
 

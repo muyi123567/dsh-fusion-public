@@ -198,6 +198,71 @@ export interface TaskEvidence {
 
 export type TaskEvidenceKind = TaskEvidence["kind"];
 
+/** A versioned worker-reported description of execution materials. */
+export interface ExecutionMaterialArtifact {
+  path: string;
+  digest: string;
+  bytes: number;
+}
+
+export interface ExecutionMaterialFile {
+  path: string;
+  digest: string;
+}
+
+export interface ExecutionRuntimeMaterial extends ExecutionMaterialFile {
+  evidence: "declared" | "measured";
+}
+
+export interface ExecutionMaterialManifest {
+  version: 1;
+  workspace: { id: string; path: string };
+  source: { revision: string; digest: string };
+  code: ExecutionMaterialFile;
+  input: ExecutionMaterialFile;
+  runtime: ExecutionRuntimeMaterial;
+  config: ExecutionMaterialFile;
+  artifacts: ExecutionMaterialArtifact[];
+}
+
+/** Trusted profile pins configured for a job; source is pinned from DSH at attempt time. */
+export interface ExecutionMaterialPins {
+  code: ExecutionMaterialFile;
+  input: ExecutionMaterialFile;
+  runtime: ExecutionRuntimeMaterial;
+  config: ExecutionMaterialFile;
+  artifacts: ExecutionMaterialArtifact[];
+}
+
+export interface ExpectedExecutionMaterials {
+  source: { revision: string; digest: string };
+  code: ExecutionMaterialFile;
+  input: ExecutionMaterialFile;
+  runtime: ExecutionRuntimeMaterial;
+  config: ExecutionMaterialFile;
+  artifacts: ExecutionMaterialArtifact[];
+}
+
+/** The native receipt keeps expected pins separate from adapter-observed bytes. */
+export interface VerifiedExecutionMaterials {
+  expected: ExpectedExecutionMaterials;
+  observed: ExecutionMaterialManifest;
+}
+
+/** Terminal metadata and complete stream digests read from an execution worker. */
+export interface WorkerExecutionObservation {
+  taskId: string;
+  nodeId: string;
+  commandSha256: string;
+  startedAt: string;
+  finishedAt: string;
+  exitCode: number;
+  stdout: { sha256: string; bytes: number };
+  stderr: { sha256: string; bytes: number };
+  /** Untrusted worker claim; never sufficient by itself for a verified receipt. */
+  reportedMaterials?: ExecutionMaterialManifest;
+}
+
 export interface TaskChildReference {
   id: string;
   targetNodeIds: string[];
@@ -221,6 +286,7 @@ export interface AgentTeamTaskProjection {
 export interface TaskRecord {
   id: string;
   goal: string;
+  description?: string;
   /** Client-supplied id used to coalesce retries of one dispatch intent. */
   idempotencyKey?: string;
   /** Hash of the dispatch payload, so a key cannot be reused for other work. */
@@ -234,6 +300,7 @@ export interface TaskRecord {
   progress?: number;
   sessionId?: string;
   evidence: TaskEvidence[];
+  executionObservation?: WorkerExecutionObservation;
   expectedEvidence?: TaskEvidenceKind[];
   childTaskRefs?: TaskChildReference[];
   createdAt: string;

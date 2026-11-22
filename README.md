@@ -44,7 +44,24 @@ beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e731461
 | 标准槽位 | 宿主 UI | `sidebar.panellist`、`main`、`plugins.detail.section` |
 | JSON Schema | 任意实现 | `docs/design/contracts/` 下的清单、漂移、派发契约 |
 
-v1 契约目前是设计稿，尚未实现；当前可用的是原生面板、现有执行路由与签名复核。
+M1 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
+`/plugins/dsh-fusion/fleet/{environment,hosts,diff}` 只读路由，以及面板顶部的环境条。
+派发、MCP 工具与自动对齐仍是设计稿；当前执行仍走既有面板与执行路由。
+
+```yaml
+- id: dsh-fusion
+  config:
+    fleetEnvironment:
+      directory: /var/lib/dsh-fusion/fleet
+      expectedManifestPath: /var/lib/dsh-fusion/fleet/expected-manifest.json
+      staleAfterSeconds: 900
+      secretNames: [DEEPSEEK_API_KEY]
+```
+
+`secretNames` 只记录名称是否存在，不读取值。首次采集会在 `directory` 生成 Ed25519
+主机密钥；远端清单从 `directory/hosts/*.json` 只读加载，过期或无法验签一律显示为
+“环境未知”，不会当作匹配。
+
 设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·
 [契约说明](docs/design/contracts/README.md)。

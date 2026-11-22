@@ -9,6 +9,7 @@ import type {
 import { createProviderStatus } from "@dsh-fusion/core";
 import type { FleetDispatchInput, FleetProvider } from "./fleet-provider.js";
 import { normalizeEvidenceValue } from "../tasks/evidence.js";
+import { readWorkerExecutionObservation } from "./worker-execution.js";
 import { execCapabilityProbeCommand, parseExecCapabilityProbe } from "./exec-capability-probe.js";
 
 export interface InstaboxMachine {
@@ -308,10 +309,10 @@ while True:
 tmp=open(sys.argv[3] + ".tmp", "w"); tmp.write(str(total) + "\\n"); tmp.close()
 import os; os.replace(sys.argv[3] + ".tmp", sys.argv[3])' "$limit" "$path" "$total_path"
   else
-    head -c "$limit" > "$path"
-    rest=$(wc -c | tr -d "[:space:]")
-    written=$(wc -c < "$path" | tr -d "[:space:]")
-    printf '%s\\n' $((written + rest)) > "$total_path.tmp.$$"
+    head -c "$limit" > "$path" || return 1
+    rest=$(wc -c) || return 1
+    written=$(wc -c < "$path") || return 1
+    printf '%s\\n' $((written + rest)) > "$total_path.tmp.$$" || return 1
     mv -f -- "$total_path.tmp.$$" "$total_path"
   fi
 }
@@ -448,13 +449,17 @@ limit_stream "$output_limit" "$job_dir/stdout.part" "$job_dir/stdout.total" < "$
 stdout_writer=$!
 limit_stream "$output_limit" "$job_dir/stderr.part" "$job_dir/stderr.total" < "$job_dir/stderr.pipe" &
 stderr_writer=$!
+command_digest=$(sha256sum < "$job_dir/command") || command_digest=""
+command_digest=\${command_digest%% *}
 bash "$job_dir/command" >"$job_dir/stdout.pipe" 2>"$job_dir/stderr.pipe"
 exit_code=$?
-wait "$stdout_writer" "$stderr_writer"
+capture_ok=1
+wait "$stdout_writer" || capture_ok=0
+wait "$stderr_writer" || capture_ok=0
 rm -f -- "$job_dir/stdout.pipe" "$job_dir/stderr.pipe"
-cp -p -- "$job_dir/stdout.part" "$job_dir/stdout" 2>/dev/null || true
-cp -p -- "$job_dir/stderr.part" "$job_dir/stderr" 2>/dev/null || true
-sync -- "$job_dir/stdout" "$job_dir/stderr" 2>/dev/null || true
+cp -p -- "$job_dir/stdout.part" "$job_dir/stdout" 2>/dev/null || capture_ok=0
+cp -p -- "$job_dir/stderr.part" "$job_dir/stderr" 2>/dev/null || capture_ok=0
+sync -- "$job_dir/stdout" "$job_dir/stderr" 2>/dev/null || capture_ok=0
 finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 acquire_state_lock || exit 1
 current_status=$(read_file "$job_dir/status")
@@ -465,6 +470,10 @@ elif [ "$exit_code" -eq 0 ]; then
   final_status=COMPLETED
 else
   final_status=FAILED
+fi
+# Publish a capture marker only after both streams have been read to EOF and copied.
+if [ "$final_status" != "CANCELLED" ] && [ "$capture_ok" = 1 ] && [ -n "$command_digest" ]; then
+  write_atomic "$job_dir/output.complete" "$command_digest"
 fi
 write_atomic "$job_dir/exit" "$exit_code"
 write_atomic "$job_dir/finished_at" "$finished_at"
@@ -665,20 +674,21 @@ stdout_file="$job_dir/stdout"
 if [ ! -f "$stdout_file" ]; then stdout_file="$job_dir/stdout.part"; fi
 stderr_file="$job_dir/stderr"
 if [ ! -f "$stderr_file" ]; then stderr_file="$job_dir/stderr.part"; fi
-stdout_size=0
-if [ -f "$stdout_file" ]; then stdout_size=$(wc -c < "$stdout_file" | tr -d "[:space:]"); fi
-if [ -f "$job_dir/stdout.total" ]; then
-  stdout_total=$(tr -d "[:space:]" < "$job_dir/stdout.total")
-  case "$stdout_total" in ""|*[!0-9]*) ;; *) stdout_size=$stdout_total ;; esac
-fi
-stderr_size=0
-if [ -f "$stderr_file" ]; then stderr_size=$(wc -c < "$stderr_file" | tr -d "[:space:]"); fi
-if [ -f "$job_dir/stderr.total" ]; then
-  stderr_total=$(tr -d "[:space:]" < "$job_dir/stderr.total")
-  case "$stderr_total" in ""|*[!0-9]*) ;; *) stderr_size=$stderr_total ;; esac
-fi
+stdout_saved=0
+if [ -f "$stdout_file" ]; then stdout_saved=$(wc -c < "$stdout_file" | tr -d "[:space:]"); fi
+stdout_size=$stdout_saved
+stdout_total=$(read_file "$job_dir/stdout.total")
+stdout_total_legacy=$(printf '%s' "$stdout_total" | tr -d "[:space:]")
+case "$stdout_total_legacy" in ""|*[!0-9]*) ;; *) stdout_size=$stdout_total_legacy ;; esac
+stderr_saved=0
+if [ -f "$stderr_file" ]; then stderr_saved=$(wc -c < "$stderr_file" | tr -d "[:space:]"); fi
+stderr_size=$stderr_saved
+stderr_total=$(read_file "$job_dir/stderr.total")
+stderr_total_legacy=$(printf '%s' "$stderr_total" | tr -d "[:space:]")
+case "$stderr_total_legacy" in ""|*[!0-9]*) ;; *) stderr_size=$stderr_total_legacy ;; esac
 printf 'EXISTS=1\\n'
 printf 'TASK_ID=%s\\n' "$task_id"
+printf 'WORKER_TASK_ID=%s\\n' "$(read_file "$job_dir/task_id")"
 printf 'STATUS=%s\\n' "$status"
 printf 'PID=%s\\n' "$pid"
 printf 'EXIT=%s\\n' "$exit_code"
@@ -694,13 +704,24 @@ printf 'CURRENT_PID=%s\\n' "$current_pid"
 printf 'CURRENT_PID_STARTTIME=%s\\n' "$current_pid_starttime"
 printf 'LOST_REASON=%s\\n' "$lost_reason"
 printf 'STDOUT_SIZE=%s\\n' "$stdout_size"
+printf 'STDOUT_TOTAL=%s\\n' "$stdout_total"
 printf 'STDOUT='
-if [ -f "$stdout_file" ]; then head -c "$output_limit" -- "$stdout_file" | base64 | tr -d '\\n'; fi
+stdout_read=0
+if [ -f "$stdout_file" ] && (set -o pipefail; head -c "$output_limit" -- "$stdout_file" | base64 | tr -d '\\n'); then stdout_read=1; fi
 printf '\\n'
 printf 'STDERR_SIZE=%s\\n' "$stderr_size"
+printf 'STDERR_TOTAL=%s\\n' "$stderr_total"
 printf 'STDERR='
-if [ -f "$stderr_file" ]; then head -c "$output_limit" -- "$stderr_file" | base64 | tr -d '\\n'; fi
+stderr_read=0
+if [ -f "$stderr_file" ] && (set -o pipefail; head -c "$output_limit" -- "$stderr_file" | base64 | tr -d '\\n'); then stderr_read=1; fi
 printf '\\n'
+capture_command_sha256=""
+if [ "$stdout_read:$stderr_read" = "1:1" ] \\
+  && [ "$stdout_file" = "$job_dir/stdout" ] && [ "$stderr_file" = "$job_dir/stderr" ] \\
+  && [ "$stdout_saved:$stderr_saved" = "$stdout_total:$stderr_total" ]; then
+  capture_command_sha256=$(read_file "$job_dir/output.complete")
+fi
+printf 'CAPTURE_COMMAND_SHA256=%s\\n' "$capture_command_sha256"
 `.trim();
 }
 
@@ -1146,6 +1167,9 @@ export class InstaboxProvider implements FleetProvider {
     const pid = finiteCount(values.PID);
     const lostReason = lostIdentityReason(values, reportedStatus, pid);
     const status: RemoteTaskStatus = lostReason === undefined ? reportedStatus : "LOST";
+    const executionObservation = status === "LOST"
+      ? undefined
+      : readWorkerExecutionObservation(result.stdout, taskId, this.nodeId, this.outputLimit);
     const stdout = decodeTaskOutput(
       values.STDOUT,
       finiteCount(values.STDOUT_SIZE),
@@ -1213,6 +1237,7 @@ export class InstaboxProvider implements FleetProvider {
       status: taskStatus,
       progress,
       evidence,
+      ...(executionObservation === undefined ? {} : { executionObservation }),
       expectedEvidence: ["summary", "command", "log"],
       createdAt: existing?.createdAt ?? startedAt,
       updatedAt: finishedAt ?? new Date().toISOString(),

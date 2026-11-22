@@ -145,7 +145,7 @@
       "required": ["name", "transport"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "transport": { "enum": ["stdio", "streamable-http"] },
+        "transport": { "enum": ["stdio", "streamable-http", "unknown"] },
         "digest": { "$ref": "#/$defs/sha256" }
       }
     },

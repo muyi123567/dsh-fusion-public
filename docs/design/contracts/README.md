@@ -35,6 +35,7 @@ sha256(utf8(JSON.stringify([
 ```
 
 它只覆盖密钥名称的存在性与 provider 名称，绝不覆盖值。`environmentDigest` 不包含 L3。
+`mcpServers[].transport` 在宿主不暴露传输类型时为 `unknown`，采集器不猜测。
 
 ## 签名
 

@@ -1,0 +1,15 @@
+.context { min-width:0; }
+.section { min-width:0; margin:12px 0; padding-top:12px; border-top:0.5px solid var(--dsw-alias-border-l4); }
+.context .section > h3 { margin:0 0 6px; font-size:14px; line-height:20px; }
+.context .section > h4 { margin:10px 0 4px; font-size:12px; line-height:18px; font-weight:600; }
+.section .note { margin:6px 0; color:var(--dsw-alias-label-secondary); font-size:12px; line-height:18px; }
+.section .body { margin:6px 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:14px; line-height:20px; }
+.metadata { display:grid; grid-template-columns:minmax(0,112px) minmax(0,1fr); gap:6px 10px; margin:10px 0; }
+.metadata dt { color:var(--dsw-alias-label-secondary); font-size:12px; line-height:20px; overflow-wrap:anywhere; }
+.context .metadata dd { min-width:0; margin:0; font-size:14px; line-height:20px; overflow-wrap:anywhere; }
+.metadata code,.values code { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; line-height:18px; }
+.values { min-width:0; margin:6px 0; padding-left:18px; font-size:12px; line-height:18px; }
+.values li { min-width:0; margin:4px 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.description { min-width: 0; margin-top: 20px; padding: 12px 0; border-block: 1px solid var(--voyage-line, var(--dsw-alias-border-l4)); }
+.description summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.description .body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.75; margin: 10px 0 0; }

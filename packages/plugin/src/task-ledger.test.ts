@@ -1,7 +1,8 @@
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { FleetRouter } from "./fleet-router.js";
 import {
   inspectTaskLedger,
   loadTaskLedger,
@@ -18,13 +19,17 @@ async function temporaryLedgerPath(): Promise<string> {
   return join(directory, "ledger.json");
 }
 
-function task(id: string, updatedAt: string): RuntimeTaskRecord {
+function task(
+  id: string,
+  updatedAt: string,
+  status: RuntimeTaskRecord["status"] = "completed",
+): RuntimeTaskRecord {
   return {
     id,
     goal: `goal ${id}`,
     targetNodeIds: ["node-a"],
     transport: "ssh",
-    status: "completed",
+    status,
     evidence: [],
     createdAt: updatedAt,
     updatedAt,
@@ -65,15 +70,86 @@ describe("task ledger", () => {
     await expect(loadTaskLedger(path)).resolves.toEqual([persisted]);
   });
 
-  it("keeps the newest tasks when the ledger exceeds its limit", async () => {
+  it("keeps the newest 200 terminal tasks across mixed terminal statuses", async () => {
     const path = await temporaryLedgerPath();
+    const statuses = ["completed", "failed", "cancelled"] as const;
     const tasks = Array.from({ length: 205 }, (_, index) =>
-      task(`task-${index}`, `2026-10-21T00:00:${String(index % 60).padStart(2, "0")}.000Z`));
+      task(`task-${index}`, new Date(1_792_540_800_000 + index).toISOString(), statuses[index % 3]));
 
     await writeTaskLedger(path, tasks);
 
     const raw = JSON.parse(await readFile(path, "utf8")) as { tasks: RuntimeTaskRecord[] };
     expect(raw.tasks).toHaveLength(200);
+    expect(raw.tasks[0]?.id).toBe("task-204");
+    expect(raw.tasks[199]?.id).toBe("task-5");
+    expect(raw.tasks.some((record) => record.id === "task-4")).toBe(false);
+  });
+
+  it.each(["queued", "claimed", "running", "verifying"] as const)(
+    "keeps an old %s task alongside the terminal history allowance",
+    async (status) => {
+      const path = await temporaryLedgerPath();
+      const active = task("active", "2026-10-20T00:00:00.000Z", status);
+      const terminal = Array.from({ length: 200 }, (_, index) =>
+        task(`terminal-${index}`, "2026-10-21T00:00:00.000Z", "failed"));
+
+      await writeTaskLedger(path, [active, ...terminal]);
+
+      const loaded = await loadTaskLedger(path);
+      expect(loaded).toHaveLength(201);
+      expect(loaded).toContainEqual(active);
+    },
+  );
+
+  it("keeps every active task when active tasks alone exceed the history limit", async () => {
+    const path = await temporaryLedgerPath();
+    const statuses = ["queued", "claimed", "running", "verifying"] as const;
+    const tasks = Array.from({ length: 205 }, (_, index) =>
+      task(`active-${index}`, new Date(1_792_540_800_000 + index).toISOString(), statuses[index % 4]));
+
+    await writeTaskLedger(path, tasks);
+
+    const loaded = await loadTaskLedger(path);
+    expect(loaded).toHaveLength(205);
+    expect(new Set(loaded.map((record) => record.id))).toEqual(new Set(tasks.map((record) => record.id)));
+  });
+
+  it("orders active and terminal tasks together by their latest update", async () => {
+    const path = await temporaryLedgerPath();
+    await writeTaskLedger(path, [
+      task("old-active", "2026-10-20T00:00:00.000Z", "running"),
+      task("middle-terminal", "2026-10-21T00:00:00.000Z", "failed"),
+      task("new-active", "2026-10-22T00:00:00.000Z", "queued"),
+    ]);
+
+    expect((await loadTaskLedger(path)).map((record) => record.id))
+      .toEqual(["new-active", "middle-terminal", "old-active"]);
+  });
+
+  it("preserves host concurrency admission after restoring a crowded ledger", async () => {
+    const path = await temporaryLedgerPath();
+    const active = task("active", "2026-10-20T00:00:00.000Z", "running");
+    const terminal = Array.from({ length: 200 }, (_, index) =>
+      task(`terminal-${index}`, "2026-10-21T00:00:00.000Z", index % 2 === 0 ? "failed" : "cancelled"));
+    await writeTaskLedger(path, [active, ...terminal]);
+    const dispatch = vi.fn(async () => task("unexpected", "2026-10-22T00:00:00.000Z", "running"));
+    const router = new FleetRouter([{
+      nodeIds: ["node-a"],
+      provider: {
+        id: "provider-a",
+        async health() { return { state: "connected", checkedAt: 1 }; },
+        async listNodes() { return []; },
+        dispatch,
+        async doctor() { throw new Error("unexpected doctor"); },
+      },
+    }], {
+      initialTasks: await loadTaskLedger(path),
+      hostAccess: { "node-a": { sharingMode: "shared", maxConcurrentTasks: 1 } },
+    });
+
+    await expect(router.dispatch({ goal: "next", nodeIds: ["node-a"] }))
+      .rejects.toThrow("FLEET_NODE_CONCURRENCY_LIMIT:node-a:1");
+    expect(dispatch).not.toHaveBeenCalled();
   });
 
   it("reports a readable ledger with a task count", async () => {

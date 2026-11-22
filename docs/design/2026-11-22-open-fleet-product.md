@@ -1,6 +1,6 @@
 # 鲸群：开放的多机 DSH 协作与环境一致性
 
-状态：产品与接口设计提案，不是发布声明。基线 `dsh-fusion` `db0cfad` / beta.14，
+状态：M1 只读切片已实现，其余仍为设计提案；不是发布声明。基线 `dsh-fusion` `db0cfad` / beta.14，
 调研依据见 [DSH 高质量项目代码级调研](../research/2026-11-22-dsh-quality-projects.md)。
 
 ## 0. 一句话
@@ -506,6 +506,49 @@ interface WhaleFleetServiceV1 {
 
 ## 16. 验收边界
 
-本文是设计提案。除已注明的现有实现外，环境清单、漂移、MCP 工具、环境门禁与回执扩展都尚未
-交付。任何“可用”结论都必须有新鲜测试输出与至少一次真实宿主验证；本地 fixture、构建成功、
+除第 17 节的 M1 只读切片外，MCP 工具、环境门禁、环境回执、自动对齐与多机信任表都尚未交付。
+任何“可用”结论都必须有新鲜测试输出与至少一次真实宿主验证；本地 fixture、构建成功、
 进程退出码 0 都不等于多机业务验收。
+
+## 17. M1 落地记录（只读）
+
+已实现：
+
+- `packages/plugin/src/fleet-environment.ts`：规范化 JSON、`environmentDigest`、
+  `secretPresenceDigest`、Ed25519 签名/验签、漂移规则。
+- `packages/plugin/src/fleet-environment-collector.ts`：只读采集 plugin manager bundle 清单、
+  profile/home patch、锁文件、compatibility、provider 名称、MCP 服务器名称、profile cwd 的
+  VCS 状态和配置指定的密钥存在性；首次采集生成并持久化主机密钥。
+- `packages/plugin/src/fleet-service.ts`：`contractVersion: 1` 的 `whaleFleet` 服务，
+  提供 `manifest()`、`host()`、`listHosts()`、`diff()`、`panelView()`、`subscribe()`；
+  30 秒缓存、远端清单只读缓存、过期/验签失败一律 `unknown`。
+- 插件通过 `ctx.provide('whaleFleet', ...)` 暴露服务；旧宿主没有 `ctx.provide` 时只记录日志，
+  不影响既有功能。
+- 只读路由：`GET /plugins/dsh-fusion/fleet/environment`、`.../hosts`、`.../diff?hostId=`，
+  沿用 DSH 认证。
+- 原生面板顶部环境条：显示匹配/漂移/未知、环境摘要、漂移项严重级别、路径与修复建议。
+
+配置（全部可选）：
+
+```yaml
+fleetEnvironment:
+  directory: /var/lib/dsh-fusion/fleet
+  expectedManifestPath: /var/lib/dsh-fusion/fleet/expected-manifest.json
+  staleAfterSeconds: 900
+  secretNames: [DEEPSEEK_API_KEY]
+  displayName: worker-b
+```
+
+语义边界：
+
+- 本地清单采集后视为新鲜；只有从 `hosts/*.json` 读取的远端清单会按 `staleAfterSeconds`
+  判定过期。
+- 没有期望清单/摘要时整体为 `unknown`，面板显示原因，不显示“匹配”。
+- 远端清单在 M1 没有公钥信任表，验签结果按“未验证”处理；M2 再接入 TOFU/固定信任表。
+- MCP transport 在 `ctx.mcpManager.list()` 不暴露时记为 `unknown`，不猜测。
+- 工作区只覆盖 profile cwd 一项；多 workspace 与会话级 cwd 属后续。
+- 采集失败显示 `unknown`，不回退为上一次匹配。
+
+验证：`fleet-environment`、`fleet-environment-collector`、`fleet-service`、`fleet-routes`
+共 23 项；client 环境条与面板回归 17 项；插件全量 400 项通过；插件与 client 类型检查、
+插件 build、client vite build 通过。以上只证明本地实现，不证明真实双机。

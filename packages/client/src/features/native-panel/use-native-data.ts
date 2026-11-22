@@ -3,7 +3,7 @@ import type { AgentTeamRecord, NodeRecord, TaskRecord, SessionHubSnapshot } from
 import { buildWhalePanelModel } from "../whale/model.js";
 import { createSnapshotCoordinator } from "../../stream/snapshot-coordinator.js";
 import { fusionBrowserUrl } from "../../routes.js";
-import type { NativePanelData } from "./types.js";
+import type { NativeEnvironmentView, NativePanelData } from "./types.js";
 
 type SourceKey = "nodes" | "tasks" | "agentTeams";
 interface Snapshot {
@@ -11,6 +11,7 @@ interface Snapshot {
  sources?: Partial<Record<SourceKey, "live" | "demo" | "unavailable">>;
  providers?: Record<string, {state?: string}>;
  fleet?: {stale?: boolean};
+ environment?: NativeEnvironmentView;
 }
 
 function collectionNotice(snapshot: Snapshot, key: SourceKey): string | undefined {
@@ -60,6 +61,7 @@ export function useNativeData(snapshotUrl: string, visible: boolean) {
  const data = useMemo<NativePanelData>(() => ({
   model: buildWhalePanelModel({...snapshot, demo:snapshot.demo === true, loaded, stale:!!error || (["nodes","tasks","agentTeams"] as const).some(key=>(snapshot[key]?.length ?? 0)>0 && collectionNotice(snapshot,key)!==undefined)}),
   tasks:snapshot.tasks, nodes:snapshot.nodes, teams:snapshot.agentTeams ?? [], loaded,
+  ...(snapshot.environment === undefined ? {} : {environment:snapshot.environment}),
   ...(error ? {error} : {}),
  }), [snapshot, loaded, error]);
  return {data,refresh,refreshing,

@@ -1,20 +1,65 @@
-.details { min-width:0; padding:12px; color:var(--dsw-alias-label-primary); font:inherit; font-size:14px; line-height:1.5; }
-.details header { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.details h2,.details h3,.details h4 { font-size:14px; line-height:1.5; }
-.details pre { overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; margin:8px 0; font-size:12px; line-height:1.5; }
-.details button { font:inherit; color:inherit; background:var(--dsw-alias-bg-layer-1); border:0.5px solid var(--dsw-alias-border-l4); border-radius:6px; padding:4px 8px; cursor:pointer; }
-.details button:focus-visible,.details a:focus-visible { outline:2px solid var(--dsw-focus-ring-color); outline-offset:2px; }
-.details a { color:var(--dsw-alias-state-business-primary); font-weight:500; text-decoration:none; overflow-wrap:anywhere; }
-.details a:focus-visible { text-decoration:underline dotted; text-underline-offset:3px; }
-@media (hover:hover) { .details a:hover { text-decoration:underline dotted; text-underline-offset:3px; } }
-@media (hover:hover) { .details button:hover { background:var(--dsw-alias-interactive-bg-hover); } }
-.details dd { margin:0 0 8px; overflow-wrap:anywhere; }
-
-.details > code { display:block; max-width:100%; white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; line-height:1.5; margin:8px 0; }
-.details p, .details h2, .details h3, .details h4, .details button { overflow-wrap:anywhere; }
-.details h2, .details h3, .details h4 { margin:12px 0 6px; }
-.details p { margin:8px 0; }
-.details > h3 + pre { font:inherit; }
-.details pre code { white-space:inherit; overflow-wrap:inherit; }
-.details article { min-width:0; padding:8px 0; border-top:0.5px solid var(--dsw-alias-border-l4); }
-.details button { max-width:100%; }
+.details {
+  --voyage-detail-inset: 24px;
+  --voyage-detail-nav-height: 66px;
+  min-width: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 0 var(--voyage-detail-inset) 24px;
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.navigation {
+  position: sticky;
+  z-index: 2;
+  inset-block-start: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 47px;
+  margin: 0 calc(-1 * var(--voyage-detail-inset)) 19px;
+  padding: 4px var(--voyage-detail-inset);
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--voyage-line);
+  background: var(--voyage-reader);
+}
+.back { flex: none; display: inline-flex; gap: 5px; align-items: center; border: 0; padding: 2px 0; color: var(--voyage-secondary); font-size: 12px; }
+.source { flex: 1; margin-inline-start: auto; text-align: end; color: var(--voyage-secondary); font-size: 12px; line-height: 1.45; }
+.source[data-warning] { color: var(--voyage-warning); }
+.clipboard { margin: 0 0 8px; color: var(--voyage-secondary); font-size: 12px; }
+.topline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--voyage-secondary); font-size: 12px; margin: 0 0 9px; }
+.topline code { font: inherit; font-variant-numeric: tabular-nums; white-space: pre-wrap; }
+.topline [data-state="verifying"] { color: var(--voyage-sea); }
+.topline [data-state="failed"] { color: var(--voyage-danger); }
+.copy { font-size: 12px; padding: 1px 4px; min-height: 24px; }
+.taskTitle { margin: 0; font-size: 24px; line-height: 1.45; font-weight: 600; text-wrap: pretty; }
+.fact { padding: 0; margin: 14px 0 15px; }
+.fact p { margin: 0; white-space: pre-wrap; }
+.fact p:first-child { font-size: 15px; font-weight: 500; }
+.fact p + p { margin-top: 4px; }
+.muted { color: var(--voyage-secondary); font-size: 13px; }
+.action { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.action time { font-variant-numeric: tabular-nums; }
+.read { display: inline-flex; align-items: center; gap: 8px; color: var(--voyage-reader); background: var(--voyage-ink); border-color: var(--voyage-ink); font-weight: 600; font-size: 13px; min-height: 35px; padding-inline: 10px; }
+.read span { font-variant-numeric: tabular-nums; }
+.attribution { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 17px 0 18px; padding: 10px 0; border-block: 1px solid var(--voyage-line); font-size: 13px; }
+.attribution > div { min-width: 0; }
+.attribution dt { color: var(--voyage-secondary); font-size: 12px; margin: 0 0 3px; }
+.attribution dd { margin: 0; }
+.attribution .attributionTeam { grid-column: 1 / -1; display: flex; gap: 10px; }
+.attributionTeam dt { flex: none; }
+.attribution dd .textButton + .textButton { margin-inline-start: 6px; }
+.textButton { display: inline-block; padding: 0; border: 0; min-height: 22px; color: var(--voyage-sea); text-align: start; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em; max-width: 100%; overflow-wrap: anywhere; }
+.generic h2, .generic h3, .related h3, .related h4 { font-size: 14px; line-height: 1.5; margin: 12px 0 6px; }
+.generic p, .related p { margin: 6px 0; }
+.generic dd { margin: 0 0 8px; }
+.generic pre, .related pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+.generic ul, .related ul { padding-inline-start: 18px; }
+.generic li, .related li { margin: 0 0 4px; }
+.related { border-top: 1px solid var(--voyage-line); margin: 16px 0 0; padding-top: 6px; }
+.details a:focus-visible, .details button:focus-visible { outline: 2px solid var(--voyage-focus); outline-offset: 2px; }
+@container voyage (min-width: 520px) { .details { --voyage-detail-inset: 30px; } }
+@media (hover: hover) {
+  .back:hover, .copy:hover { color: var(--voyage-sea); }
+  .textButton:hover { text-decoration-thickness: 2px; }
+}

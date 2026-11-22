@@ -1,0 +1,114 @@
+.section {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin-block: 24px 0;
+  padding-block-start: 12px;
+  border-top: 1px solid var(--voyage-line, var(--dsw-alias-border-l4));
+  scroll-margin-block-start: var(--voyage-detail-nav-height, 52px);
+}
+
+.section :is(button, select, summary, textarea):focus-visible {
+  outline: 2px solid var(--dsw-focus-ring-color);
+  outline-offset: 2px;
+}
+
+.section :is(h3, h4, p) { margin: 0; }
+.section h3 { font-size: 16px; line-height: 1.45; font-weight: 650; }
+.section h4 { font-size: 14px; line-height: 1.5; font-weight: 650; }
+.section p { margin-block-start: 8px; line-height: 1.6; }
+.section :is(p[role="alert"], p[role="status"]) { font-size: 13px; }
+
+.header,
+.attemptHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.section :is(button, select, textarea) {
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--voyage-line, var(--dsw-alias-border-l4));
+  border-radius: 5px;
+}
+
+.section :is(button, select) { min-height: 32px; padding: 4px 9px; }
+.section button { max-width: 100%; white-space: normal; line-height: 1.4; }
+.section :is(button, summary) { cursor: pointer; }
+.section :is(button, select):disabled { cursor: default; opacity: 0.55; }
+.section .primary { align-self: end; border-color: var(--voyage-sea, var(--dsw-alias-state-business-primary)); }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  margin-block: 12px;
+}
+
+.controls label { flex: 1 1 100px; }
+.controls label,
+.reviewImport label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.controls select,
+.reviewImport textarea { width: 100%; min-width: 0; }
+.note { color: var(--voyage-secondary, var(--dsw-alias-label-secondary)); font-size: 12px; }
+
+.attempt {
+  min-width: 0;
+  margin-block-start: 12px;
+  padding-block-start: 12px;
+  border-top: 1px solid var(--voyage-line, var(--dsw-alias-border-l4));
+}
+
+.section .facts {
+  display: grid;
+  grid-template-columns: minmax(5em, max-content) minmax(0, 1fr);
+  gap: 4px 12px;
+  min-width: 0;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.section .facts dt { color: var(--voyage-secondary, var(--dsw-alias-label-secondary)); }
+.section .facts dd { min-width: 0; margin: 0; }
+.section .facts code { font-family: var(--dsw-font-mono, ui-monospace, monospace); }
+.receipt {
+  margin-block-start: 8px;
+  padding: 8px 12px 10px;
+  background: var(--voyage-evidence, var(--dsw-alias-bg-layer-1));
+}
+.section .receipt .facts { margin-block-start: 0; }
+.receiptActions {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-block-start: 10px;
+}
+.receiptActions details { width: 100%; min-width: 0; }
+.receipt :is(summary, pre) { font-size: 12px; line-height: 1.6; }
+.section .receipt pre {
+  margin-block: 4px 0;
+  padding: 4px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.review { font-size: 13px; overflow-wrap: anywhere; }
+.section .review .note { margin-block-start: 2px; }
+.summary { white-space: pre-wrap; }
+.reviewImport { margin-block-start: 8px; }
+.materialDetails { margin-block-start: 8px; }
+.materialDetails > summary { font-size: 12px; line-height: 1.6; }
+.reviewImport form { margin-block-start: 6px; }
+.reviewImport textarea { padding: 6px 8px; resize: vertical; }
+.reviewImport button { margin-block-start: 7px; }

@@ -127,6 +127,7 @@ describe("loadNativeAgentTeams", () => {
     expect(result?.tasks).toEqual([{
       id: "dsh-native-team:root:implement",
       goal: "Implement native bridge",
+      description: "Observe the root Session task board",
       targetNodeIds: [],
       dependsOnTaskIds: ["dsh-native-team:root:design"],
       agentTeamTask: {
@@ -159,6 +160,19 @@ describe("loadNativeAgentTeams", () => {
     expect(nativeTask).toEqual(before);
     result?.tasks[0]?.agentTeamTask?.blockedBy.push("local");
     expect(nativeTask.blockedBy).toEqual(["design"]);
+  });
+
+  it.each([
+    ["multiline", "\n  Preserve the task body.\r\n\r\nReview <details> literally.  \n"],
+    ["explicitly empty", ""],
+  ])("preserves %s native task descriptions verbatim", async (_label, description) => {
+    const nativeTask = task({ description });
+    const before = structuredClone(nativeTask);
+    const result = await loadNativeAgentTeams(controller({ enabled: true, tasks: [nativeTask] }));
+
+    expect(result?.tasks[0]).toHaveProperty("description", description);
+    expect(result?.tasks[0]?.goal).toBe("Implement native bridge");
+    expect(nativeTask).toEqual(before);
   });
 
   it.each([
@@ -196,6 +210,8 @@ describe("loadNativeAgentTeams", () => {
     { enabled: true, tasks: {} },
     { enabled: "true", tasks: [] },
     { enabled: true, tasks: [task({ subject: undefined, title: "wrong contract" })] },
+    { enabled: true, tasks: [task({ description: undefined })] },
+    { enabled: true, tasks: [task({ description: null })] },
     { enabled: true, tasks: [task({ revision: -1 })] },
     { enabled: true, tasks: [task({ status: "running" })] },
     { enabled: true, tasks: [task({ blockedBy: "design" })] },

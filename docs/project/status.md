@@ -1,5 +1,93 @@
 # 🐋 鲸项目状态
 
+## 同类调研与离线复核校验（2026-11-22）
+
+公开检索到 5 个 DSH 多机插件：dsh-fleet、Constellation、WispOps、dsh-anywhere、dsh-cow。
+它们覆盖远程 DSH 切换、SSH/VPS 运维、NAT 入网和纯消息协作，但没有任务 revision 绑定、
+材料回执或签名复核闭环，因此继续按既有差异点开发，不新增通用 SSH 面板或消息总线。
+逐仓对照与边界见[同类调研](../design/2026-11-22-fleet-landscape.md)；只依据 README 与仓库元数据，
+未审计源码或实际安装，星数和更新时间仅是 2026-11-22 快照。
+
+签名工具新增离线 `--verify`：用公钥校验复核 JSON，并可用 `--receipt` 确认签名绑定的正是本次
+task/attempt 回执；签名不符、摘要被改、未签名字段或回执不一致均非零退出。
+`scripts/smoke-sign-native-execution-review.mjs` 已覆盖 v1/v2 成功校验、错误公钥、篡改摘要、
+额外字段、错误回执和仅验签模式，最新运行输出 `native execution review smoke: pass`，exit 0。
+该工具只证明签名、公钥与回执一致，不证明 reviewer 与执行者身份独立，也不替代真实 Host B 验收。
+
+### M1：只读环境清单与漂移（2026-11-22）
+
+已实现 `whaleFleet` `contractVersion: 1` 的只读切片：`manifest()`、`host()`、
+`listHosts()`、`diff()`、`panelView()`、`subscribe()`。采集只读使用
+`ctx.pluginManager.listBundles()`、`ctx.profileContext`、profile/home 补丁、
+`pnpm-lock.yaml`、`compatibility.json`、`ctx.llm.listProviders()` 和 `ctx.mcpManager.list()`；
+首次采集在 `fleetEnvironment.directory` 生成 Ed25519 主机密钥，之后清单可离线验签。
+
+新增只读路由 `/plugins/dsh-fusion/fleet/{environment,hosts,diff}`，沿用 DSH 认证；
+原生面板顶部显示匹配/漂移/未知、环境摘要和漂移项。没有期望清单、远端清单过期、
+签名验证失败都显示“环境未知”，不回退为匹配；M1 不自动安装、不修改 profile、不读密钥值。
+
+验证：插件 fleet 定向 23 项、插件全量 400 项、原生面板 61 项、`tests/package.test.ts` 8 项通过；
+插件与 client 类型检查、插件 build、client vite build 通过。真实双机、远端公钥信任表和
+自动对齐仍未交付。
+
+## 开发分支：协作上下文与工作台候选（2026-11-20）
+
+本轮从公开 main `db0cfad` / beta.14 继续开发，尚未提交、推送、发布或替换 production 入口。
+已补原生与 legacy 任务正文的无损投影，原生详情展示负责人、修订、就绪三态、
+写入范围警告和预期证据；不据此推断执行授权、成员关系或验收通过。
+恢复账本改为保留全部非终态，仅终态历史使用最近 200 条配额，回归覆盖磁盘恢复后的容量准入。
+
+独立 `workbench-preview.html` 提供横向全景、海域加任务托盘、任务优先三个交互候选。
+候选全部采用固定合成数据，周边聊天仅作布局示意，无执行后端。
+用户随后选定第三版“任务优先”的结构，同时明确否决旧稿美感，要求先重设计并完成独立自审。
+用户已基本认可新的静态方向，并要求加入快速展示动画；设计稿与审查依据见[任务优先重设计 brief](../design/2026-11-20-task-first-design-brief.md)。
+独立 `design-study.html` 已完成 r1 否决 → r2 重排 → r3 精修 → r4 文字对比修复，可提交用户评审。
+新鲜验证为新增 8 项回归、client build（含类型检查）及 13 组浏览器检查；page / console errors 和写请求均为 0。
+48 组明暗文字token/阅读底色组合的最小对比为4.592:1；r4浅色新图独立复看未破坏已通过的视觉层级。
+420px 首任务起点 126px，常规详情实质证据阅读区起点约 493px；420 / 560 / 850 容器与明暗主题已看图。
+范围、截图、迭代否决及通过依据见[设计自审](../../design-qa.md)；旧 1194 项全套结果不冒充此次新设计的重跑。
+用户基本认可静态方向后，追加前端快速展示：独立稿提供约15秒一次性导览，支持暂停/继续/重播，
+人工操作退出；减动态模式改为手动步骤。已修启动列表位置、键盘焦点、冗余滚动及工具栏横跳。
+新增导览回归与原任务阅读回归合计14项通过；build含类型检查通过；另6组动效浏览器检查和13组基础检查通过。
+实际浏览器短预览及420浅色/560深色截图已保存。动画只讲解合成任务与证据，不演成真实执行或成功。
+真实 DSH 原生入口和当前已发布的 beta.14 不因该预览改变。
+
+原生执行纵切片已接入候选 native panel：从 DSH 原生 task 投影读取当前 revision，操作员只能选择
+allowlisted 作业和已配置 worker；Fusion 持久化 execution intent，经既有 FleetRouter/SSH adapter 派发，
+按精确 worker task 回读终态并生成 stdout/stderr 字节摘要、命令摘要、dispatch fingerprint 和 receipt SHA-256。
+签名复核 JSON 已由配置 reviewer key 签名并导入，验证 review 绑定当前 task、attempt 和 receipt。系统尚未将 reviewer key
+身份关联到 DSH authenticated actor 或 executor/operator，因此签名有效不等于系统已证明审核者独立；原生面板现明确显示“签名复核通过”及此边界。
+另加服务端终态门禁，completed/cancelled task 不再因 ready 标志被重新派发；新增 native execution 回归 17 项、
+client execution 回归 12 项，类型检查和 client build 通过。
+
+继续推进的版本化材料回执已落到候选源码：材料作业可固定 code/input/runtime/config 与 artifact 摘要，SSH worker 为每个 attempt
+创建私有 workspace，并在终态后从同一 worker 受限读取实际文件字节；路径穿越、符号链接、超限文件、工作区身份或摘要不匹配均保持未确认。
+材料回执使用 v2 digest，签名脚本同时兼容 v1/v2。当前这条材料门禁已有本机 provider 回归、worker 协议回归和 24 项原生执行回归，但本轮没有把现有
+loopback 固定文本证据改写成材料 v2 或双机通过；真实 Host B、固定 checkout/input/runtime、真实 artifact 与 reviewer 身份仍待授权和现场证据。
+
+本轮继续收紧了三个复核与恢复边界：作业撤销某执行节点后，该节点旧 review 会变为过期；账本拒绝普通作业携带材料回执，也拒绝材料作业缺失或篡改材料回执；SSH 回报的 workspace 绝对路径须与该 worker task 的预期目录一致。派发前 reservation 以 `reserved` 持久化，来源短暂不可读时可用同一 request、attempt、worker task ID 和 fingerprint 恢复；进入 `may-have-been-sent` 后按不确定处理，不盲目再次执行。该改动有定向回归，最终结果待本轮统一重跑。
+
+本次真实执行证据只来自当前机器上的 `127.0.0.1` SSH loopback 与固定文本合成作业；配置明确 `loopbackOnly: true`，
+因此不称为真实双机或业务验收。宿主 1280px viewport 的右栏拖拽实际受宿主最小宽度约 600px 限制，旧脚本的 420px 断言
+应视为宿主契约不匹配；Fusion 自身 420/560px 容器回归仍保留。模型目录/Provider 元数据 POST 与真实聊天/任务写入分开计数，未发生
+聊天消息、模型调用或未授权任务派发。真实第二台 Host、其 SSH 凭据/known_hosts、跨机 workspace/产物版本证据尚未获授权，仍是下一道门禁。
+仓库配置中多节点只是示例；不能据此推断有可用或获准的 Host B。现有任务执行接口每个 attempt 明确绑定单 worker，Fusion 不新增第二套调度器；真实 Host B 的任务、材料 v2 回执和另一位 reviewer 的现场复核仍需一次获准的双机运行。当前 DSH 认证路由只确认会话有效，签名导入中的 reviewerId 仍是声明值，因此系统尚不能证明执行者与审核者为不同身份。
+
+本次最终材料与恢复补丁的新鲜定向验证为：插件 execution/FleetRouter/routes 119 项、SSH/worker 76 项、原生执行面板 12 项；
+插件与 Host 类型检查、插件 client build、release package/setup 契约 13 项及 v1/v2 签名工具 smoke test 均通过。
+对应当前未发布候选 tarball SHA-256：`09309890ba49e531b052ed5441d3a759a52b6642e07eb5207cd4551f37e86fee`。
+这组结果验证候选代码与包契约，不包含真实 Host B 运行或业务验收。
+
+本轮源码 1194 项在单 worker、显式 30 秒单测预算下通过（root 68、core 33、config 3、
+client 397、host 345、plugin 348）。默认 5 秒运行中，两项既有动画穷举测试超时；
+完整同步循环在本机实测超过默认预算，保留原始失败记录，没有修改断言、采样范围或项目默认配置。
+构建、类型检查、doctor 29、插件契约 27、包契约 13、原生加载契约 18 及既有 E2E 3/3 通过。
+合成前端完成 1440 / 900 / 420、明暗、筛选、证据、草稿保留、IME、海域隔离/重试及减动画检查。
+这些结果不代表真实宿主升级、多 Host 写入、物理 GPU 或生产验收。
+
+[架构与产品提案](../design/2026-11-20-collaboration-control-plane.md) ·
+[本轮实施计划](../superpowers/plans/2026-11-20-whale-context-and-design.md)
+
 ## 当前候选：0.2.0-beta.14
 
 2026-11-17，候选入口已接入 DSH 原生右栏，默认任务，提供主机、团队与按需海域。

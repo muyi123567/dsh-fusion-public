@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { homedir } from "node:os";
 import {
   FUSION_PLUGIN_VERSION,
   type DshCompatibilityReport,
@@ -68,6 +69,32 @@ import {
 import { FleetRouter } from "./fleet-router.js";
 import { ReadCounts } from "./read-counts.js";
 import { loadNativeAgentTeams } from "./native-agent-teams.js";
+import {
+  createNativeTaskExecution,
+  type NativeExecutionJob,
+} from "./native-task-execution.js";
+import { createNativeExecutionRoutes } from "./native-execution-routes.js";
+import { collectFleetManifest } from "./fleet-environment-collector.js";
+import { hostIdFromPublicKey, verifyFleetManifest } from "./fleet-environment.js";
+import { createWhaleFleetService } from "./fleet-service.js";
+import { createFleetRoutes } from "./fleet-routes.js";
+
+export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
+export type {
+  FleetBundle,
+  FleetDriftItem,
+  FleetDriftReport,
+  FleetHostManifest,
+  FleetManifestBody,
+  FleetMcpServer,
+  FleetPatchRef,
+  FleetWorkspace,
+} from "./fleet-environment.js";
+export type {
+  FleetHostSummary,
+  FleetPanelView,
+  WhaleFleetServiceV1,
+} from "./fleet-service.js";
 import {
   BridgeRoundCache,
   type BridgeRound,
@@ -173,6 +200,8 @@ export interface FusionHostContext {
     info?: (message: string) => void;
     warn?: (message: string) => void;
   };
+  /** Cordis service registration; absent on older hosts. */
+  provide?: (name: string, value: unknown) => unknown;
 }
 
 export interface FusionHostConfig {
@@ -183,6 +212,25 @@ export interface FusionHostConfig {
   timeoutMs?: number;
   actionTimeoutMs?: number;
   taskLedgerPath?: string;
+  /** Opt-in jobs selected by an authenticated browser operator. */
+  nativeTaskExecution?: {
+    jobs: NativeExecutionJob[];
+    /** Ed25519 public keys. Reviewer private keys stay outside the host. */
+    reviewerKeys?: Record<string, string>;
+    directory?: string;
+  };
+  /**
+   * Read-only fleet environment facts. The directory holds the host identity
+   * key, cached remote manifests and the optional expected manifest. No
+   * profile or plugin configuration is changed by collection.
+   */
+  fleetEnvironment?: {
+    directory?: string;
+    expectedManifestPath?: string;
+    staleAfterSeconds?: number;
+    secretNames?: string[];
+    displayName?: string;
+  };
   modelTaskCommands?: string[];
   /**
    * Enables the three high-privilege AgentTeams write proxies:
@@ -1102,6 +1150,109 @@ export async function apply(
       ...fleetNodeDefinitions.sshNodes.map((node) => node.nodeId),
       ...fleetNodeDefinitions.instaboxNodes.map((node) => node.nodeId),
     ]);
+    const executionConfig = config.demo === true ? undefined : config.nativeTaskExecution;
+    const executionDirectory = executionConfig?.directory
+      ?? (taskLedgerPath === undefined ? undefined : `${taskLedgerPath}.executions`);
+    const executionService = executionConfig === undefined || executionDirectory === undefined
+      || fleetRouter === undefined ? undefined : createNativeTaskExecution({
+        directory: executionDirectory,
+        jobs: executionConfig.jobs.filter((job) => job.nodeIds.every((id) => configuredNodeIds.has(id))),
+        reviewerKeys: executionConfig.reviewerKeys ?? {},
+        readTask: async (taskId) => {
+          const controller = ctx.get?.("sessionController") as SessionControllerLike | undefined;
+          const board = await loadNativeAgentTeams(controller, config.timeoutMs);
+          if (board === undefined) throw new Error("NATIVE_AGENT_TEAMS_UNAVAILABLE");
+          return board.tasks.find((task) => task.id === taskId);
+        },
+        taskIdFor: (nodeId, key) => fleetRouter.executionTaskId(nodeId, key),
+        dispatch: async (input) => await createRuntime().dispatchTask(input).finally(() => {
+          void refreshFleetNow(true).catch(() => {});
+        }),
+        inspect: (nodeId, taskId) => fleetRouter.inspectExecution(nodeId, taskId),
+        supportsMaterials: (nodeId) => fleetRouter.supportsExecutionMaterials(nodeId),
+        verifyMaterials: async (input) => {
+          const paths = [
+            input.expected.code.path,
+            input.expected.input.path,
+            input.expected.runtime.path,
+            input.expected.config.path,
+            ...input.expected.artifacts.map((artifact) => artifact.path),
+          ];
+          const read = await fleetRouter.readRoutedExecutionMaterialFiles(
+            input.nodeId, input.workerTaskId, input.attemptId, paths,
+          );
+          if (read === undefined || read.workspaceId !== input.attemptId
+            || read.sourceRevision !== input.expected.source.revision
+            || read.sourceDigest !== input.expected.source.digest) return undefined;
+          const byPath = new Map(read.files.map((file) => [file.path, file]));
+          const file = (path: string) => byPath.get(path);
+          const code = file(input.expected.code.path);
+          const inputFile = file(input.expected.input.path);
+          const runtime = file(input.expected.runtime.path);
+          const config = file(input.expected.config.path);
+          if (code === undefined || inputFile === undefined || runtime === undefined || config === undefined) return undefined;
+          const artifacts = input.expected.artifacts.map((expected) => {
+            const actual = file(expected.path);
+            return actual === undefined ? undefined : { path: actual.path, digest: actual.digest, bytes: actual.bytes };
+          });
+          if (artifacts.some((artifact) => artifact === undefined)) return undefined;
+          return {
+            version: 1,
+            workspace: { id: read.workspaceId, path: read.workspacePath },
+            source: { ...input.expected.source },
+            code: { path: code.path, digest: code.digest },
+            input: { path: inputFile.path, digest: inputFile.digest },
+            runtime: { path: runtime.path, digest: runtime.digest, evidence: "measured" as const },
+            config: { path: config.path, digest: config.digest },
+            artifacts: artifacts as Array<{ path: string; digest: string; bytes: number }>,
+          };
+        },
+      });
+    const fleetEnvironmentConfig = config.fleetEnvironment;
+    const fleetDirectory = fleetEnvironmentConfig?.directory
+      ?? env("FUSION_FLEET_DIR")
+      ?? join(homedir(), ".dsh-fusion", "fleet");
+    const fleetExpectedManifest = fleetEnvironmentConfig?.expectedManifestPath
+      ?? env("FUSION_FLEET_EXPECTED_MANIFEST");
+    const fleetStaleAfterSeconds = fleetEnvironmentConfig?.staleAfterSeconds
+      ?? Number(env("FUSION_FLEET_STALE_SECONDS") ?? "");
+    let fleetPublicKeyPem: string | undefined;
+    const fleetService = createWhaleFleetService({
+      collect: async () => {
+        const collected = await collectFleetManifest({
+          ctx,
+          directory: fleetDirectory,
+          ...(fleetEnvironmentConfig?.displayName === undefined ? {} : { displayName: fleetEnvironmentConfig.displayName }),
+          ...(fleetEnvironmentConfig?.secretNames === undefined ? {} : { secretNames: fleetEnvironmentConfig.secretNames }),
+          ...(Number.isFinite(fleetStaleAfterSeconds) && fleetStaleAfterSeconds > 0
+            ? { staleAfterSeconds: fleetStaleAfterSeconds }
+            : {}),
+          dshVersion: dshCompatibility.version ?? version,
+        });
+        fleetPublicKeyPem = collected.publicKeyPem;
+        return collected.manifest;
+      },
+      directory: fleetDirectory,
+      ...(fleetExpectedManifest === undefined ? {} : { expectedManifestPath: fleetExpectedManifest }),
+      ...(Number.isFinite(fleetStaleAfterSeconds) && fleetStaleAfterSeconds > 0
+        ? { staleAfterSeconds: fleetStaleAfterSeconds }
+        : {}),
+      verifyManifest: (manifest) => {
+        if (fleetPublicKeyPem === undefined) return undefined;
+        return manifest.hostId === hostIdFromPublicKey(fleetPublicKeyPem)
+          ? verifyFleetManifest(manifest, fleetPublicKeyPem)
+          : undefined;
+      },
+    });
+    if (typeof ctx.provide === "function") {
+      try {
+        ctx.provide("whaleFleet", fleetService);
+      } catch (error) {
+        ctx.logger?.warn?.(`dsh-fusion: whaleFleet service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    } else {
+      ctx.logger?.info?.("dsh-fusion: host has no ctx.provide; whaleFleet stays local to this plugin");
+    }
     const dispatchPreview = fleetRouter === undefined ? undefined : createDispatchPreviewService({
       configuredNodeIds,
       fleet: {
@@ -1952,6 +2103,13 @@ export async function apply(
       const connection = injectedConnection
         ?? ctx.connection
         ?? ctx.get?.("connection") as DshConnection | undefined;
+      for (const route of createNativeExecutionRoutes({
+        service: executionService,
+        authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+        readBody: readJsonBody,
+      })) {
+        effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
       // The routes are registered on the injected scope, not on the outer
       // plugin scope. `ctx.inject` creates a child fiber, and that fiber is
       // reloaded when the webServer instance changes. Registering on the
@@ -1975,6 +2133,18 @@ export async function apply(
             const hub = await sessionHub.snapshot(abortSignalForRequest(request));
             const snapshot = store.snapshot();
             const sources = snapshotSources(live, demoEnabled);
+            const environment = await fleetService.panelView().catch((error: unknown) => ({
+              hostId: "unknown",
+              displayName: "本机",
+              observedAt: new Date().toISOString(),
+              digest: "",
+              overall: "unknown" as const,
+              reason: error instanceof Error ? error.message : String(error),
+              stale: true,
+              signed: false,
+              items: [],
+              counts: { block: 0, warn: 0, info: 0 },
+            }));
             const nodes = live.nodes.length > 0 || !demoEnabled ? live.nodes : snapshot.nodes;
             const bots = live.bots.length > 0 || !demoEnabled ? live.bots : snapshot.bots;
             const groups = live.groups.length > 0 || !demoEnabled ? live.groups : snapshot.groups;
@@ -1994,6 +2164,7 @@ export async function apply(
               sessionHub: hub,
               providers: live.providers,
               config: configFromNodes(nodes, live.config[0]?.hash),
+              environment,
               // Read fan-out accounting (review 05 P1-1): cumulative
               // route / loader / bridge-HTTP / controller read counts
               // for this plugin apply, including this very request.
@@ -2016,6 +2187,12 @@ export async function apply(
           }
         },
       }), "dsh-fusion: state route");
+      for (const route of createFleetRoutes({
+        service: fleetService,
+        authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+      })) {
+        effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
       effectScope.effect?.(() => webServer.register({
         kind: "exact",
         path: "/plugins/dsh-fusion/session-hub",

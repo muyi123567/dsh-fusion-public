@@ -543,6 +543,7 @@ export function mapAgentTeamsSnapshot(
       result.tasks.push({
         id: taskKey,
         goal: text(task.subject, text(task.description, taskKey)),
+        ...(typeof task.description === "string" ? { description: task.description } : {}),
         targetNodeIds: [],
         ...(dependencies.length === 0 ? {} : { dependsOnTaskIds: dependencies }),
         ...(agentTeamTask === undefined ? {} : { agentTeamTask }),
