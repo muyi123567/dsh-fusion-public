@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muyi123567/dsh-fusion-public/contracts/task-envelope.v1.schema.json",
+  "title": "TaskEnvelope v1",
+  "description": "A single multi-host dispatch intent. It references upstream task identity and an allowlisted job; it never carries arbitrary commands or secrets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "taskId",
+    "taskRevision",
+    "sourceToken",
+    "requestId",
+    "idempotencyKey",
+    "target",
+    "environment",
+    "job",
+    "limits",
+    "approval"
+  ],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1, "maxLength": 2048 },
+    "taskRevision": { "type": "integer", "minimum": 0 },
+    "sourceToken": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "requestId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "requestedBy": { "type": "string", "maxLength": 128 },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostId"],
+      "properties": {
+        "hostId": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy"],
+      "properties": {
+        "requireDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "policy": { "enum": ["exact", "compatible"] },
+        "requiredCapabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jobId"],
+      "properties": {
+        "jobId": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "materials": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": { "$ref": "#/$defs/filePin" },
+        "input": { "$ref": "#/$defs/filePin" },
+        "runtime": { "$ref": "#/$defs/filePin" },
+        "config": { "$ref": "#/$defs/filePin" },
+        "artifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactPin" }
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deadlineSeconds", "maxOutputBytes"],
+      "properties": {
+        "deadlineSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+        "maxOutputBytes": { "type": "integer", "minimum": 0, "maximum": 10485760 }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required"],
+      "properties": {
+        "required": { "const": true },
+        "approvalId": { "type": "string", "maxLength": 128 }
+      }
+    }
+  },
+  "$defs": {
+    "filePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "artifactPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest", "bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

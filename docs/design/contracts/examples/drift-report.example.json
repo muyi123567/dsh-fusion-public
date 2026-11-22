@@ -1,0 +1,26 @@
+{
+  "contractVersion": 1,
+  "hostId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "expectedDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observedDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "checkedAt": "2026-11-22T10:00:01Z",
+  "stale": false,
+  "overall": "drift",
+  "items": [
+    {
+      "code": "bundle.version",
+      "severity": "block",
+      "path": "bundles[dsh-fusion].version",
+      "expected": "0.2.0-beta.15",
+      "actual": "0.2.0-beta.14",
+      "remedy": "在目标主机升级到锁定版本并重启 profile"
+    },
+    {
+      "code": "provider.name",
+      "severity": "warn",
+      "path": "providers",
+      "expected": ["deepseek"],
+      "actual": ["deepseek", "openai"]
+    }
+  ]
+}

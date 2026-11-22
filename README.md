@@ -32,6 +32,23 @@ beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e731461
 [接入规划](docs/design/2026-11-17-whale-native-panel-plan.md) ·
 [原生验收方法](docs/design/2026-11-17-native-panel-acceptance.md)
 
+## 开放接入
+
+鲸群的目标不是封闭工作台，而是 DS-Bot 式 Bot 团队在多机上的“执行与环境一致性层”：
+任务仍属于 DSH/DS-Bot 的 Session，鲸只提供跨机派发、环境清单、漂移报告和执行证据。
+
+| 接入面 | 面向 | 形态 |
+| --- | --- | --- |
+| `whaleFleet` 服务 v1 | 其他 DSH 插件 | `ctx.provide` + `inject`，版本化只读/派发接口 |
+| MCP 工具 | DS-Bot Bot、Claude、Codex、脚本 | 本机 loopback，默认关闭，按客户端令牌限权 |
+| 标准槽位 | 宿主 UI | `sidebar.panellist`、`main`、`plugins.detail.section` |
+| JSON Schema | 任意实现 | `docs/design/contracts/` 下的清单、漂移、派发契约 |
+
+v1 契约目前是设计稿，尚未实现；当前可用的是原生面板、现有执行路由与签名复核。
+设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
+[开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·
+[契约说明](docs/design/contracts/README.md)。
+
 ## 安装与升级
 
 从维护者提供的同一 release 下载 tarball 与 `SHA256SUMS`，核对后由 DSH 宿主安装。

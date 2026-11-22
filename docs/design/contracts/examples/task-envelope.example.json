@@ -1,0 +1,33 @@
+{
+  "contractVersion": 1,
+  "taskId": "dsh-native-team:example-task",
+  "taskRevision": 3,
+  "sourceToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "requestId": "req-example-1",
+  "idempotencyKey": "idem-example-1",
+  "requestedBy": "chief",
+  "target": {
+    "hostId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "environment": {
+    "requireDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "policy": "exact",
+    "requiredCapabilities": ["ssh"]
+  },
+  "job": { "jobId": "verify-example" },
+  "materials": {
+    "code": {
+      "path": "src/revision.txt",
+      "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "artifacts": [
+      {
+        "path": "dist/result.bin",
+        "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 10
+      }
+    ]
+  },
+  "limits": { "deadlineSeconds": 600, "maxOutputBytes": 1048576 },
+  "approval": { "required": true }
+}

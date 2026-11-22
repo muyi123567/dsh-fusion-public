@@ -1,0 +1,59 @@
+{
+  "contractVersion": 1,
+  "hostId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "displayName": "worker-b",
+  "observedAt": "2026-11-22T10:00:00Z",
+  "staleAfterSeconds": 900,
+  "dsh": {
+    "version": "0.2.3-alpha.2",
+    "profile": "web",
+    "node": "24.11.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "bundles": [
+    {
+      "name": "dsh-fusion",
+      "version": "0.2.0-beta.14",
+      "enabled": true,
+      "installed": true,
+      "availability": "profile",
+      "rows": ["whale"],
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "patches": {
+    "profile": {
+      "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 120
+    },
+    "home": null
+  },
+  "compatibility": { "exemptions": [] },
+  "capabilities": { "ssh": true, "gpu": false },
+  "workspaces": [
+    {
+      "id": "ws-example",
+      "rootHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "vcsCommit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "dirty": false,
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "providers": ["deepseek"],
+  "mcpServers": [
+    {
+      "name": "whale-fleet",
+      "transport": "stdio",
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "secrets": { "present": ["DEEPSEEK_API_KEY"] },
+  "environmentDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "secretPresenceDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "signature": {
+    "alg": "ed25519",
+    "keyId": "host:worker-b",
+    "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  }
+}

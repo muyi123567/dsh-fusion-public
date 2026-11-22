@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muyi123567/dsh-fusion-public/contracts/drift-report.v1.schema.json",
+  "title": "DriftReport v1",
+  "description": "A deterministic comparison between an expected environment digest and one host's observed manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "hostId",
+    "expectedDigest",
+    "observedDigest",
+    "checkedAt",
+    "overall",
+    "items"
+  ],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "hostId": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "expectedDigest": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "observedDigest": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "checkedAt": { "type": "string", "format": "date-time" },
+    "stale": { "type": "boolean" },
+    "overall": { "enum": ["match", "drift", "unknown"] },
+    "reason": { "type": "string", "description": "Present when overall is unknown." },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "path"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^(runtime|bundle|patch|compatibility|capability|workspace|provider|mcp|secret|manifest)\\.[a-z0-9_.-]+$"
+        },
+        "severity": { "enum": ["block", "warn", "info"] },
+        "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "expected": {},
+        "actual": {},
+        "remedy": { "type": "string", "maxLength": 512 }
+      }
+    }
+  }
+}
