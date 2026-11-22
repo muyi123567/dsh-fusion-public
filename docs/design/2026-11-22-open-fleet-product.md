@@ -38,7 +38,8 @@ Ed25519 签名复核、过期判定、离线验签。但它有三个结构性缺
 | 核心差异 | 让 Bot 像人一样长期协作 | 让 Bot 团队跨机器工作且环境可复现 |
 
 鲸群不是“另一个 DS-Bot”，而是 DS-Bot 团队的**跨机执行与一致性层**。两者可以同时安装：
-DS-Bot 的 Bot 通过同 profile 的 MCP 工具直接使用鲸群，不需要改 DS-Bot 代码。
+DS-Bot 的 Bot 在 agent preset 允许时，通过同 profile 的 MCP 工具直接使用鲸群，
+不需要改 DS-Bot 代码。
 
 ### 2.2 三个产品承诺
 
@@ -367,8 +368,9 @@ whale:
 
 ### 模式 A：同 profile 工具（默认，零改动）
 
-DS-Bot 的 Bot 是 DSH root Session，自动看到同 profile 的 MCP 工具。安装鲸并启用
-`whale-fleet` MCP 后，Chief Bot 可直接调用 `whale_list_hosts`、`whale_environment_diff`、
+DS-Bot 的 Bot 是 DSH root Session；在 Bot 的 agent preset 允许该工具的前提下，同 profile 的
+MCP 工具会进入它的工具面。安装鲸并启用 `whale-fleet` MCP 后，Chief Bot 可直接调用
+`whale_list_hosts`、`whale_environment_diff`、
 `whale_request_dispatch`。这是最快、最稳的互操作方式。
 
 ### 模式 B：BotPeer（可选）
