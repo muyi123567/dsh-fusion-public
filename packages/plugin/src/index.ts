@@ -2123,17 +2123,7 @@ export async function apply(
           if (rejectUnauthenticated(ctx, connection, request, response)) return;
           readCounts.countRoute("state");
           try {
-            const fleetRead = await readFleetState();
-            const live = await createRuntime(
-              request.headers,
-              fleetRead?.entry,
-            ).snapshot();
-            stateHub.mergeLiveSnapshot(watchSnapshotFrom(live));
-            sessionHub.setBridgeSources(sessionHubBridgeSources(live));
-            const hub = await sessionHub.snapshot(abortSignalForRequest(request));
-            const snapshot = store.snapshot();
-            const sources = snapshotSources(live, demoEnabled);
-            const environment = await fleetService.panelView().catch((error: unknown) => ({
+            const environmentRead = fleetService.panelView().catch((error: unknown) => ({
               hostId: "unknown",
               displayName: "本机",
               observedAt: new Date().toISOString(),
@@ -2145,6 +2135,17 @@ export async function apply(
               items: [],
               counts: { block: 0, warn: 0, info: 0 },
             }));
+            const fleetRead = await readFleetState();
+            const live = await createRuntime(
+              request.headers,
+              fleetRead?.entry,
+            ).snapshot();
+            stateHub.mergeLiveSnapshot(watchSnapshotFrom(live));
+            sessionHub.setBridgeSources(sessionHubBridgeSources(live));
+            const hub = await sessionHub.snapshot(abortSignalForRequest(request));
+            const snapshot = store.snapshot();
+            const sources = snapshotSources(live, demoEnabled);
+            const environment = await environmentRead;
             const nodes = live.nodes.length > 0 || !demoEnabled ? live.nodes : snapshot.nodes;
             const bots = live.bots.length > 0 || !demoEnabled ? live.bots : snapshot.bots;
             const groups = live.groups.length > 0 || !demoEnabled ? live.groups : snapshot.groups;

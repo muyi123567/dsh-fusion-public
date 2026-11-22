@@ -1,8 +1,9 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { createPrivateKey, createPublicKey, generateKeyPairSync } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { readInstalledDshVersion } from "./compatibility.js";
 import {
   canonicalJson,
@@ -30,7 +31,7 @@ export interface FleetCollectorOptions {
   now?: () => Date;
   env?: Record<string, string | undefined>;
   readText?: (path: string) => string;
-  readVcs?: (cwd: string) => { commit: string | null; dirty: boolean | null };
+  readVcs?: (cwd: string) => Promise<{ commit: string | null; dirty: boolean | null }> | { commit: string | null; dirty: boolean | null };
 }
 
 export interface CollectedFleetManifest {
@@ -82,7 +83,7 @@ export async function collectFleetManifest(options: FleetCollectorOptions): Prom
   const compatibility = readCompatibility(profile, readText);
   const providers = readProviders(options.ctx, capabilities);
   const mcpServers = readMcpServers(options.ctx, capabilities);
-  const workspaces = readWorkspaces(profile, options.readVcs ?? defaultReadVcs, capabilities);
+  const workspaces = await readWorkspaces(profile, options.readVcs ?? defaultReadVcs, capabilities);
   const present = (options.secretNames ?? [])
     .map(name => name.trim())
     .filter(name => /^[A-Z][A-Z0-9_]{2,127}$/u.test(name) && (env[name] ?? "") !== "")
@@ -273,27 +274,33 @@ function readMcpServers(ctx: FleetCollectorContext, capabilities: Record<string,
   }
 }
 
-function readWorkspaces(
+async function readWorkspaces(
   profile: ProfileContextLike | undefined,
-  readVcs: (cwd: string) => { commit: string | null; dirty: boolean | null },
+  readVcs: (cwd: string) => Promise<{ commit: string | null; dirty: boolean | null }> | { commit: string | null; dirty: boolean | null },
   capabilities: Record<string, boolean>,
-): FleetWorkspace[] {
+): Promise<FleetWorkspace[]> {
   if (profile?.cwd === undefined || profile.cwd === "") return [];
   const rootHash = `sha256:${sha256Hex(profile.cwd)}`;
-  const vcs = readVcs(profile.cwd);
+  const vcs = await readVcs(profile.cwd);
   const digest = `sha256:${sha256Hex(canonicalJson({ rootHash, commit: vcs.commit, dirty: vcs.dirty }))}`;
   capabilities.workspaceVcs = vcs.commit !== null;
   return [{ id: "profile", rootHash, vcsCommit: vcs.commit, dirty: vcs.dirty, digest }];
 }
 
-function defaultReadVcs(cwd: string): { commit: string | null; dirty: boolean | null } {
+const runFile = promisify(execFile) as (
+  file: string,
+  args: string[],
+  options: Record<string, unknown>,
+) => Promise<{ stdout: string; stderr: string }>;
+
+async function defaultReadVcs(cwd: string): Promise<{ commit: string | null; dirty: boolean | null }> {
   try {
-    const commit = execFileSync("git", ["-C", cwd, "rev-parse", "HEAD"], {
-      encoding: "utf8", timeout: 2_000, stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    const status = execFileSync("git", ["-C", cwd, "status", "--porcelain"], {
-      encoding: "utf8", timeout: 2_000, stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
+    const [head, statusOutput] = await Promise.all([
+      runFile("git", ["-C", cwd, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 2_000 }),
+      runFile("git", ["-C", cwd, "status", "--porcelain"], { encoding: "utf8", timeout: 2_000 }),
+    ]);
+    const commit = head.stdout.trim();
+    const status = statusOutput.stdout.trim();
     return { commit: /^[a-f0-9]{40}$/u.test(commit) ? commit : null, dirty: status !== "" };
   } catch {
     return { commit: null, dirty: null };
