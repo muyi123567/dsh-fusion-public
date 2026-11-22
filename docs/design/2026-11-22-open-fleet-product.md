@@ -269,7 +269,8 @@ MCP v1 工具：
 - 上游任务：`taskId`、`taskRevision`、`sourceToken`；鲸不复制任务正文作为权威。
 - 幂等：`requestId`、`idempotencyKey`。
 - 目标：`hostId` 或选择器（能力/标签），但一次 attempt 只绑定一个 host。
-- 环境：`requireDigest`、`policy: exact | compatible`、`requiredCapabilities`。
+- 环境：`hostId?`（默认沿用 target）、`requireDigest`、`policy: exact | compatible`、
+  `requiredCapabilities`。
 - 作业：只引用 allowlisted `jobId`，不携带任意命令。
 - 材料：code/input/runtime/config/artifact 的 pin。
 - 限制：deadline、最大输出字节、审批要求。
@@ -587,3 +588,28 @@ fleetEnvironment:
 
 验证：MCP 存储与 HTTP 回归 9 项；插件全量 410 项通过；类型检查与构建通过。
 真实 Chief 调用见 [DS-Bot M2 runbook](2026-11-22-dsbot-chief-m2-runbook.md)。
+
+## 19. M3 落地记录（环境门禁与回执绑定）
+
+已实现：
+
+- 原生执行启动可带可选 `environment: { hostId?, requireDigest?, policy }`。
+  门禁调用 `whaleFleet.diff`：`exact` 只允许 `match`；`compatible` 允许无 `block`
+  的漂移；`unknown`、主机不可读或门禁未配置一律拒绝派发。
+- attempt 保存 `controller-gate` 观测（hostId、期望/实际摘要、策略、匹配、漂移项、时间）；
+  同一 request 重试复用该 attempt，改变环境要求按 `attempt-conflict` 处理。
+- 回执新增可选 `environment`，使用 v3 域：
+  `["dsh-native-execution-receipt/v3", ...fields, materials ?? null, environment]`。
+  v1/v2 保持兼容；v3 回执的 SHA-256 绑定环境观测，复核签名继续绑定该回执摘要。
+- 原生执行面板新增“读取本机环境”、环境主机、期望摘要与精确/兼容策略；启动时随请求发送。
+- `scripts/sign-native-execution-review.mjs` 与 smoke 覆盖 v3 签名、验签与篡改环境失败。
+
+语义边界：
+
+- 门禁使用本机清单或 `hosts/*.json` 缓存；没有真实远端采集时，`hostId` 必须由操作员提供，
+  且清单来源仍可能过期或未验签，按 `unknown`/`block` 处理。
+- `environment.matched=false` 仍可能在 `compatible` 策略下被允许；回执会保留该事实，不写成匹配。
+- 回执环境观测是控制面在派发门禁时记录的事实，不是 worker 自报；它证明门禁看到的清单，
+  不额外证明 worker 内部运行时与清单完全一致。
+
+验证：插件全量 414 项、原生面板 63 项通过；插件与 client 类型检查、构建、v1/v2/v3 签名 smoke 通过。

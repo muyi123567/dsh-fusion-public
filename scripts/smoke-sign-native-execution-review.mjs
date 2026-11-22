@@ -136,6 +136,33 @@ try {
     "--public-key", publicKeyFile, "--receipt", receiptV1File], { encoding: "utf8" });
   assert.notEqual(staleReceipt.status, 0);
   assert.match(staleReceipt.stderr, /未绑定到该回执/u);
+
+  const environment = {
+    hostId: `sha256:${"a".repeat(64)}`, expectedDigest: `sha256:${"b".repeat(64)}`,
+    observedDigest: `sha256:${"b".repeat(64)}`, policy: "exact", matched: true,
+    checkedAt: "2026-11-20T00:00:09.000Z", source: "controller-gate",
+  };
+  const v3 = { ...v2, environment };
+  v3.sha256 = sha256(JSON.stringify(["dsh-native-execution-receipt/v3", v3.taskId, v3.sourceToken,
+    v3.attemptId, v3.jobId, v3.nodeId, v3.workerTaskId, `native-execution:${v3.attemptId}`,
+    v3.commandSha256, v3.dispatchFingerprint, v3.startedAt, v3.finishedAt, v3.exitCode,
+    v3.stdout.sha256, v3.stdout.bytes, v3.stderr.sha256, v3.stderr.bytes, materials, environment]));
+  writeFileSync(receiptFile, JSON.stringify(v3));
+  const v3Result = spawnSync(process.execPath, ["scripts/sign-native-execution-review.mjs", "--receipt", receiptFile,
+    "--reviewer", "reviewer-example", "--verdict", "passed", "--summary-file", summaryFile,
+    "--private-key", keyFile], { encoding: "utf8" });
+  assert.equal(v3Result.status, 0, v3Result.stderr);
+  const v3ReviewFile = join(dir, "review-v3.json");
+  writeFileSync(v3ReviewFile, v3Result.stdout);
+  const v3Verified = spawnSync(process.execPath, ["scripts/sign-native-execution-review.mjs", "--verify", v3ReviewFile,
+    "--public-key", publicKeyFile, "--receipt", receiptFile], { encoding: "utf8" });
+  assert.equal(v3Verified.status, 0, v3Verified.stderr);
+  assert.equal(JSON.parse(v3Verified.stdout).receiptBound, true);
+  const tamperedEnvironment = join(dir, "receipt-v3-tampered.json");
+  writeFileSync(tamperedEnvironment, JSON.stringify({ ...v3, environment: { ...environment, matched: false } }));
+  const tamperedEnvReceipt = spawnSync(process.execPath, ["scripts/sign-native-execution-review.mjs", "--verify", v3ReviewFile,
+    "--public-key", publicKeyFile, "--receipt", tamperedEnvironment], { encoding: "utf8" });
+  assert.notEqual(tamperedEnvReceipt.status, 0);
   console.log("native execution review smoke: pass");
 } finally {
   rmSync(dir, { recursive: true, force: true });

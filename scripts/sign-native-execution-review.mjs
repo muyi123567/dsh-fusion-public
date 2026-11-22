@@ -88,7 +88,10 @@ function validMaterials(value, sourceToken, attemptId) {
 
 function validReceipt(receipt) {
   const hasMaterials = typeof receipt === "object" && receipt !== null && Object.hasOwn(receipt, "materials");
-  if (!fieldsMatch(receipt, hasMaterials ? [...RECEIPT_FIELDS_V1, "materials"] : RECEIPT_FIELDS_V1)) return false;
+  const hasEnvironment = typeof receipt === "object" && receipt !== null && Object.hasOwn(receipt, "environment");
+  const fieldsWithExtras = [...RECEIPT_FIELDS_V1,
+    ...(hasMaterials ? ["materials"] : []), ...(hasEnvironment ? ["environment"] : [])];
+  if (!fieldsMatch(receipt, fieldsWithExtras)) return false;
   const { sha256: digest, taskId, sourceToken, attemptId, jobId, nodeId, workerTaskId, commandSha256,
     dispatchFingerprint, startedAt, finishedAt, exitCode, stdout, stderr } = receipt;
   if (typeof taskId !== "string" || taskId.length === 0 || Buffer.byteLength(taskId) > 2048
@@ -98,12 +101,32 @@ function validReceipt(receipt) {
     || !validTime(startedAt) || !validTime(finishedAt) || Date.parse(startedAt) > Date.parse(finishedAt)
     || !Number.isInteger(exitCode) || exitCode < 0 || exitCode > 255
     || !validStream(stdout) || !validStream(stderr)
-    || (hasMaterials && !validMaterials(receipt.materials, sourceToken, attemptId))) return false;
+    || (hasMaterials && !validMaterials(receipt.materials, sourceToken, attemptId))
+    || (hasEnvironment && !validEnvironment(receipt.environment))) return false;
   const fields = [taskId, sourceToken,
     attemptId, jobId, nodeId, workerTaskId, `native-execution:${attemptId}`, commandSha256,
     dispatchFingerprint, startedAt, finishedAt, exitCode, stdout.sha256, stdout.bytes, stderr.sha256, stderr.bytes];
-  const digestDomain = hasMaterials ? "dsh-native-execution-receipt/v2" : "dsh-native-execution-receipt/v1";
-  return digest === sha256(JSON.stringify([digestDomain, ...fields, ...(hasMaterials ? [receipt.materials] : [])]));
+  const digestDomain = hasEnvironment ? "dsh-native-execution-receipt/v3"
+    : hasMaterials ? "dsh-native-execution-receipt/v2" : "dsh-native-execution-receipt/v1";
+  const extras = hasEnvironment
+    ? [receipt.materials ?? null, receipt.environment]
+    : hasMaterials ? [receipt.materials] : [];
+  return digest === sha256(JSON.stringify([digestDomain, ...fields, ...extras]));
+}
+
+function validEnvironment(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const allowed = new Set(["hostId", "expectedDigest", "observedDigest", "policy", "matched", "checkedAt", "source", "items", "reason"]);
+  if (!Object.keys(value).every(field => allowed.has(field))) return false;
+  const digest = input => input === undefined || matches(/^sha256:[a-f0-9]{64}$/u, input);
+  if (!digest(value.hostId) || !digest(value.expectedDigest) || !digest(value.observedDigest)) return false;
+  if ((value.policy !== "exact" && value.policy !== "compatible") || typeof value.matched !== "boolean"
+    || !validTime(value.checkedAt) || value.source !== "controller-gate") return false;
+  if (value.reason !== undefined && (typeof value.reason !== "string" || value.reason.length > 512)) return false;
+  if (value.items !== undefined && (!Array.isArray(value.items) || value.items.some(item =>
+    typeof item !== "object" || item === null || !["code", "path"].every(key => typeof item[key] === "string")
+    || !["block", "warn", "info"].includes(item.severity)))) return false;
+  return true;
 }
 
 function readOrFail(read, message) {

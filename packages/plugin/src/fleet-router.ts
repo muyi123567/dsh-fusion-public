@@ -57,11 +57,13 @@ export function createDispatchFingerprint(input: {
   nodeIds: string[];
   executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
   executionMaterialsDigest?: string;
+  executionEnvironmentDigest?: string;
 }): string {
   return createHash("sha256").update(JSON.stringify({
     command: input.command ?? "",
     ...(input.executionWorkspace === undefined ? {} : { executionWorkspace: input.executionWorkspace }),
     ...(input.executionMaterialsDigest === undefined ? {} : { executionMaterialsDigest: input.executionMaterialsDigest }),
+    ...(input.executionEnvironmentDigest === undefined ? {} : { executionEnvironmentDigest: input.executionEnvironmentDigest }),
     goal: input.goal,
     nodeIds: [...new Set(input.nodeIds)],
   })).digest("hex");

@@ -75,8 +75,8 @@ import {
 } from "./native-task-execution.js";
 import { createNativeExecutionRoutes } from "./native-execution-routes.js";
 import { collectFleetManifest } from "./fleet-environment-collector.js";
-import { hostIdFromPublicKey, verifyFleetManifest } from "./fleet-environment.js";
-import { createWhaleFleetService } from "./fleet-service.js";
+import { hostIdFromPublicKey, verifyFleetManifest, type FleetDriftReport } from "./fleet-environment.js";
+import { createWhaleFleetService, FleetServiceError } from "./fleet-service.js";
 import { createFleetRoutes } from "./fleet-routes.js";
 import { createFleetMcpServer } from "./fleet-mcp.js";
 import { FleetMcpStore } from "./fleet-mcp-store.js";
@@ -1164,6 +1164,13 @@ export async function apply(
     const executionConfig = config.demo === true ? undefined : config.nativeTaskExecution;
     const executionDirectory = executionConfig?.directory
       ?? (taskLedgerPath === undefined ? undefined : `${taskLedgerPath}.executions`);
+    let fleetEnvironmentGate: ((input: {
+      taskId: string; nodeId: string; hostId?: string; requireDigest?: string; policy: "exact" | "compatible";
+    }) => Promise<{
+      allowed: boolean; hostId?: string; expectedDigest?: string; observedDigest?: string;
+      policy: "exact" | "compatible"; matched: boolean; source: "controller-gate";
+      items?: Array<{ code: string; severity: "block" | "warn" | "info"; path: string }>; reason?: string;
+    }>) | undefined;
     const executionService = executionConfig === undefined || executionDirectory === undefined
       || fleetRouter === undefined ? undefined : createNativeTaskExecution({
         directory: executionDirectory,
@@ -1218,6 +1225,10 @@ export async function apply(
             artifacts: artifacts as Array<{ path: string; digest: string; bytes: number }>,
           };
         },
+        checkEnvironment: async (input) => {
+          if (fleetEnvironmentGate === undefined) throw new Error("FLEET_ENVIRONMENT_GATE_UNAVAILABLE");
+          return await fleetEnvironmentGate(input);
+        },
       });
     const fleetEnvironmentConfig = config.fleetEnvironment;
     const fleetDirectory = fleetEnvironmentConfig?.directory
@@ -1255,6 +1266,32 @@ export async function apply(
           : undefined;
       },
     });
+    fleetEnvironmentGate = async (input) => {
+      const local = await fleetService.manifest();
+      const hostId = input.hostId ?? local.hostId;
+      let report: FleetDriftReport;
+      try {
+        report = await fleetService.diff(hostId, input.requireDigest);
+      } catch (error) {
+        return {
+          allowed: false, hostId, policy: input.policy, matched: false, source: "controller-gate" as const,
+          reason: error instanceof FleetServiceError ? error.code : "whale/unavailable",
+        };
+      }
+      const blocked = report.items.some((item) => item.severity === "block");
+      const allowed = report.overall === "match"
+        || (input.policy === "compatible" && report.overall === "drift" && !blocked);
+      return {
+        allowed, hostId, policy: input.policy, matched: report.overall === "match",
+        source: "controller-gate" as const,
+        ...(report.expectedDigest === null ? {} : { expectedDigest: report.expectedDigest }),
+        ...(report.observedDigest === null ? {} : { observedDigest: report.observedDigest }),
+        ...(report.items.length === 0 ? {} : {
+          items: report.items.map((item) => ({ code: item.code, severity: item.severity, path: item.path })),
+        }),
+        ...(report.reason === undefined ? {} : { reason: report.reason }),
+      };
+    };
     if (typeof ctx.provide === "function") {
       try {
         ctx.provide("whaleFleet", fleetService);

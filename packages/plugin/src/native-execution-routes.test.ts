@@ -101,6 +101,21 @@ describe("native execution HTTP boundary", () => {
     });
   });
 
+  it("passes an optional environment requirement to the execution service", async () => {
+    const subject = harness({} as Service);
+    const digest = `sha256:${"a".repeat(64)}`;
+    subject.setBody({ taskId: "dsh-native-team:team:task", sourceToken: "f".repeat(64),
+      jobId: "verify", nodeId: "worker", requestId: "request-1",
+      environment: { hostId: digest, requireDigest: digest, policy: "exact" } });
+    const post = await subject.invoke(PATH, {
+      method: "POST", headers: { "content-type": "application/json" },
+    });
+    expect(post.status).toBe(202);
+    expect(subject.start).toHaveBeenCalledWith(expect.objectContaining({
+      environment: { hostId: digest, requireDigest: digest, policy: "exact" },
+    }));
+  });
+
   it("requires same-origin JSON for the independent-review mutation", async () => {
     const subject = harness({} as Service);
     subject.setBody({ taskId: "task", attemptId: "attempt", receiptSha256: "a".repeat(64),

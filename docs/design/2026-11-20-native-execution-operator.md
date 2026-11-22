@@ -8,6 +8,11 @@
 - 操作员选择已配置的作业和主机。每次尝试由受支持的 worker adapter 派发，绑定一个任务和一个作业/主机。不要把 `writeScopes` 解释成锁；adapter 的 `jobRoot/<workerTaskId>` 是任务状态、进程身份和 stdout/stderr 的隔离目录，不等于自动切换后的代码工作目录，也不证明跨执行器 fencing。SSH 默认 `jobRoot` 为 `/var/lib/dsh-fusion/jobs`，Instabox 默认值为 `/tmp/dsh-fusion-instabox-jobs`；可被 Host 配置覆盖。普通 v1 作业不会自动建立代码 workspace 或注入 attempt 环境变量；材料 v2 作业按下文创建私有工作区。无论哪种，代码和输入准备仍由 allowlisted command 与固定 pin 决定，服务不会替作业猜测 checkout。
 - Worker 回报会把退出码、开始/结束时间及完整捕获到的 stdout/stderr 摘要带入回执。`commandSha256` 仅绑定配置中的命令文本，不包含被命令调用的脚本、代码、依赖或运行时。Fusion 校验观察字段与回执摘要；回执没有作业源代码、完整运行环境、任意文件清单或真实终端屏幕录像的证明。
 - 需要材料验收的作业可以配置固定的 code/input/runtime/config 文件摘要和 artifact 路径/字节数。适配器会为 attempt 创建唯一的私有 `jobRoot/<workerTaskId>/workspace`，以非登录 shell 的 `FUSION_ATTEMPT_*` 环境变量和当前目录交给 allowlisted command；它不会自动检出 DSH 任务引用或准备依赖，作业必须在此唯一工作区内按固定规则准备代码和输入。终态后适配器再从同一 worker 读取受限文件字节，拒绝绝对路径、`..`、符号链接、超大文件和工作区身份或来源摘要不匹配。worker 在 stdout 中报告的 manifest 只作提示，不能替代适配器读取。没有适配器读取、任一摘要不匹配，或 runtime 只有 `declared` 身份时，作业不可启动或 attempt 保持“未确认”，不会生成 v2 材料回执。
+- 可选的环境门禁在派发前读取目标环境的签名清单并与 `requireDigest` 比较。`exact` 只放行匹配；
+  `compatible` 只放行没有阻塞级漂移的结果；来源过期、清单不可读、未配置门禁或验签失败都拒绝。
+  通过门禁的观测写入 attempt，并进入 v3 回执摘要
+  `["dsh-native-execution-receipt/v3", ...fields, materials ?? null, environment]`；
+  v1/v2 回执仍可验证。回执只证明控制面门禁看到的环境，不证明 worker 进程内部与清单完全一致。
 - 与执行身份独立的 reviewer 应重新阅读同一任务 revision，在主机上检查本次尝试涉及的代码、输入和实际产物，核对日志、退出状态及自己的复现/测试，并自行决定 `passed` 或 `failed`。当前服务只验证配置 reviewer 公钥对应的 Ed25519 签名、任务 owner 不同以及签名绑定了回执；`reviewerId` 仍由导入内容声明，DSH authenticated actor / operator / executor principal 尚未绑定到签名，因此系统目前不能证明签名者就是独立于执行者的真实审核人。只有 reviewer 从受控身份实际复查这些材料后，才可在操作流程中称为独立复核；UI 显示签名有效不代表身份独立性已由系统证明。签名也不证明文件内容、测试质量或真实 LAN/多 Host 端到端链路。
 
 ## 配置

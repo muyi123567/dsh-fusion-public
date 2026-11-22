@@ -3,7 +3,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TaskRecord } from "@dsh-fusion/core";
 import { createNativeTaskExecution, nativeExecutionReviewBytes } from "./native-task-execution.js";
 
@@ -42,6 +42,7 @@ async function fixture() {
     idempotencyKey: string;
     executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string };
     executionMaterialsDigest?: string;
+    executionEnvironmentDigest?: string;
   } | undefined;
   const inspections: Array<[string, string]> = [];
   const options = {
@@ -83,6 +84,7 @@ async function fixture() {
         command,
         ...(submitted.executionWorkspace === undefined ? {} : { executionWorkspace: submitted.executionWorkspace }),
         ...(submitted.executionMaterialsDigest === undefined ? {} : { executionMaterialsDigest: submitted.executionMaterialsDigest }),
+        ...(submitted.executionEnvironmentDigest === undefined ? {} : { executionEnvironmentDigest: submitted.executionEnvironmentDigest }),
         goal: submitted.goal, nodeIds: [nodeId],
       })),
       executionObservation: {
@@ -160,6 +162,82 @@ describe("native execution", () => {
       receipt.exitCode, receipt.stdout.sha256, receipt.stdout.bytes, receipt.stderr.sha256, receipt.stderr.bytes,
     ]));
   }
+
+  function receiptV3Digest(receipt: Record<string, any>): string {
+    return sha(JSON.stringify([
+      "dsh-native-execution-receipt/v3", receipt.taskId, receipt.sourceToken, receipt.attemptId,
+      receipt.jobId, receipt.nodeId, receipt.workerTaskId, `native-execution:${receipt.attemptId}`,
+      receipt.commandSha256, receipt.dispatchFingerprint, receipt.startedAt, receipt.finishedAt,
+      receipt.exitCode, receipt.stdout.sha256, receipt.stdout.bytes, receipt.stderr.sha256, receipt.stderr.bytes,
+      receipt.materials ?? null, receipt.environment,
+    ]));
+  }
+
+  it("binds an allowed environment gate into a v3 receipt", async () => {
+    const f = await fixture();
+    const digest = `sha256:${"a".repeat(64)}`;
+    const checkEnvironment = vi.fn(async (input: { hostId?: string; requireDigest?: string; policy: string }) => ({
+      allowed: true,
+      ...(input.hostId === undefined ? {} : { hostId: input.hostId }),
+      ...(input.requireDigest === undefined ? {} : { expectedDigest: input.requireDigest }),
+      observedDigest: digest, policy: input.policy as "exact" | "compatible", matched: true,
+      source: "controller-gate" as const,
+    }));
+    const service = createNativeTaskExecution({ ...f.options, checkEnvironment });
+    const attempt = await service.start({
+      ...f.request,
+      environment: { hostId: digest, requireDigest: digest, policy: "exact" },
+    });
+    expect(checkEnvironment).toHaveBeenCalledWith({
+      taskId, nodeId: "node-a", hostId: digest, requireDigest: digest, policy: "exact",
+    });
+    expect(attempt.environment).toMatchObject({ observedDigest: digest, matched: true, policy: "exact" });
+    expect(f.dispatchCount).toBe(1);
+    f.observed = f.observedWorker();
+    const read = await service.read(taskId);
+    const receipt = read.attempts[0]!.receipt!;
+    expect(receipt.environment).toMatchObject({ observedDigest: digest, matched: true });
+    expect(receipt.sha256).toBe(receiptV3Digest(receipt));
+  });
+
+  it("refuses to dispatch when the environment gate denies the target", async () => {
+    const f = await fixture();
+    const digest = `sha256:${"a".repeat(64)}`;
+    const service = createNativeTaskExecution({
+      ...f.options,
+      checkEnvironment: async () => ({
+        allowed: false, hostId: digest, expectedDigest: digest, observedDigest: digest,
+        policy: "exact", matched: false, source: "controller-gate", reason: "bundle.version",
+      }),
+    });
+    await expect(service.start({
+      ...f.request,
+      environment: { hostId: digest, requireDigest: digest, policy: "exact" },
+    })).rejects.toMatchObject({ code: "environment-drift" });
+    expect(f.dispatchCount).toBe(0);
+    expect((await service.read(taskId)).attempts).toEqual([]);
+  });
+
+  it("reuses an environment-gated attempt for the same request and rejects a changed requirement", async () => {
+    const f = await fixture();
+    const digest = `sha256:${"a".repeat(64)}`;
+    const checkEnvironment = vi.fn(async (input: { hostId?: string; requireDigest?: string; policy: string }) => ({
+      allowed: true,
+      ...(input.hostId === undefined ? {} : { hostId: input.hostId }),
+      ...(input.requireDigest === undefined ? {} : { expectedDigest: input.requireDigest }),
+      observedDigest: digest, policy: input.policy as "exact" | "compatible", matched: true,
+      source: "controller-gate" as const,
+    }));
+    const service = createNativeTaskExecution({ ...f.options, checkEnvironment });
+    const request = { ...f.request, environment: { hostId: digest, requireDigest: digest, policy: "exact" as const } };
+    const first = await service.start(request);
+    const second = await service.start(request);
+    expect(second.id).toBe(first.id);
+    expect(checkEnvironment).toHaveBeenCalledTimes(1);
+    expect(f.dispatchCount).toBe(1);
+    await expect(service.start({ ...request, environment: { ...request.environment, requireDigest: `sha256:${"b".repeat(64)}` } }))
+      .rejects.toMatchObject({ code: "attempt-conflict" });
+  });
 
   it("issues a v2 receipt only when configured pins match adapter-observed worker materials", async () => {
     const f = await fixture();

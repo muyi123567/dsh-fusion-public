@@ -1,6 +1,10 @@
 import { isJsonRequest, isSameOriginMutation, type AuthHeaders } from "./auth.js";
 import { jsonResponse, type HttpResponse } from "./http.js";
-import { NativeTaskExecutionError, type createNativeTaskExecution } from "./native-task-execution.js";
+import {
+  NativeTaskExecutionError,
+  type NativeExecutionEnvironmentRequest,
+  type createNativeTaskExecution,
+} from "./native-task-execution.js";
 
 interface Request {
   url?: string;
@@ -26,6 +30,7 @@ function sendError(response: HttpResponse, error: unknown) {
     "source-stale": 409, "job-unavailable": 409, "attempt-conflict": 409,
     "attempt-missing": 410, "receipt-unavailable": 409, "review-untrusted": 403,
     "review-invalid": 422, "store-unavailable": 503,
+    "environment-unavailable": 503, "environment-drift": 409, "environment-unknown": 409,
   } satisfies Record<NativeTaskExecutionError["code"], number>;
   jsonResponse(response, status[error.code], { error: error.code });
 }
@@ -82,6 +87,9 @@ export function createNativeExecutionRoutes<T extends Request>(options: {
             jobId: requiredString(body, "jobId"),
             nodeId: requiredString(body, "nodeId"),
             requestId: requiredString(body, "requestId"),
+            ...(body.environment === undefined
+              ? {}
+              : { environment: body.environment as NativeExecutionEnvironmentRequest }),
           });
           jsonResponse(response, 202, attempt);
           return;

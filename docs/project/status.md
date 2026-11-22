@@ -47,6 +47,19 @@ DS-Bot Bot 与 DSH Agent；没有 mcpManager 时仅外部客户端可用。
 因此用确定性 mock 适配器驱动 Chief；工具链真实，模型推理为测试替身。证据：
 `/data/openlet/evidence/dsh-fusion-m2-20261122/`（含 screenshot、tools、401/403/405/200、SHA256SUMS）。
 
+### M3：环境门禁与回执绑定（2026-11-22）
+
+原生执行启动支持 `environment: { hostId, requireDigest, policy }`。门禁调用 `whaleFleet.diff`：
+`exact` 只放行 match，`compatible` 放行无 block 的漂移，unknown/不可读/未配置一律拒绝。
+attempt 保存控制面观测；同一 request 重试复用，改变要求为 attempt-conflict。
+
+回执新增可选环境观测并使用 v3 域（含 materials 与 environment），v1/v2 兼容；签名复核绑定
+该回执摘要。面板可读取本机环境、填写主机/摘要/策略并随启动发送。签名工具与 smoke 覆盖
+v3 及环境篡改失败。
+
+验证：插件全量 414 项、原生面板 63 项、v1/v2/v3 签名 smoke 通过；双端类型检查与构建通过。
+真实远端清单采集、worker 内部环境证明与自动对齐仍未交付。
+
 ## 开发分支：协作上下文与工作台候选（2026-11-20）
 
 本轮从公开 main `db0cfad` / beta.14 继续开发，尚未提交、推送、发布或替换 production 入口。

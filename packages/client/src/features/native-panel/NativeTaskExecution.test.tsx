@@ -100,6 +100,46 @@ it("after an uncertain POST only reads until the exact request is found", async 
   expect(fetcher.mock.calls.map(([url]) => url)).toEqual([getUrl(task.id), executionPath, getUrl(task.id), getUrl(task.id)]);
 });
 
+it("shows the environment gate and the environment-bound receipt", async () => {
+  const digest = `sha256:${"f".repeat(64)}`;
+  const environment = {
+    hostId: digest, expectedDigest: digest, observedDigest: digest, policy: "exact" as const,
+    matched: true, checkedAt: "2026-11-20T00:00:09Z", source: "controller-gate" as const,
+  };
+  const withEnvironment = {
+    ...attempt, environment,
+    receipt: { ...receipt, environment, sha256: "f".repeat(64) },
+  };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(result({ ...list, attempts: [withEnvironment] })));
+  render(<NativeTaskExecution task={task} data={dataFor()} />);
+  expect(await screen.findByText("环境门禁")).toBeVisible();
+  expect(screen.getByText("环境绑定")).toBeVisible();
+  expect(screen.getAllByText(digest).length).toBeGreaterThan(0);
+});
+
+it("loads the local environment and sends it as a dispatch requirement", async () => {
+  const digest = `sha256:${"a".repeat(64)}`;
+  let requestId = "";
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce(result(list))
+    .mockResolvedValueOnce(result({ hostId: digest, environmentDigest: digest }))
+    .mockImplementationOnce((_, init: RequestInit) => {
+      requestId = JSON.parse(String(init.body)).requestId;
+      return result({ ...attempt, requestId, executionState: "running", receipt: undefined }, 202);
+    })
+    .mockImplementationOnce(() => result({ ...list, attempts: [{ ...attempt, requestId }] }));
+  vi.stubGlobal("fetch", fetcher);
+  render(<NativeTaskExecution task={task} data={dataFor()} />);
+  fireEvent.change(await screen.findByLabelText("执行作业"), { target: { value: "validate" } });
+  fireEvent.change(screen.getByLabelText("执行主机"), { target: { value: "worker-b" } });
+  fireEvent.click(screen.getByRole("button", { name: "读取本机环境" }));
+  await waitFor(() => expect(screen.getByLabelText("期望环境摘要")).toHaveValue(digest));
+  fireEvent.click(screen.getByRole("button", { name: "启动执行" }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(4));
+  const request = JSON.parse(fetcher.mock.calls[2]?.[1].body);
+  expect(request.environment).toEqual({ hostId: digest, requireDigest: digest, policy: "exact" });
+});
+
 it("discards prior launch controls when the displayed subject changes before the next read settles", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(result(list)).mockReturnValueOnce(new Promise(() => {}));
   vi.stubGlobal("fetch", fetcher);

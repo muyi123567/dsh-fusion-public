@@ -43,6 +43,25 @@ export interface NativeExecutionReceipt {
   stdout: StreamDigest;
   stderr: StreamDigest;
   materials?: VerifiedExecutionMaterials;
+  environment?: NativeExecutionEnvironmentObservation;
+}
+
+export interface NativeExecutionEnvironmentRequest {
+  hostId?: string;
+  requireDigest?: string;
+  policy?: "exact" | "compatible";
+}
+
+export interface NativeExecutionEnvironmentObservation {
+  hostId?: string;
+  expectedDigest?: string;
+  observedDigest?: string;
+  policy: "exact" | "compatible";
+  matched: boolean;
+  checkedAt: string;
+  source: "controller-gate";
+  items?: Array<{ code: string; severity: "block" | "warn" | "info"; path: string }>;
+  reason?: string;
 }
 
 
@@ -78,6 +97,7 @@ export interface NativeExecutionAttemptView {
   /** Exited means the exact worker supplied a complete, consistent terminal receipt. */
   executionState: "pending" | "running" | "unconfirmed" | "exited";
   receipt?: NativeExecutionReceipt;
+  environment?: NativeExecutionEnvironmentObservation;
   review?: Omit<StoredReview, "taskId" | "attemptId" | "signature" | "keySha256"> & { state: "current" | "stale"; };
 }
 
@@ -105,6 +125,7 @@ export interface NativeExecutionReadView {
 export type NativeTaskExecutionErrorCode =
   | "invalid-input" | "task-missing" | "source-unavailable" | "source-stale"
   | "job-unavailable" | "attempt-conflict" | "attempt-missing" | "receipt-unavailable"
+  | "environment-unavailable" | "environment-drift" | "environment-unknown"
   | "review-untrusted" | "review-invalid" | "store-unavailable";
 export class NativeTaskExecutionError extends Error {
   constructor(readonly code: NativeTaskExecutionErrorCode) {
@@ -120,6 +141,7 @@ export interface NativeExecutionStartInput {
   jobId: string;
   nodeId: string;
   requestId: string;
+  environment?: NativeExecutionEnvironmentRequest;
 }
 
 type StartInput = NativeExecutionStartInput;
@@ -135,6 +157,7 @@ interface StoredAttempt extends StartInput {
   materialsRequired?: true;
   expectedSourceRevision?: string;
   expectedMaterials?: ExecutionMaterialPins;
+  environment?: NativeExecutionEnvironmentObservation;
   receipt?: NativeExecutionReceipt;
   receiptConflict?: true;
   review?: StoredReview;
@@ -169,6 +192,7 @@ export interface NativeExecutionOptions {
     idempotencyKey: string;
     executionWorkspace?: { id: string; sourceRevision: string; sourceDigest: string; };
     executionMaterialsDigest?: string;
+    executionEnvironmentDigest?: string;
   }) => Promise<TaskRecord>;
   inspect: (nodeId: string, workerTaskId: string) => Promise<TaskRecord>;
   /** Must read bounded bytes from the exact worker and hash them independently of worker stdout. */
@@ -182,6 +206,23 @@ export interface NativeExecutionOptions {
     reported?: ExecutionMaterialManifest;
   }) => Promise<ExecutionMaterialManifest | undefined>;
   supportsMaterials?: (nodeId: string) => boolean;
+  checkEnvironment?: (input: {
+    taskId: string;
+    nodeId: string;
+    hostId?: string;
+    requireDigest?: string;
+    policy: "exact" | "compatible";
+  }) => Promise<{
+    allowed: boolean;
+    hostId?: string;
+    expectedDigest?: string;
+    observedDigest?: string;
+    policy: "exact" | "compatible";
+    matched: boolean;
+    source: "controller-gate";
+    items?: Array<{ code: string; severity: "block" | "warn" | "info"; path: string }>;
+    reason?: string;
+  }>;
   now?: () => Date;
 }
 
@@ -258,9 +299,37 @@ function receiptDigest(value: Omit<NativeExecutionReceipt, "sha256">): string {
   value.jobId, value.nodeId, value.workerTaskId, workerKey(value.attemptId), value.commandSha256,
   value.dispatchFingerprint, value.startedAt, value.finishedAt, value.exitCode,
   value.stdout.sha256, value.stdout.bytes, value.stderr.sha256, value.stderr.bytes];
+  if (value.environment !== undefined) {
+    return sha256(canonical("dsh-native-execution-receipt/v3", ...fields,
+      value.materials ?? null, value.environment));
+  }
   return value.materials === undefined
     ? sha256(canonical("dsh-native-execution-receipt/v1", ...fields))
     : sha256(canonical("dsh-native-execution-receipt/v2", ...fields, value.materials));
+}
+
+function validEnvironmentRequest(value: unknown): value is NativeExecutionEnvironmentRequest {
+  if (!isRecord(value) || !hasOnlyFields(value, ["hostId", "requireDigest", "policy"])) return false;
+  const digest = (input: unknown) => typeof input === "string" && /^sha256:[a-f0-9]{64}$/u.test(input);
+  return (value.hostId === undefined || digest(value.hostId))
+    && (value.requireDigest === undefined || digest(value.requireDigest))
+    && (value.policy === undefined || value.policy === "exact" || value.policy === "compatible")
+    && (value.requireDigest !== undefined || value.policy === "compatible");
+}
+
+function validEnvironmentObservation(value: unknown): value is NativeExecutionEnvironmentObservation {
+  if (!isRecord(value)
+    || !hasOnlyFields(value, ["hostId", "expectedDigest", "observedDigest", "policy", "matched", "checkedAt", "source", "items", "reason"])) return false;
+  const digest = (input: unknown) => input === undefined || (typeof input === "string" && /^sha256:[a-f0-9]{64}$/u.test(input));
+  return digest(value.hostId) && digest(value.expectedDigest) && digest(value.observedDigest)
+    && (value.policy === "exact" || value.policy === "compatible")
+    && typeof value.matched === "boolean" && validTime(value.checkedAt) && value.source === "controller-gate"
+    && (value.observedDigest !== undefined || value.matched === false)
+    && (value.reason === undefined || isText(value.reason, 512))
+    && (value.items === undefined || (Array.isArray(value.items) && value.items.every(item =>
+      isRecord(item) && hasOnlyFields(item, ["code", "severity", "path"])
+      && typeof item.code === "string" && (item.severity === "block" || item.severity === "warn" || item.severity === "info")
+      && typeof item.path === "string")));
 }
 
 function isManifest(value: unknown): value is ExecutionMaterialManifest {
@@ -382,7 +451,7 @@ function validStoredMaterials(value: Record<string, unknown>, attempt: StoredAtt
 
 function validStoredReceipt(value: unknown, attempt: StoredAttempt): value is NativeExecutionReceipt {
   return isRecord(value) && hasOnlyFields(value, ["sha256", "taskId", "sourceToken", "attemptId", "jobId", "nodeId",
-    "workerTaskId", "commandSha256", "dispatchFingerprint", "startedAt", "finishedAt", "exitCode", "stdout", "stderr", "materials"])
+    "workerTaskId", "commandSha256", "dispatchFingerprint", "startedAt", "finishedAt", "exitCode", "stdout", "stderr", "materials", "environment"])
     && matches(HASH, value.sha256)
     && value.taskId === attempt.taskId && value.sourceToken === attempt.sourceToken
     && value.attemptId === attempt.id && value.jobId === attempt.jobId && value.nodeId === attempt.nodeId
@@ -391,6 +460,10 @@ function validStoredReceipt(value: unknown, attempt: StoredAttempt): value is Na
     && validTime(value.startedAt) && validTime(value.finishedAt)
     && Date.parse(value.startedAt) <= Date.parse(value.finishedAt) && knownStream(value.stdout) && knownStream(value.stderr)
     && validStoredMaterials(value, attempt)
+    && (value.environment === undefined
+      ? attempt.environment === undefined
+      : attempt.environment !== undefined && validEnvironmentObservation(value.environment)
+        && JSON.stringify(value.environment) === JSON.stringify(attempt.environment))
     && value.sha256 === receiptDigest(value as unknown as NativeExecutionReceipt);
 }
 
@@ -402,7 +475,7 @@ function decodeAttempts(taskId: string, value: unknown): StoredAttempt[] {
   const intents = new Set<string>();
   return value.map((entry: unknown) => {
     if (!isRecord(entry) || !hasOnlyFields(entry, ["taskId", "sourceToken", "jobId", "nodeId", "requestId", "id",
-      "workerTaskId", "createdAt", "commandSha256", "dispatchFingerprint", "dispatchState", "materialsRequired", "expectedSourceRevision", "expectedMaterials", "receipt", "receiptConflict", "review"])
+      "workerTaskId", "createdAt", "commandSha256", "dispatchFingerprint", "dispatchState", "materialsRequired", "expectedSourceRevision", "expectedMaterials", "environment", "receipt", "receiptConflict", "review"])
       || entry.taskId !== taskId || !matches(ID, entry.id) || !matches(HASH, entry.sourceToken)
       || !matches(ID, entry.jobId) || !matches(ID, entry.nodeId) || !matches(ID, entry.requestId)
       || !matches(ID, entry.workerTaskId) || !validTime(entry.createdAt)
@@ -414,6 +487,7 @@ function decodeAttempts(taskId: string, value: unknown): StoredAttempt[] {
       || (entry.materialsRequired === true && (entry.expectedMaterials === undefined || entry.expectedSourceRevision === undefined))
       || (entry.expectedMaterials !== undefined && entry.materialsRequired !== true)
       || (entry.expectedSourceRevision !== undefined && entry.materialsRequired !== true)
+      || (entry.environment !== undefined && !validEnvironmentObservation(entry.environment))
       || (entry.receiptConflict !== undefined && (entry.receiptConflict !== true || entry.receipt === undefined))) {
       throw new NativeTaskExecutionError("store-unavailable");
     }
@@ -585,6 +659,7 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
       exitCode: observed.exitCode, stdout: { sha256: observed.stdout.sha256, bytes: observed.stdout.bytes },
       stderr: { sha256: observed.stderr.sha256, bytes: observed.stderr.bytes },
       ...(verifiedMaterials === undefined ? {} : { materials: verifiedMaterials }),
+      ...(attempt.environment === undefined ? {} : { environment: attempt.environment }),
     };
     return { state: "exited", receipt: { ...facts, sha256: receiptDigest(facts) } };
   }
@@ -630,6 +705,7 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
     return {
       id, taskId, sourceToken, jobId, nodeId, requestId, workerTaskId, createdAt, executionState,
       sourceState: activeSource !== undefined ? "current" : source.state === "unavailable" ? "unavailable" : "stale",
+      ...(attempt.environment === undefined ? {} : { environment: attempt.environment }),
       ...(receipt === undefined ? {} : { receipt }), ...(review === undefined ? {} : { review }),
     };
   }
@@ -680,6 +756,9 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
         throw new NativeTaskExecutionError("invalid-input");
       }
       const { taskId, sourceToken, jobId, nodeId, requestId } = input;
+      if (input.environment !== undefined && !validEnvironmentRequest(input.environment)) {
+        throw new NativeTaskExecutionError("invalid-input");
+      }
       const source = currentSource(await readSource(taskId), sourceToken);
       const job = jobs.get(jobId);
       if (job === undefined || !job.nodeIds.includes(nodeId) || !source.ready) throw new NativeTaskExecutionError("job-unavailable");
@@ -688,9 +767,49 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
           || options.supportsMaterials?.(nodeId) === false)) {
         throw new NativeTaskExecutionError("job-unavailable");
       }
+      const environmentRequest = input.environment;
+      const existing = (await store.read(taskId)).find(entry => entry.requestId === requestId);
+      let environment: NativeExecutionEnvironmentObservation | undefined =
+        environmentRequest === undefined ? undefined : existing?.environment;
+      if (existing !== undefined && environmentRequest !== undefined) {
+        const saved = existing.environment;
+        const policy = environmentRequest.policy ?? "exact";
+        if (saved === undefined
+          || (environmentRequest.hostId !== undefined && saved.hostId !== environmentRequest.hostId)
+          || (environmentRequest.requireDigest !== undefined && saved.expectedDigest !== environmentRequest.requireDigest)
+          || saved.policy !== policy) {
+          throw new NativeTaskExecutionError("attempt-conflict");
+        }
+      }
+      if (environmentRequest !== undefined && existing === undefined) {
+        if (options.checkEnvironment === undefined) throw new NativeTaskExecutionError("environment-unavailable");
+        let gate: Awaited<ReturnType<NonNullable<typeof options.checkEnvironment>>>;
+        try {
+          gate = await options.checkEnvironment({
+            taskId, nodeId,
+            ...(environmentRequest.hostId === undefined ? {} : { hostId: environmentRequest.hostId }),
+            ...(environmentRequest.requireDigest === undefined ? {} : { requireDigest: environmentRequest.requireDigest }),
+            policy: environmentRequest.policy ?? "exact",
+          });
+        } catch {
+          throw new NativeTaskExecutionError("environment-unavailable");
+        }
+        if (!gate.allowed) {
+          throw new NativeTaskExecutionError(gate.observedDigest === undefined ? "environment-unknown" : "environment-drift");
+        }
+        environment = {
+          ...(gate.hostId === undefined ? {} : { hostId: gate.hostId }),
+          ...(gate.expectedDigest === undefined ? {} : { expectedDigest: gate.expectedDigest }),
+          ...(gate.observedDigest === undefined ? {} : { observedDigest: gate.observedDigest }),
+          policy: gate.policy, matched: gate.matched, checkedAt: now(), source: "controller-gate",
+          ...(gate.items === undefined ? {} : { items: gate.items }),
+          ...(gate.reason === undefined ? {} : { reason: gate.reason }),
+        };
+        if (!validEnvironmentObservation(environment)) throw new NativeTaskExecutionError("environment-unavailable");
+      }
       const id = randomUUID();
       const idempotencyKey = workerKey(id);
-      const makeDispatch = (attempt: Pick<StoredAttempt, "id" | "sourceToken" | "expectedSourceRevision" | "expectedMaterials" | "materialsRequired">) => ({
+      const makeDispatch = (attempt: Pick<StoredAttempt, "id" | "sourceToken" | "expectedSourceRevision" | "expectedMaterials" | "materialsRequired" | "environment">) => ({
         goal: `Native task execution ${attempt.id} (${job.id})`, nodeIds: [nodeId], command: job.command,
         idempotencyKey: workerKey(attempt.id),
         ...(attempt.materialsRequired === true && attempt.expectedMaterials !== undefined ? {
@@ -703,11 +822,15 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
             sourceDigest: attempt.sourceToken,
           },
         } : {}),
+        ...(attempt.environment?.observedDigest === undefined
+          ? {}
+          : { executionEnvironmentDigest: attempt.environment.observedDigest }),
       });
       const proposedDispatch = makeDispatch({
         id, sourceToken, expectedSourceRevision: String(source.revision),
         ...(job.expectedMaterials === undefined ? {} : { expectedMaterials: job.expectedMaterials }),
         ...((job.requireMaterials === true || job.expectedMaterials !== undefined) ? { materialsRequired: true as const } : {}),
+        ...(environment === undefined ? {} : { environment }),
       });
       const reservation = await store.update(taskId, entries => {
         const sameRequest = entries.find(entry => entry.requestId === requestId);
@@ -720,7 +843,8 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
           const newPinsDigest = job.expectedMaterials === undefined
             ? undefined : materialPinsDigest(job.expectedMaterials);
           if (sameRequest.commandSha256 !== sha256(job.command) || oldPinsDigest !== newPinsDigest
-            || (sameRequest.materialsRequired === true) !== (job.requireMaterials === true || job.expectedMaterials !== undefined)) {
+            || (sameRequest.materialsRequired === true) !== (job.requireMaterials === true || job.expectedMaterials !== undefined)
+            || JSON.stringify(sameRequest.environment) !== JSON.stringify(environment)) {
             throw new NativeTaskExecutionError("attempt-conflict");
           }
           return { result: { created: false, attempt: sameRequest } };
@@ -733,6 +857,7 @@ export function createNativeTaskExecution(options: NativeExecutionOptions) {
           id, taskId, sourceToken, jobId, nodeId, requestId, workerTaskId, createdAt: now(),
           commandSha256: sha256(job.command), dispatchFingerprint: createDispatchFingerprint(proposedDispatch),
           dispatchState: "reserved",
+          ...(environment === undefined ? {} : { environment }),
           ...((job.requireMaterials === true || job.expectedMaterials !== undefined) ? {
             materialsRequired: true as const,
             ...(job.expectedMaterials === undefined ? {} : {

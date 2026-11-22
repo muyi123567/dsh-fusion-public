@@ -60,6 +60,7 @@
   font-size: 12px;
   line-height: 1.5;
 }
+.controls input,
 .controls select,
 .reviewImport textarea { width: 100%; min-width: 0; }
 .note { color: var(--voyage-secondary, var(--dsw-alias-label-secondary)); font-size: 12px; }

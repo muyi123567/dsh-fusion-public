@@ -8,6 +8,18 @@ const PATH = "/plugins/dsh-fusion/tasks/execution";
 const SHA256 = /^[0-9a-f]{64}$/;
 const REVIEW_FIELDS = ["taskId", "attemptId", "receiptSha256", "reviewerId", "verdict", "summary", "signature"] as const;
 
+interface NativeExecutionEnvironment {
+  hostId?: string;
+  expectedDigest?: string;
+  observedDigest?: string;
+  policy: "exact" | "compatible";
+  matched: boolean;
+  checkedAt: string;
+  source: "controller-gate";
+  items?: Array<{ code: string; severity: "block" | "warn" | "info"; path: string }>;
+  reason?: string;
+}
+
 interface NativeExecutionReceipt {
   sha256: string;
   taskId: string;
@@ -24,6 +36,7 @@ interface NativeExecutionReceipt {
   stdout: { sha256: string; bytes: number };
   stderr: { sha256: string; bytes: number };
   materials?: VerifiedExecutionMaterials;
+  environment?: NativeExecutionEnvironment;
 }
 
 interface NativeExecutionReview {
@@ -47,6 +60,7 @@ interface NativeExecutionAttemptView {
   sourceState: "current" | "stale" | "unavailable";
   executionState: "pending" | "running" | "unconfirmed" | "exited";
   receipt?: NativeExecutionReceipt;
+  environment?: NativeExecutionEnvironment;
   review?: NativeExecutionReview;
 }
 
@@ -80,6 +94,19 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const isLogDigest = (value: unknown) => isObject(value) && typeof value.sha256 === "string"
   && typeof value.bytes === "number" && Number.isSafeInteger(value.bytes) && value.bytes >= 0;
 
+function isEnvironment(value: unknown): value is NativeExecutionEnvironment {
+  return isObject(value)
+    && (value.hostId === undefined || typeof value.hostId === "string")
+    && (value.expectedDigest === undefined || typeof value.expectedDigest === "string")
+    && (value.observedDigest === undefined || typeof value.observedDigest === "string")
+    && (value.policy === "exact" || value.policy === "compatible")
+    && typeof value.matched === "boolean" && typeof value.checkedAt === "string" && value.source === "controller-gate"
+    && (value.reason === undefined || typeof value.reason === "string")
+    && (value.items === undefined || (Array.isArray(value.items) && value.items.every(item => isObject(item)
+      && typeof item.code === "string" && typeof item.path === "string"
+      && (item.severity === "block" || item.severity === "warn" || item.severity === "info"))));
+}
+
 function isMaterialReceipt(value: unknown): value is NonNullable<NativeExecutionReceipt["materials"]> {
   if (!isObject(value) || !isObject(value.expected) || !isObject(value.observed)) return false;
   const expected = value.expected;
@@ -108,7 +135,9 @@ function isAttempt(value: unknown, taskId: string): value is NativeExecutionAtte
     || receipt.workerTaskId !== value.workerTaskId || typeof receipt.exitCode !== "number" || !Number.isSafeInteger(receipt.exitCode)
     || !["sha256", "commandSha256", "dispatchFingerprint", "startedAt", "finishedAt"].every(key => typeof receipt[key] === "string")
     || !isLogDigest(receipt.stdout) || !isLogDigest(receipt.stderr)
-    || (receipt.materials !== undefined && !isMaterialReceipt(receipt.materials)))) return false;
+    || (receipt.materials !== undefined && !isMaterialReceipt(receipt.materials))
+    || (receipt.environment !== undefined && !isEnvironment(receipt.environment))
+    || (value.environment !== undefined && !isEnvironment(value.environment)))) return false;
 
   return review === undefined || (isObject(review)
     && (review.state === "stale" || (review.state === "current" && value.sourceState === "current" && isObject(receipt)))
@@ -173,6 +202,10 @@ function ExecutionPanel({ task, data }: Props) {
   const [readState, setReadState] = useState<"reading" | "ready" | "error" | "disabled">("reading");
   const [jobId, setJobId] = useState("");
   const [nodeId, setNodeId] = useState("");
+  const [environmentHost, setEnvironmentHost] = useState("");
+  const [environmentDigest, setEnvironmentDigest] = useState("");
+  const [environmentPolicy, setEnvironmentPolicy] = useState<"exact" | "compatible">("exact");
+  const [environmentReading, setEnvironmentReading] = useState(false);
   const [mutating, setMutating] = useState(false);
   const [notice, setNotice] = useState("");
   const active = useRef(false);
@@ -238,6 +271,25 @@ function ExecutionPanel({ task, data }: Props) {
   const upstreamBlocked = task.agentTeamTask?.ready === false;
   const canStart = actionReady && workerSelected && !awaiting && !alreadyRegistered && !upstreamBlocked;
 
+  async function loadEnvironment() {
+    if (environmentReading) return;
+    setEnvironmentReading(true);
+    try {
+      const response = await fetch(fusionBrowserUrl("/plugins/dsh-fusion/fleet/environment"));
+      if (!response.ok) throw new Error("environment unavailable");
+      const value: unknown = await response.json();
+      if (!isObject(value) || typeof value.hostId !== "string" || typeof value.environmentDigest !== "string") {
+        throw new Error("environment invalid");
+      }
+      setEnvironmentHost(value.hostId);
+      setEnvironmentDigest(value.environmentDigest);
+    } catch {
+      if (active.current) setNotice("无法读取本机环境摘要，请手动填写或稍后重试。");
+    } finally {
+      if (active.current) setEnvironmentReading(false);
+    }
+  }
+
   async function acceptAttempt(response: Response, match: (attempt: NativeExecutionAttemptView) => boolean) {
     const body: unknown = await response.json();
     const value = isObject(body) && "attempt" in body ? body.attempt : body;
@@ -260,7 +312,17 @@ function ExecutionPanel({ task, data }: Props) {
     setMutating(true);
     setNotice("");
     try {
-      const response = await postExecution(PATH, { taskId, sourceToken: panel.sourceToken, jobId, nodeId, requestId });
+      const required = environmentDigest.trim();
+      const response = await postExecution(PATH, {
+        taskId, sourceToken: panel.sourceToken, jobId, nodeId, requestId,
+        ...(required === "" ? {} : {
+          environment: {
+            ...(environmentHost.trim() === "" ? {} : { hostId: environmentHost.trim() }),
+            requireDigest: required,
+            policy: environmentPolicy,
+          },
+        }),
+      });
       if (response.ok) {
         await acceptAttempt(response, attempt => attempt.requestId === requestId);
       } else if ([400, 401, 403, 404, 409, 410, 413, 415, 422].includes(response.status)) {
@@ -326,6 +388,13 @@ function ExecutionPanel({ task, data }: Props) {
         <option value="">选择主机</option>
         {job?.nodeIds.map(id => <option key={id} value={id}>{data.nodes.find(node => node.id === id)?.name ?? id}</option>)}
       </select></label>
+      <label>环境主机<input aria-label="环境主机" value={environmentHost} disabled={!actionReady || awaiting} placeholder="sha256:…（可选）" onChange={event => setEnvironmentHost(event.target.value)} /></label>
+      <label>期望摘要<input aria-label="期望环境摘要" value={environmentDigest} disabled={!actionReady || awaiting} placeholder="sha256:…（可选）" onChange={event => setEnvironmentDigest(event.target.value)} /></label>
+      <label>环境策略<select aria-label="环境策略" value={environmentPolicy} disabled={!actionReady || awaiting} onChange={event => setEnvironmentPolicy(event.target.value === "compatible" ? "compatible" : "exact")}>
+        <option value="exact">精确</option>
+        <option value="compatible">兼容</option>
+      </select></label>
+      <button type="button" disabled={!actionReady || awaiting || environmentReading} onClick={() => void loadEnvironment()}>{environmentReading ? "读取中…" : "读取本机环境"}</button>
       <button type="button" className={styles.primary} disabled={!canStart} onClick={() => void start()}>启动执行</button>
     </div>}
     {alreadyRegistered && <p className={styles.note}>此作业已在所选主机登记。</p>}
@@ -360,6 +429,7 @@ function ExecutionAttempt({ attempt, jobLabel, nodeLabel, fresh, reviewable, rev
       <dt>执行记录</dt><dd><code>{attempt.id}</code></dd>
       {attempt.workerTaskId && <><dt>主机任务</dt><dd><code>{attempt.workerTaskId}</code></dd></>}
       {receipt?.materials && <><dt>材料工作区</dt><dd><code>{receipt.materials.observed.workspace.id}</code> · 已核对材料字节</dd></>}
+      {attempt.environment && <><dt>环境门禁</dt><dd>{attempt.environment.matched ? "匹配" : "未匹配"} · {attempt.environment.policy} · <code>{attempt.environment.observedDigest ?? "摘要未知"}</code></dd></>}
     </dl>
     {receipt ? <ExecutionReceipt key={receipt.sha256} receipt={receipt} reviewable={reviewable && review?.state !== "current"} reviewEnabled={reviewEnabled} onReview={onReview} /> : <p className={styles.note}>未取得执行回执。</p>}
     <div className={styles.review}>
@@ -414,6 +484,7 @@ function ExecutionReceipt({ receipt, reviewable, reviewEnabled, onReview }: {
       <dt>标准输出</dt><dd>{receipt.stdout.bytes} 字节 <code>{receipt.stdout.sha256}</code></dd>
       <dt>标准错误</dt><dd>{receipt.stderr.bytes} 字节 <code>{receipt.stderr.sha256}</code></dd>
       {receipt.materials && <><dt>材料回执</dt><dd>v2 · 适配器读取并核对固定材料</dd></>}
+      {receipt.environment && <><dt>环境绑定</dt><dd>{receipt.environment.matched ? "匹配" : "未匹配"} · {receipt.environment.policy} · <code>{receipt.environment.observedDigest ?? "摘要未知"}</code></dd></>}
     </dl>
     {receipt.materials && <details className={styles.materialDetails}>
       <summary>查看固定材料摘要（{receipt.materials.observed.artifacts.length} 件产物）</summary>
