@@ -41,9 +41,11 @@ Host 必须 loopback，Bearer 令牌按客户端校验。`mcp.json` 只存 SHA-2
 DS-Bot Bot 与 DSH Agent；没有 mcpManager 时仅外部客户端可用。
 
 验证：MCP 存储/HTTP 回归 9 项、插件全量 410 项通过；插件类型检查与构建通过。
-`muse-instabox` 在 2026-11-22 21:25 UTC 仍为 Tailscale offline，本机无 Instabox API key，
-因此 DS-Bot Chief 实机调用尚未执行；隔离 profile runbook 已写入
-[DS-Bot M2 runbook](../design/2026-11-22-dsbot-chief-m2-runbook.md)。
+实机验收在 `muse-logged-in`（InstaBox `m_agqvx5ujg4lghpt2asdd7sfg6y`）的隔离 profile
+`m2-open-fleet` 完成：DSH 0.2.2-rc.5、DS-Bot 0.3.9、鲸提交 `bb529f2`；Chief 看到四个
+`mcp__whale-fleet__*` 工具并调用 `whale_list_hosts`，回复了真实 hostId。开发机无模型密钥，
+因此用确定性 mock 适配器驱动 Chief；工具链真实，模型推理为测试替身。证据：
+`/data/openlet/evidence/dsh-fusion-m2-20261122/`（含 screenshot、tools、401/403/405/200、SHA256SUMS）。
 
 ## 开发分支：协作上下文与工作台候选（2026-11-20）
 

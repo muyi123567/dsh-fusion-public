@@ -579,8 +579,11 @@ fleetEnvironment:
 - `whale_receipt` 不返回命令文本、脚本正文或文件内容，只返回摘要与状态。
 - 内部令牌每次插件激活轮换，旧令牌立即失效；mcpManager 注册随插件卸载撤销。
 - 没有 `mcpManager` 的宿主仍可通过外部客户端令牌访问本机 MCP，但 Bot 不会自动获得工具。
-- 真实 DS-Bot Chief 调用需要隔离 profile、DS-Bot、mcpManager 与运行中的开发机；
-  本地单元/HTTP 测试不等同该验收。
+- 真实 DS-Bot Chief 调用已在隔离 profile 完成：DS-Bot 0.3.9 的 Chief 工具列表出现四个
+  `mcp__whale-fleet__*`，调用 `whale_list_hosts` 后回复了工具返回的 hostId。
+  为了让无模型密钥的开发机跑通真实工具链，本轮使用确定性 mock 模型适配器；DSH、DS-Bot、
+  MCP 传输与工具回流是真实路径，自然语言推理不是真实模型行为。证据见
+  `/data/openlet/evidence/dsh-fusion-m2-20261122/`。
 
 验证：MCP 存储与 HTTP 回归 9 项；插件全量 410 项通过；类型检查与构建通过。
 真实 Chief 调用见 [DS-Bot M2 runbook](2026-11-22-dsbot-chief-m2-runbook.md)。

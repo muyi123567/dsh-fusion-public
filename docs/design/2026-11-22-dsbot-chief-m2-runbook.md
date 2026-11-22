@@ -4,6 +4,15 @@
 `whale_list_hosts`，返回本机环境清单与漂移状态。该验收只证明本机 MCP 与 DS-Bot 工具可见性，
 不证明真实双机、派发或生产 profile。
 
+## 2026-11-22 验收记录
+
+- 机器：`muse-logged-in` / InstaBox `m_agqvx5ujg4lghpt2asdd7sfg6y` / Tailscale `muse-instabox`。
+- 版本：DSH `0.2.2-rc.5`、DS-Bot `0.3.9`、dsh-fusion `0.2.0-beta.14`（提交 `bb529f2`）。
+- 结果：Chief 工具列表出现四个 `mcp__whale-fleet__*`；调用 `whale_list_hosts` 后回复
+  `hostId=sha256:6b84869b...52d7`。MCP 边界 `401/401/403/405/200`。
+- 模型边界：开发机无模型密钥，使用确定性 mock 适配器；工具链真实，自然语言推理不是真实模型。
+- 证据：`/data/openlet/evidence/dsh-fusion-m2-20261122/`。
+
 ## 前置
 
 - 开发机：`muse-instabox`（Tailscale，Ubuntu）。
