@@ -11,9 +11,9 @@ const require = createRequire(import.meta.url);
 export const FUSION_DSH_COMPATIBILITY_MATRIX: DshCompatibilityMatrix = {
   minimum: "0.2.0-rc.2",
   maximumExclusive: "0.3.0",
-  recommended: "0.2.2-rc.3",
-  tested: ["0.2.2-rc.3"],
-  candidates: ["0.2.0-rc.2", "0.2.2-rc.1"],
+  recommended: "0.2.2-rc.5",
+  tested: ["0.2.2-rc.5", "0.2.3-alpha.2"],
+  candidates: ["0.2.0-rc.2", "0.2.2-rc.1", "0.2.2-rc.3"],
 };
 
 export function readInstalledDshVersion(): string | undefined {

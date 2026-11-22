@@ -64,25 +64,29 @@ describe("Fusion DSH compatibility", () => {
     expect(FUSION_DSH_COMPATIBILITY_MATRIX).toEqual({
       minimum: "0.2.0-rc.2",
       maximumExclusive: "0.3.0",
-      recommended: "0.2.2-rc.3",
-      tested: ["0.2.2-rc.3"],
-      candidates: ["0.2.0-rc.2", "0.2.2-rc.1"],
+      recommended: "0.2.2-rc.5",
+      tested: ["0.2.2-rc.5", "0.2.3-alpha.2"],
+      candidates: ["0.2.0-rc.2", "0.2.2-rc.1", "0.2.2-rc.3"],
     });
   });
 
-  it("verifies this native candidate on rc.3 and leaves older hosts untested", () => {
+  it("verifies the latest stable and alpha hosts and leaves rc.3 untested", () => {
     const report = resolveDshCompatibility({
-      packageVersion: "0.2.2-rc.3",
+      packageVersion: "0.2.2-rc.5",
     });
 
     expect(report).toMatchObject({
       state: "verified",
-      version: "0.2.2-rc.3",
+      version: "0.2.2-rc.5",
       source: "package",
       reasonCode: "TESTED_HOST",
     });
+    expect(resolveDshCompatibility({ packageVersion: "0.2.3-alpha.2" })).toMatchObject({
+      state: "verified",
+      reasonCode: "TESTED_HOST",
+    });
     expect(resolveDshCompatibility({
-      packageVersion: "0.2.2-rc.1",
+      packageVersion: "0.2.2-rc.3",
     })).toMatchObject({
       state: "untested",
       reasonCode: "UNTESTED_HOST",

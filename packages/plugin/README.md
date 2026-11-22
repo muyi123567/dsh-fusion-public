@@ -16,9 +16,9 @@ beta.14 已实现主机来源不可用与合法空板的区分。最终安装包
 ## 安装预构建包
 
 当前可安装范围为 DSH `>=0.2.0-rc.2 <0.3.0` 和 Node.js `>=24.9.0`。
-beta.14 包内 recommended / tested 仅为 DSH `0.2.2-rc.3`，
-candidates 为 `0.2.0-rc.2`、`0.2.2-rc.1`，安装范围保持不变。
-rc.3 的 verified 仅指本轮隔离启动与原生 UI 范围，不覆盖真实模型或多机业务。
+beta.14 包内 recommended 为 DSH `0.2.2-rc.5`，tested 为 `0.2.2-rc.5` 与 `0.2.3-alpha.2`，
+candidates 为 `0.2.0-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.3`，安装范围保持不变。
+`0.2.3-alpha.2` 的 verified 仅指隔离启动、MCP 与环境采集，不覆盖全部原生 UI 或真实模型业务。
 新客户端使用 `commandTarget`、`openTab` 与 `tab.visible`；已核对的旧宿主也有所需 API，
 不能据版本较旧将其标为 unsupported。`0.2.2-rc.1` 的历史 verified 属于旧包，
 beta.14 与旧宿主的运行组合尚未重新实测。安装提示以最终包内契约为准，

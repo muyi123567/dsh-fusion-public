@@ -99,12 +99,14 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.14.tgz
 | --- | --- |
 | Node.js | >=24.9.0 |
 | DSH 安装范围 | >=0.2.0-rc.2 <0.3.0 |
-| 本轮推荐宿主 | 0.2.2-rc.3；仅依据本轮启动 / UI 实测范围 |
-| 候选宿主 | 0.2.0-rc.2 / 0.2.2-rc.1；API 已核实存在，beta.14 组合未重新实测 |
+| 本轮推荐宿主 | 0.2.2-rc.5；最新 stable，已实机启动 / MCP / 执行验证 |
+| 最新 alpha | 0.2.3-alpha.2；隔离启动、MCP 与环境采集验证通过，未覆盖原生 UI 全量 |
+| 候选宿主 | 0.2.0-rc.2 / 0.2.2-rc.1 / 0.2.2-rc.3；API 已核实存在，未全部重测 |
 | AgentTeams companion | 0.1.30 |
 | Room / AgentBus | 0.7.0 / 0.1.1（兼容补丁版） |
 
-包内 recommended / tested 仅为 0.2.2-rc.3，verified 仅限本轮启动与原生 UI 范围。
+包内 recommended 为 0.2.2-rc.5，tested 为 0.2.2-rc.5 与 0.2.3-alpha.2；
+verified 仅限实际启动、MCP 与环境采集范围，不覆盖真实模型、双机或全部原生 UI。
 包包含已构建的 host、客户端和类型声明，运行依赖仍需网络或已有缓存。
 安装范围不等于所有组合已经通过业务验收；缺少原生面板服务时会提示升级宿主。
 

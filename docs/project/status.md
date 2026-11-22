@@ -14,6 +14,19 @@ task/attempt 回执；签名不符、摘要被改、未签名字段或回执不�
 额外字段、错误回执和仅验签模式，最新运行输出 `native execution review smoke: pass`，exit 0。
 该工具只证明签名、公钥与回执一致，不证明 reviewer 与执行者身份独立，也不替代真实 Host B 验收。
 
+### DSH 内核兼容（2026-11-22）
+
+官方 npm dist-tags：stable `0.2.2-rc.5`，alpha `0.2.3-alpha.2`。兼容矩阵已更新为
+recommended `0.2.2-rc.5`，tested `0.2.2-rc.5` 与 `0.2.3-alpha.2`，rc.3 保留为 candidate。
+
+- `0.2.2-rc.5`：Instabox 隔离 profile 完成 M2 DS-Bot Chief 工具调用与 M3 环境门禁/v3 回执实机验证。
+- `0.2.3-alpha.2`：本机隔离 DSH_HOME 启动成功，插件加载无错误，MCP `8899` 的四个只读工具
+  与 `whale_list_hosts` 环境清单/签名正常；未重跑完整原生 UI、DS-Bot 全链路或真实模型。
+
+证据：`/data/openlet/evidence/dsh-fusion-dsh-compat-20261122/`（含 alpha 日志、工具清单、
+环境返回、版本与 SHA256SUMS）。`packages/plugin/{compatibility.json,release.json}` 与
+`src/compatibility.ts` 已同步；setup 契约在 Node 24 下 12 项通过。
+
 ### M1：只读环境清单与漂移（2026-11-22）
 
 已实现 `whaleFleet` `contractVersion: 1` 的只读切片：`manifest()`、`host()`、

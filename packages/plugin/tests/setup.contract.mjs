@@ -266,12 +266,12 @@ test("verified latest DSH version installs without an untested warning", () => {
     const result = runSetup(
       fixture,
       ["--dsh-bin", fixture.fakeDsh, "--profile", "web", "--without-companions", "--dry-run"],
-      { FAKE_DSH_VERSION: "0.2.2-rc.3" },
+      { FAKE_DSH_VERSION: "0.2.2-rc.5" },
     );
     assert.equal(result.status, 0, result.stderr);
     assert.doesNotMatch(result.stderr, /DSH_FUSION_DSH_HOST_UNTESTED/u);
     const plan = JSON.parse(result.stdout);
-    assert.equal(plan.dshVersion, "0.2.2-rc.3");
+    assert.equal(plan.dshVersion, "0.2.2-rc.5");
     assert.equal(plan.hostCompatibility.state, "verified");
     assert.equal(plan.hostCompatibility.reasonCode, "TESTED_HOST");
   } finally {
