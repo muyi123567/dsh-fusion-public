@@ -50,6 +50,19 @@ describe("fleet environment canonical form", () => {
     expect(computeEnvironmentDigest(manifest)).toBe(manifest.environmentDigest);
   });
 
+  it("keeps host identity, display name and secret presence out of the environment digest", () => {
+    const { privateKeyPem } = keys();
+    const manifest = baseManifest(privateKeyPem);
+    const otherHost = {
+      ...manifest,
+      hostId: `sha256:${"b".repeat(64)}`,
+      displayName: "another-name",
+      staleAfterSeconds: 60,
+      secrets: { present: [] },
+    };
+    expect(computeEnvironmentDigest(otherHost)).toBe(manifest.environmentDigest);
+  });
+
   it("signs and verifies the manifest, and rejects tampering", () => {
     const { privateKeyPem, publicKeyPem } = keys();
     const manifest = baseManifest(privateKeyPem);

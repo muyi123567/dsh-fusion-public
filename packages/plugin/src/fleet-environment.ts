@@ -103,7 +103,13 @@ export interface FleetDriftReport {
   items: FleetDriftItem[];
 }
 
-const VOLATILE_FIELDS = new Set(["observedAt", "environmentDigest", "secretPresenceDigest", "signature"]);
+// The digest identifies the environment, not the host or its reporting policy:
+// two hosts with the same runtime/composition/workspace facts but different
+// display names, host keys or stale budgets must share one digest.
+const DIGEST_EXCLUDED_FIELDS = new Set([
+  "hostId", "displayName", "staleAfterSeconds", "secrets",
+  "observedAt", "environmentDigest", "secretPresenceDigest", "signature",
+]);
 const SEVERITY_ORDER = { block: 0, warn: 1, info: 2 } as const;
 
 export function sha256Hex(value: string | Buffer): string {
@@ -128,7 +134,7 @@ function canonicalize(value: unknown): unknown {
 export function computeEnvironmentDigest(input: object): string {
   const body: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
-    if (!VOLATILE_FIELDS.has(key)) body[key] = value;
+    if (!DIGEST_EXCLUDED_FIELDS.has(key)) body[key] = value;
   }
   return `sha256:${sha256Hex(canonicalJson(["dsh-fleet-environment/v1", body]))}`;
 }

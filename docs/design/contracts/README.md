@@ -18,7 +18,8 @@
 `environmentDigest` 的计算输入：
 
 1. 取 `FleetHostManifest` 对象；
-2. 删除 `observedAt`、`environmentDigest`、`secretPresenceDigest`、`signature`；
+2. 删除 `hostId`、`displayName`、`staleAfterSeconds`、`secrets`、`observedAt`、
+   `environmentDigest`、`secretPresenceDigest`、`signature`；
 3. 递归排序对象键（JS 默认字符串排序），数组保持原顺序；
 4. `JSON.stringify` 且不加空白，UTF-8 编码；
 5. 计算 `sha256(utf8(JSON.stringify(["dsh-fleet-environment/v1", canonical])))`；

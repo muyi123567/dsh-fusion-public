@@ -216,6 +216,8 @@ MCP v1 工具：
 
 签名：`signature { alg: "ed25519", keyId, value }`，对“去掉 `signature` 与 `observedAt` 的
 规范化 JSON”签名。`environmentDigest` 同样排除 `observedAt` 与 `signature`。
+它也不含 `hostId`、`displayName`、`staleAfterSeconds` 与 `secrets`：环境摘要描述环境本身，
+可以被多台主机共享；主机身份由签名和 `hostId` 单独绑定。
 
 ### 7.2 环境分层与摘要
 
@@ -550,5 +552,5 @@ fleetEnvironment:
 - 采集失败显示 `unknown`，不回退为上一次匹配。
 
 验证：`fleet-environment`、`fleet-environment-collector`、`fleet-service`、`fleet-routes`
-共 23 项；client 环境条与面板回归 17 项；插件全量 400 项通过；插件与 client 类型检查、
+共 24 项；client 环境条与面板回归 17 项；插件全量 401 项通过；插件与 client 类型检查、
 插件 build、client vite build 通过。以上只证明本地实现，不证明真实双机。

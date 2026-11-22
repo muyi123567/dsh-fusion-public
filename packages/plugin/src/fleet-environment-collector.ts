@@ -208,27 +208,29 @@ function readPatches(
   readText: (path: string) => string,
   capabilities: Record<string, boolean>,
 ): { profile: FleetPatchRef | null; home: FleetPatchRef | null; lock?: FleetPatchRef | null } {
+  let failed = false;
   const read = (path: string | undefined): FleetPatchRef | null => {
     if (path === undefined || path === "") {
-      capabilities.patchesReadable = false;
+      failed = true;
       return null;
     }
     try {
       const text = readText(path);
-      capabilities.patchesReadable = true;
       return { sha256: `sha256:${sha256Hex(text)}`, bytes: Buffer.byteLength(text, "utf8") };
     } catch (error) {
       // A missing optional file is an absent fact, not an unreadable one.
-      if ((error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT") capabilities.patchesReadable = false;
+      if ((error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT") failed = true;
       return null;
     }
   };
   if (profile === undefined) return { profile: null, home: null };
-  return {
+  const patches = {
     profile: read(profile.patchPath ?? (profile.dir === undefined ? undefined : join(profile.dir, "cordis.patch.yml"))),
     home: read(profile.home === undefined ? undefined : join(profile.home, "cordis.patch.yml")),
     ...(profile.dir === undefined ? {} : { lock: read(join(profile.dir, "pnpm-lock.yaml")) }),
   };
+  capabilities.patchesReadable = !failed;
+  return patches;
 }
 
 function readCompatibility(
