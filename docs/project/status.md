@@ -65,6 +65,15 @@ scope，只能创建待审批意图；人类批准后复用环境门禁执行，
 `secretEnv`、超时与失败降级；可用于 Slack/n8n/自建网关。与 dsh-im 适配并存。
 本地 HTTP 回环测试覆盖签名、payload 与不可达 URL。
 
+### 双机 Host A → Host B（2026-11-23）
+
+`muse-logged-in`（A）通过 Instabox API 派发到 `muse-instabox-2`（B）。B 独立运行 DSH
+0.2.2-rc.5 与鲸，生成 23-bundle 环境清单；A 缓存 B 清单并以 `exact` 摘要门禁派发
+`cross-host`。v3 回执含 B 环境观测，stdout `cross-host-ok` 摘要匹配，离线验签通过。
+证据：`/data/openlet/evidence/dsh-fusion-crosshost-20261123/`（含 SHA256SUMS）。
+
+边界：A 使用 B 的缓存清单，不能证明 B 在 worker 执行瞬间环境未变化；两台均为 Instabox VM。
+
 实机验收：`muse-logged-in` 隔离 profile 中，request scope 创建待审批请求，只读令牌被
 `whale/scope-required` 拒绝，面板批准后环境门禁执行 `m4-approve`；v3 回执
 `6fd9c57a...65e1` 含 environment，离线验签通过。证据：

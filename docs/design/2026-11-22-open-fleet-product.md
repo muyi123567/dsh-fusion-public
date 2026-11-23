@@ -678,3 +678,18 @@ fleetEnvironment:
 - 可用于 Slack/n8n/自建网关，避免绑定单一 IM 实现；dsh-im 适配仍保留。
 
 验证：本地 HTTP 回环测试覆盖签名、payload、不可达 URL 与格式。
+
+## 25. 双机实机验收
+
+2026-11-23 在 `muse-logged-in`（Host A）与 `muse-instabox-2`（Host B）完成：
+
+- Host B 独立安装 DSH 0.2.2-rc.5 与鲸，采集 23 个 bundle，生成并签名环境清单
+  `sha256:728782a2...430d`。
+- Host A 缓存 B 清单，通过 Instabox API 节点派发 `cross-host`；门禁 `exact` 匹配。
+- v3 回执 `20b2b6fa...26bd` 含 B 的环境观测；stdout `cross-host-ok` 摘要匹配；
+  离线验签 `verified=true` / `receiptBound=true`。
+
+证据：`/data/openlet/evidence/dsh-fusion-crosshost-20261123/`。
+
+边界：A 使用 B 的缓存清单做门禁，不能证明 B 在 worker 执行瞬间环境未变化；两台均为
+Instabox VM，任务由测试种子创建。
