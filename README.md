@@ -71,6 +71,9 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
         botId: <dsh-im bot id>
         targetId: <dsh-im target id>
         format: plain
+      webhook:
+        url: https://example.invalid/dsh-fusion
+        secretEnv: FUSION_WEBHOOK_SECRET
 ```
 
 `secretNames` 只记录名称是否存在，不读取值。首次采集会在 `directory` 生成 Ed25519
@@ -88,6 +91,8 @@ node packages/plugin/scripts/fleet-mcp-token.mjs --file /var/lib/dsh-fusion/flee
 令牌只在创建时输出一次，文件只保存 SHA-256；`--list` 查看客户端，`--revoke <id>` 立即失效。
 `fleetNotifications.dshIm` 为可选：安装并启用 dsh-im 后，待审批、批准、拒绝和失败事件
 会通过 `dshIm.send` 发到指定目标；没有 dsh-im 或未配置时完全静默，不影响请求状态。
+`fleetNotifications.webhook` 是另一个可选出口，POST 事件 JSON 并用
+`X-DSH-Fusion-Signature: sha256=<HMAC>` 签名（secret 建议从 `secretEnv` 读取）。
 
 设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·

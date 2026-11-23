@@ -83,7 +83,7 @@ import { createFleetMcpServer } from "./fleet-mcp.js";
 import { FleetMcpStore } from "./fleet-mcp-store.js";
 import { createFleetDispatchRequests } from "./fleet-dispatch-requests.js";
 import { createFleetDispatchRoutes } from "./fleet-dispatch-routes.js";
-import { formatFleetNotification } from "./fleet-notifications.js";
+import { createFleetWebhook, formatFleetNotification, type FleetNotificationEvent } from "./fleet-notifications.js";
 
 export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
 export type {
@@ -249,6 +249,7 @@ export interface FusionHostConfig {
   /** Optional proactive notification adapter; disabled by default. */
   fleetNotifications?: {
     dshIm?: { botId: string; targetId: string; format?: "plain" | "markdown" };
+    webhook?: { url: string; secret?: string; secretEnv?: string; timeoutMs?: number };
   };
   modelTaskCommands?: string[];
   /**
@@ -1325,18 +1326,39 @@ export async function apply(
       if (typeof ctx.inject === "function") ctx.inject(["dshIm"], (scope) => captureDshIm(scope));
       else captureDshIm(ctx);
     }
-    const notifyFleet = async (event: Parameters<typeof formatFleetNotification>[0]): Promise<void> => {
-      if (dshImNotification === undefined || dshImService?.send === undefined) return;
+    let webhookNotify: ((event: FleetNotificationEvent) => Promise<boolean>) | undefined;
+    if (config.fleetNotifications?.webhook !== undefined) {
       try {
-        await dshImService.send(
+        const webhook = config.fleetNotifications.webhook;
+        const secret = webhook.secret
+          ?? (webhook.secretEnv === undefined ? undefined : process.env[webhook.secretEnv]);
+        webhookNotify = createFleetWebhook({
+          url: webhook.url,
+          ...(secret === undefined ? {} : { secret }),
+          ...(webhook.timeoutMs === undefined ? {} : { timeoutMs: webhook.timeoutMs }),
+        });
+      } catch (error) {
+        ctx.logger?.warn?.(`dsh-fusion: webhook notification disabled: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    const notifyFleet = async (event: FleetNotificationEvent): Promise<void> => {
+      const tasks: Array<Promise<unknown>> = [];
+      if (dshImNotification !== undefined && dshImService?.send !== undefined) {
+        tasks.push(dshImService.send(
           dshImNotification.botId,
           dshImNotification.targetId,
           formatFleetNotification(event),
           { format: dshImNotification.format ?? "plain" },
-        );
-      } catch (error) {
-        ctx.logger?.warn?.(`dsh-fusion: dsh-im notification failed: ${error instanceof Error ? error.message : String(error)}`);
+        ).catch((error: unknown) => {
+          ctx.logger?.warn?.(`dsh-fusion: dsh-im notification failed: ${error instanceof Error ? error.message : String(error)}`);
+        }));
       }
+      if (webhookNotify !== undefined) {
+        tasks.push(webhookNotify(event).then((delivered) => {
+          if (!delivered) ctx.logger?.warn?.(`dsh-fusion: webhook notification not delivered: ${event.type}`);
+        }));
+      }
+      if (tasks.length > 0) await Promise.all(tasks);
     };
     const dispatchRequests = executionService === undefined ? undefined : createFleetDispatchRequests({
       path: join(fleetDirectory, "dispatch-requests.json"),

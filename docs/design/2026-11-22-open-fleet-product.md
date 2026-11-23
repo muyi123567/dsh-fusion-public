@@ -666,4 +666,15 @@ fleetEnvironment:
 - 默认关闭；没有 dsh-im、服务未就绪或发送失败时完全静默降级，请求状态不受影响。
 - `botId` / `targetId` 来自 dsh-im 自己的目标列表，不在鲸群复制 IM 凭据。
 
-验证：通知格式与请求事件共 9 项定向测试；插件全量 437 项、原生面板 67 项通过。
+验证：通知格式、请求事件与 Webhook 共 11 项定向测试；插件全量 439 项、原生面板 67 项通过。
+
+## 24. 开放 Webhook 通知
+
+已实现可选的 `fleetNotifications.webhook`：
+
+- POST `{source, version, event, text}` 到 http/https URL，5 秒默认超时。
+- `secret`/`secretEnv` 存在时发送 `X-DSH-Fusion-Signature: sha256=<HMAC-SHA256>`。
+- 发送失败/超时只记录降级，不影响派发请求状态；不支持 `file:` 等非 HTTP URL。
+- 可用于 Slack/n8n/自建网关，避免绑定单一 IM 实现；dsh-im 适配仍保留。
+
+验证：本地 HTTP 回环测试覆盖签名、payload、不可达 URL 与格式。

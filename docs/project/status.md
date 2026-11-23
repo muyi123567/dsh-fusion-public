@@ -57,7 +57,13 @@ scope，只能创建待审批意图；人类批准后复用环境门禁执行，
 在待审批/批准/拒绝/失败时发送短通知。默认关闭，无 dsh-im 或发送失败静默降级；
 通知不含令牌、私钥或命令正文。`botId`/`targetId` 取自 dsh-im 自己的目标列表。
 
-验证：通知格式与请求事件 9 项定向测试；插件全量 437 项、原生面板 67 项通过。
+验证：通知格式、请求事件与 Webhook 11 项定向测试；插件全量 439 项、原生面板 67 项通过。
+
+### 开放 Webhook 通知（2026-11-23）
+
+新增可选 `fleetNotifications.webhook`：POST 事件 JSON，支持 HMAC-SHA256 签名、
+`secretEnv`、超时与失败降级；可用于 Slack/n8n/自建网关。与 dsh-im 适配并存。
+本地 HTTP 回环测试覆盖签名、payload 与不可达 URL。
 
 实机验收：`muse-logged-in` 隔离 profile 中，request scope 创建待审批请求，只读令牌被
 `whale/scope-required` 拒绝，面板批准后环境门禁执行 `m4-approve`；v3 回执
