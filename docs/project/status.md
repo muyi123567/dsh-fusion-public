@@ -44,6 +44,30 @@ tarball sha256 一致，排除旧包冒充。
 
 证据：`/data/openlet/evidence/dsh-fusion-dsh-compat-20261123/`。
 
+### 开放云盘连接器（2026-11-23）
+
+新增只读云盘连接器内核：目录化 provider、环境变量凭据引用、第三方命名空间注册，
+以及 Google Drive、OneDrive、Dropbox、WebDAV/Nextcloud 四个内置 provider。
+凭据值不进入配置、日志、清单或 MCP 返回；拉取文件写入私有 imports 目录
+（0700/0600），带字节上限、文件名清理、路径穿越拒绝与 sha256 回执。
+
+MCP 新增 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
+`whale_cloud_pull`；HTTP 增加 `/plugins/dsh-fusion/fleet/connectors` 的目录、浏览和
+拉取路由；面板新增“云盘连接器”浏览/拉取区。第三方插件可通过
+`ctx.get("whaleConnectors").register(definition, factory)` 接入。
+
+验证：插件 454 项、原生面板 69 项通过。`0.2.3-alpha.2` 隔离 profile 用本地 WebDAV
+模拟服务实测：目录返回 4 个 provider 与 1 个就绪实例；`whale_cloud_list` 列出文件；
+`whale_cloud_pull` 落盘 `a.txt`（3 B，0600，sha256 `ba7816bf…15ad`）；只读令牌被
+`whale/scope-required` 拒绝；超限与 `../` 分别返回 `connector/limit` 与
+`connector/path`，失败拉取不留下临时文件。
+
+边界：真实 Google/Microsoft/Dropbox 账号未验证，只有协议级注入 fetch 测试；
+本版全部只读，没有上传、删除或任意命令执行。
+
+设计：[开放云盘连接器](../design/2026-11-23-cloud-connectors.md)。证据：
+`/data/openlet/evidence/dsh-fusion-cloud-20261123/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

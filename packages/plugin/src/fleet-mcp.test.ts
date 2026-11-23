@@ -57,6 +57,7 @@ async function start(options: {
   service?: WhaleFleetServiceV1;
   execution?: { read: (taskId: string) => Promise<unknown> };
   requests?: unknown;
+  connectors?: unknown;
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
@@ -66,6 +67,7 @@ async function start(options: {
     store,
     ...(options.execution === undefined ? {} : { execution: options.execution as never }),
     ...(options.requests === undefined ? {} : { requests: options.requests as never }),
+    ...(options.connectors === undefined ? {} : { connectors: options.connectors as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -121,6 +123,51 @@ describe("fleet MCP server", () => {
     expect(body.result.tools.map(tool => tool.name)).toEqual([
       "whale_list_hosts", "whale_host_manifest", "whale_environment_diff", "whale_receipt", "whale_doctor", "whale_environment_plan",
     ]);
+  });
+
+  it("lists cloud connector tools and enforces the request scope for pulls", async () => {
+    const connectors = {
+      contractVersion: 1 as const,
+      catalog: () => [{
+        kind: "gdrive", displayName: "Google Drive", category: "drive", description: "drive",
+        capabilities: { list: true, stat: true, pull: true, upload: false }, fields: [],
+      }],
+      instances: () => [{ id: "gd", kind: "gdrive", label: "Drive", enabled: true, state: "configured" }],
+      list: vi.fn(async () => [{ name: "a.txt", path: "a.txt", kind: "file", size: 3 }]),
+      pull: vi.fn(async () => ({
+        connectorId: "gd", kind: "gdrive", path: "a.txt", name: "a.txt",
+        localPath: "/tmp/imports/a.txt", bytes: 3, sha256: "a".repeat(64), pulledAt: "2026-11-23T12:00:00.000Z",
+      })),
+      register: () => () => {},
+    };
+    const { url, token, store } = await start({ connectors });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toEqual([
+      "whale_list_hosts", "whale_host_manifest", "whale_environment_diff", "whale_receipt", "whale_doctor",
+      "whale_environment_plan", "whale_connectors", "whale_cloud_list", "whale_cloud_pull",
+    ]);
+
+    const browsed = await post(url, token, rpc(3, "tools/call", {
+      name: "whale_cloud_list", arguments: { id: "gd", path: "root", limit: 5 },
+    }));
+    const browsedBody = await browsed.json() as { result: { structuredContent: unknown } };
+    expect(browsedBody.result.structuredContent).toEqual({
+      entries: [{ name: "a.txt", path: "a.txt", kind: "file", size: 3 }],
+    });
+
+    const denied = await post(url, token, rpc(4, "tools/call", {
+      name: "whale_cloud_pull", arguments: { id: "gd", path: "a.txt" },
+    }));
+    expect(await denied.json()).toMatchObject({ result: { isError: true, content: [{ text: "whale/scope-required" }] } });
+
+    const writer = store.createClient({ name: "writer", scopes: ["read", "request"] }).token;
+    const pulled = await post(url, writer, rpc(5, "tools/call", {
+      name: "whale_cloud_pull", arguments: { id: "gd", path: "a.txt" },
+    }));
+    expect(await pulled.json()).toMatchObject({
+      result: { structuredContent: { connectorId: "gd", name: "a.txt", bytes: 3 } },
+    });
   });
 
   it("rejects browser Origins, non-loopback Hosts, wrong tokens and GET", async () => {

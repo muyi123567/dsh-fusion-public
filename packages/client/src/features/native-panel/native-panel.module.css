@@ -117,3 +117,12 @@
 @media (pointer: coarse) {
   :where(.panel) :where(button, input, select) { min-height: 36px; }
 }
+.cloud { flex: 0 0 auto; padding: 8px 20px; border-bottom: 1px solid var(--voyage-line); background: var(--voyage-paper); }
+.cloudHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cloudHeader button { flex: none; padding: 2px 7px; }
+.cloudList { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; max-height: 24vh; overflow: auto; }
+.cloudList li { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px solid var(--voyage-line); border-radius: 4px; background: var(--voyage-reader); font-size: 13px; }
+.cloudList li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cloudList li small { flex: none; color: var(--voyage-secondary); font-size: 12px; }
+.cloudList li button { flex: none; padding: 2px 7px; }
+.cloudBrowser { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--voyage-line); }

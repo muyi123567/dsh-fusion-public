@@ -6,6 +6,7 @@ import { FleetServiceError, type WhaleFleetServiceV1 } from "./fleet-service.js"
 import type { FleetMcpStore } from "./fleet-mcp-store.js";
 import type { FleetDispatchRequestService } from "./fleet-dispatch-requests.js";
 import { DispatchRequestError } from "./fleet-dispatch-requests.js";
+import type { WhaleConnectorServiceV1 } from "./cloud-connectors.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -26,6 +27,7 @@ export interface FleetMcpServerOptions {
   store: FleetMcpStore;
   execution?: FleetMcpExecutionReader;
   requests?: FleetDispatchRequestService;
+  connectors?: WhaleConnectorServiceV1;
   autoApproveDispatch?: boolean;
   version?: string;
 }
@@ -109,6 +111,42 @@ const REQUEST_TOOL = {
   },
 } as const;
 
+const CONNECTOR_TOOLS = [
+  {
+    name: "whale_connectors",
+    description: "List open cloud-drive connector providers and configured instances without exposing credentials.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "whale_cloud_list",
+    description: "List or search files in one configured cloud-drive connector.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        path: { type: "string" },
+        query: { type: "string" },
+        limit: { type: "number", minimum: 1, maximum: 200 },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "whale_cloud_pull",
+    description: "Copy one remote file into the host's private imports directory and return its sha256. Requires the request scope.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        path: { type: "string" },
+        name: { type: "string" },
+        maxBytes: { type: "number", minimum: 1 },
+      },
+      required: ["id", "path"],
+    },
+  },
+] as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -164,6 +202,34 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         const hostId = required(args, "hostId");
         return await options.service.plan(hostId, optional(args, "expectedDigest"));
       }
+      case "whale_connectors": {
+        if (options.connectors === undefined) throw new ToolError("whale/connectors-unavailable", "云盘连接器未配置");
+        return { catalog: options.connectors.catalog(), instances: options.connectors.instances() };
+      }
+      case "whale_cloud_list": {
+        if (options.connectors === undefined) throw new ToolError("whale/connectors-unavailable", "云盘连接器未配置");
+        const limit = optionalNumber(args, "limit");
+        const path = optional(args, "path");
+        const query = optional(args, "query");
+        return {
+          entries: await options.connectors.list(required(args, "id"), {
+            ...(path === undefined ? {} : { path }),
+            ...(query === undefined ? {} : { query }),
+            ...(limit === undefined ? {} : { limit }),
+          }),
+        };
+      }
+      case "whale_cloud_pull": {
+        if (options.connectors === undefined) throw new ToolError("whale/connectors-unavailable", "云盘连接器未配置");
+        if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
+        const maxBytes = optionalNumber(args, "maxBytes");
+        const name = optional(args, "name");
+        return await options.connectors.pull(required(args, "id"), {
+          path: required(args, "path"),
+          ...(name === undefined ? {} : { name }),
+          ...(maxBytes === undefined ? {} : { maxBytes }),
+        });
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -211,7 +277,13 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
       case "ping":
         return {};
       case "tools/list":
-        return { tools: options.requests === undefined ? TOOLS : [...TOOLS, REQUEST_TOOL] };
+        return {
+          tools: [
+            ...TOOLS,
+            ...(options.connectors === undefined ? [] : CONNECTOR_TOOLS),
+            ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
+          ],
+        };
       case "tools/call": {
         const params = (message.params ?? {}) as { name?: unknown; arguments?: unknown };
         if (typeof params.name !== "string") throw Object.assign(new Error("Unknown tool"), { rpc: -32602 });
@@ -222,7 +294,9 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
           const code = error instanceof ToolError ? error.code
             : error instanceof FleetServiceError ? error.code
             : typeof (error as { code?: unknown } | undefined)?.code === "string"
-              ? `whale/${(error as { code: string }).code}`
+              ? (error as { code: string }).code.startsWith("connector/")
+                ? (error as { code: string }).code
+                : `whale/${(error as { code: string }).code}`
             : "whale/unavailable";
           return { isError: true, content: [{ type: "text", text: code }] };
         }
@@ -359,6 +433,15 @@ function optional(args: Record<string, unknown>, name: string): string | undefin
   const value = args[name];
   if (value === undefined) return undefined;
   if (typeof value !== "string" || value === "") throw new ToolError("whale/invalid-input", `${name} 无效`);
+  return value;
+}
+
+function optionalNumber(args: Record<string, unknown>, name: string): number | undefined {
+  const value = args[name];
+  if (value === undefined) return undefined;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new ToolError("whale/invalid-input", `${name} 无效`);
+  }
   return value;
 }
 

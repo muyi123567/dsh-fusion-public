@@ -84,6 +84,14 @@ import { FleetMcpStore } from "./fleet-mcp-store.js";
 import { createFleetDispatchRequests } from "./fleet-dispatch-requests.js";
 import { createFleetDispatchRoutes } from "./fleet-dispatch-routes.js";
 import { createFleetWebhook, formatFleetNotification, type FleetNotificationEvent } from "./fleet-notifications.js";
+import {
+  CloudConnectorRegistry,
+  createCloudConnectorService,
+  type CloudConnectorInstanceConfig,
+  type WhaleConnectorServiceV1,
+} from "./cloud-connectors.js";
+import { registerBuiltinCloudConnectors } from "./cloud-providers.js";
+import { createFleetConnectorRoutes } from "./fleet-connector-routes.js";
 
 export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
 export type {
@@ -101,6 +109,27 @@ export type {
   FleetPanelView,
   WhaleFleetServiceV1,
 } from "./fleet-service.js";
+export {
+  CloudConnectorError,
+  CloudConnectorRegistry,
+  createCloudConnectorService,
+} from "./cloud-connectors.js";
+export type {
+  CloudConnector,
+  CloudConnectorDefinition,
+  CloudConnectorEntry,
+  CloudConnectorFactory,
+  CloudConnectorFactoryContext,
+  CloudConnectorField,
+  CloudConnectorInstanceConfig,
+  CloudConnectorInstanceStatus,
+  CloudConnectorSink,
+  CloudListInput,
+  CloudPullInput,
+  CloudPullResult,
+  WhaleConnectorServiceV1,
+} from "./cloud-connectors.js";
+export { registerBuiltinCloudConnectors } from "./cloud-providers.js";
 import {
   BridgeRoundCache,
   type BridgeRound,
@@ -250,6 +279,15 @@ export interface FusionHostConfig {
   fleetNotifications?: {
     dshIm?: { botId: string; targetId: string; format?: "plain" | "markdown" };
     webhook?: { url: string; secret?: string; secretEnv?: string; timeoutMs?: number };
+  };
+  /**
+   * Read-only open cloud-drive connectors. Credentials are named by
+   * environment variable and never stored in this configuration.
+   */
+  fleetConnectors?: {
+    directory?: string;
+    maxBytes?: number;
+    connectors?: CloudConnectorInstanceConfig[];
   };
   modelTaskCommands?: string[];
   /**
@@ -1306,11 +1344,32 @@ export async function apply(
         ...(report.reason === undefined ? {} : { reason: report.reason }),
       };
     };
+    const connectorRegistry = new CloudConnectorRegistry();
+    registerBuiltinCloudConnectors(connectorRegistry);
+    const connectorConfig = config.fleetConnectors;
+    let whaleConnectorService: WhaleConnectorServiceV1 | undefined;
+    try {
+      whaleConnectorService = createCloudConnectorService({
+        registry: connectorRegistry,
+        connectors: connectorConfig?.connectors ?? [],
+        importsDirectory: connectorConfig?.directory ?? join(fleetDirectory, "imports"),
+        ...(connectorConfig?.maxBytes === undefined ? {} : { maxBytes: connectorConfig.maxBytes }),
+      });
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-fusion: cloud connectors disabled: ${error instanceof Error ? error.message : String(error)}`);
+    }
     if (typeof ctx.provide === "function") {
       try {
         ctx.provide("whaleFleet", fleetService);
       } catch (error) {
         ctx.logger?.warn?.(`dsh-fusion: whaleFleet service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      if (whaleConnectorService !== undefined) {
+        try {
+          ctx.provide("whaleConnectors", whaleConnectorService);
+        } catch (error) {
+          ctx.logger?.warn?.(`dsh-fusion: whaleConnectors service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
     } else {
       ctx.logger?.info?.("dsh-fusion: host has no ctx.provide; whaleFleet stays local to this plugin");
@@ -1400,6 +1459,7 @@ export async function apply(
             store: fleetMcpStore,
             ...(executionService === undefined ? {} : { execution: executionService }),
             ...(dispatchRequests === undefined ? {} : { requests: dispatchRequests }),
+            ...(whaleConnectorService === undefined ? {} : { connectors: whaleConnectorService }),
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -2437,6 +2497,15 @@ export async function apply(
         readBody: readJsonBody,
       })) {
         effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
+      if (whaleConnectorService !== undefined) {
+        for (const route of createFleetConnectorRoutes({
+          service: whaleConnectorService,
+          authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+          readBody: readJsonBody,
+        })) {
+          effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+        }
       }
       if (dispatchRequests !== undefined) {
         for (const route of createFleetDispatchRoutes({

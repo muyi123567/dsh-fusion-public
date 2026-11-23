@@ -52,7 +52,13 @@ it("keeps an unavailable task source local while allowing live empty hosts", asy
 });
 
 it("keeps a failed refresh of an empty snapshot distinct from a live empty source", async () => {
- const fetcher = vi.fn().mockResolvedValueOnce(response({...snapshot, sources: {...snapshot.sources, nodes: "live"}})).mockRejectedValueOnce(new Error("offline"));
+ let reads = 0;
+ const fetcher = vi.fn(async (input: string | URL | Request) => {
+  if (String(input).includes("/connectors")) return response({catalog: [], instances: []});
+  reads += 1;
+  if (reads === 1) return response({...snapshot, sources: {...snapshot.sources, nodes: "live"}});
+  throw new Error("offline");
+ });
  vi.stubGlobal("fetch", fetcher);
  const user = userEvent.setup();
  render(<NativeWhalePanel/>);

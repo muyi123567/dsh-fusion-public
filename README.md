@@ -76,6 +76,25 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
       webhook:
         url: https://example.invalid/dsh-fusion
         secretEnv: FUSION_WEBHOOK_SECRET
+    fleetConnectors:
+      directory: /var/lib/dsh-fusion/fleet/imports
+      maxBytes: 67108864
+      connectors:
+        - id: team-drive
+          kind: gdrive
+          label: Team Drive
+          refreshTokenEnv: GOOGLE_DRIVE_REFRESH_TOKEN
+          clientIdEnv: GOOGLE_DRIVE_CLIENT_ID
+          clientSecretEnv: GOOGLE_DRIVE_CLIENT_SECRET
+        - id: one-drive
+          kind: onedrive
+          label: OneDrive
+          tokenEnv: ONEDRIVE_ACCESS_TOKEN
+        - id: nextcloud
+          kind: webdav
+          baseUrl: https://cloud.example.com/remote.php/dav/files/me
+          usernameEnv: NEXTCLOUD_USER
+          passwordEnv: NEXTCLOUD_APP_PASSWORD
 ```
 
 `secretNames` 只记录名称是否存在，不读取值。首次采集会在 `directory` 生成 Ed25519
@@ -96,8 +115,17 @@ node packages/plugin/scripts/fleet-mcp-token.mjs --file /var/lib/dsh-fusion/flee
 `fleetNotifications.webhook` 是另一个可选出口，POST 事件 JSON 并用
 `X-DSH-Fusion-Signature: sha256=<HMAC>` 签名（secret 建议从 `secretEnv` 读取）。
 
+`fleetConnectors` 是只读云盘连接器：内置 Google Drive、OneDrive、Dropbox 和
+WebDAV/Nextcloud。凭据只写环境变量名，值不进配置、日志或清单；拉取文件进入私有
+`directory`（默认 `fleet/imports`，目录 0700、文件 0600），并返回 sha256 与字节数。
+Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
+`whale_cloud_pull` 使用；面板提供浏览与拉取。第三方插件可通过
+`ctx.get("whaleConnectors").register(definition, factory)` 注册自己的 provider。
+本版不提供上传、删除或任意命令执行。
+
 设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·
+[开放云盘连接器](docs/design/2026-11-23-cloud-connectors.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级
