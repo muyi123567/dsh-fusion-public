@@ -74,6 +74,15 @@ const TOOLS = [
     description: "Diagnose DSH compatibility, environment drift, MCP registration, execution readiness and installed ecosystem plugins.",
     inputSchema: { type: "object", properties: {} },
   },
+  {
+    name: "whale_environment_plan",
+    description: "Turn environment drift into ordered, non-executable alignment steps with risk and restart requirements.",
+    inputSchema: {
+      type: "object",
+      properties: { hostId: { type: "string" }, expectedDigest: { type: "string" } },
+      required: ["hostId"],
+    },
+  },
 ] as const;
 
 const REQUEST_TOOL = {
@@ -150,6 +159,10 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
       case "whale_doctor": {
         if (options.service.doctor === undefined) throw new ToolError("whale/doctor-unavailable", "诊断不可用");
         return await options.service.doctor();
+      }
+      case "whale_environment_plan": {
+        const hostId = required(args, "hostId");
+        return await options.service.plan(hostId, optional(args, "expectedDigest"));
       }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");

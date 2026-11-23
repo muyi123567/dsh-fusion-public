@@ -54,5 +54,10 @@ export function createFleetRoutes<T extends Request>(options: {
       if (options.service.doctor === undefined) throw new FleetServiceError("whale/doctor-unavailable", "诊断不可用");
       return await options.service.doctor();
     }),
+    get(`${BASE}/plan`, async (url) => {
+      const hostId = url.searchParams.get("hostId");
+      if (hostId === null || hostId === "") throw new FleetServiceError("whale/invalid-input", "hostId 必填");
+      return await options.service.plan(hostId, url.searchParams.get("expectedDigest") ?? undefined);
+    }),
   ];
 }

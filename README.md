@@ -46,10 +46,11 @@ beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e731461
 
 M1/M2 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
 `/plugins/dsh-fusion/fleet/{environment,hosts,diff}` 只读路由、面板顶部的环境条，
-以及本机 MCP 的五个只读工具：
+以及本机 MCP 的六个只读工具：
 `whale_list_hosts`、`whale_host_manifest`、`whale_environment_diff`、`whale_receipt`、
-`whale_doctor`。`whale_doctor` 同时检测 DSH 版本、环境漂移、MCP、执行节点与已安装的
-DS-Bot、dsh-im、QQBot、Modlens；面板“诊断”按钮提供同一报告。
+`whale_doctor`、`whale_environment_plan`。诊断检测 DSH 版本、环境漂移、MCP、执行节点与
+已安装的 DS-Bot、dsh-im、QQBot、Modlens；对齐计划把漂移转成带风险与重启要求的人工步骤。
+面板“诊断”“对齐计划”按钮提供同一报告。
 M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业时再增加
 `whale_request_dispatch`：Bot 只能创建待审批意图，必须在面板“待审批派发”批准后才执行。
 只有带 `--request` 的外部令牌才拥有该 scope；自动对齐仍是后续工作。

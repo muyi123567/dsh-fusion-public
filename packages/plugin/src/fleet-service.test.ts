@@ -122,4 +122,20 @@ describe("whaleFleet service", () => {
     expect(view).toMatchObject({ overall: "match", hostId: SHA, signed: true });
     expect(JSON.stringify(view)).not.toContain("secrets");
   });
+
+  it("turns a drift report into alignment steps", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fleet-service-"));
+    const expectedPath = join(dir, "expected.json");
+    writeFileSync(expectedPath, JSON.stringify(manifest(SHA, {
+      bundles: [{ name: "dsh-fusion", version: "1.0.0", enabled: true, availability: "profile", rows: [] }],
+    })));
+    const service = createWhaleFleetService({
+      collect: async () => manifest(SHA), directory: dir, expectedManifestPath: expectedPath,
+    });
+    const plan = await service.plan(SHA);
+    expect(plan.overall).toBe("plan");
+    expect(plan.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: "update", target: "dsh-fusion", requiresRestart: true }),
+    ]));
+  });
 });

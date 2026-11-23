@@ -64,3 +64,17 @@ it("runs the ecosystem doctor and shows blocking checks", async () => {
   expect(screen.getByText("mcp.endpoint")).toBeVisible();
   expect(screen.getAllByText("检查端口占用").length).toBeGreaterThan(0);
 });
+
+it("loads an alignment plan without executing it", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+    overall: "plan",
+    steps: [{ id: "update:dsh-fusion", action: "update", target: "dsh-fusion", risk: "medium", requiresRestart: true, reason: "更新到 0.2.0-beta.15" }],
+  }), { status: 200 })));
+  render(<NativeEnvironmentStrip environment={base} />);
+  await user.click(screen.getByRole("button", { name: "对齐计划" }));
+  expect(await screen.findByText("对齐计划 · 1 步")).toBeVisible();
+  expect(screen.getByText("dsh-fusion")).toBeVisible();
+  expect(screen.getByText("更新到 0.2.0-beta.15")).toBeVisible();
+  expect(screen.getByText("需要重启 profile")).toBeVisible();
+});

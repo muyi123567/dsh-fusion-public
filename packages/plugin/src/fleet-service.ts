@@ -9,6 +9,7 @@ import {
   type FleetHostManifest,
 } from "./fleet-environment.js";
 import type { FleetDoctorReport } from "./fleet-doctor.js";
+import { planFleetAlignment, type FleetPlanReport } from "./fleet-plan.js";
 
 export interface FleetHostSummary {
   hostId: string;
@@ -42,6 +43,7 @@ export interface WhaleFleetServiceV1 {
   diff(hostId: string, expectedDigest?: string): Promise<FleetDriftReport>;
   panelView(): Promise<FleetPanelView>;
   doctor?(): Promise<FleetDoctorReport>;
+  plan(hostId: string, expectedDigest?: string): Promise<FleetPlanReport>;
   subscribe(listener: (event: { hostId: string; digest: string }) => void): () => void;
 }
 
@@ -204,6 +206,21 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
       || left.displayName.localeCompare(right.displayName));
   };
 
+  const plan = async (hostId: string, expectedDigest?: string): Promise<FleetPlanReport> => {
+    const observed = await host(hostId);
+    if (observed === undefined) throw new FleetServiceError("whale/host-unknown", "未知主机：" + hostId);
+    const expected = loadExpected();
+    if (expected?.manifest === undefined) {
+      return {
+        contractVersion: 1, hostId, expectedDigest: expectedDigest ?? expected?.digest ?? "",
+        observedDigest: observed.environmentDigest, overall: "unknown", steps: [],
+        note: "没有完整期望清单，无法生成逐项对齐计划",
+      };
+    }
+    const report = await diff(hostId, expectedDigest);
+    return planFleetAlignment(expected.manifest, observed, report);
+  };
+
   const panelView = async (): Promise<FleetPanelView> => {
     const local = await manifest();
     const report = await diff(local.hostId);
@@ -309,6 +326,7 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     listHosts,
     diff,
     panelView,
+    plan,
     ...(options.doctor === undefined ? {} : { doctor: options.doctor }),
     subscribe,
   });

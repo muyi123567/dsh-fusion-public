@@ -564,12 +564,13 @@ fleetEnvironment:
   支持创建、撤销、内部客户端轮换；文件 0600、目录 0700、原子替换。
 - `packages/plugin/src/fleet-mcp.ts`：Streamable HTTP、POST-only、无 MCP 会话；
   有 `Origin` 头即 403，Host 必须是 loopback；Bearer 令牌按客户端校验；1 MiB 请求上限。
-- 五个只读工具：
+- 六个只读工具：
   - `whale_list_hosts`
   - `whale_host_manifest`（可裁剪 section）
   - `whale_environment_diff`
   - `whale_receipt`（taskId/attemptId，只返回回执 hash、退出事实与复核状态）
   - `whale_doctor`（DSH 兼容、环境漂移、MCP、执行节点与热门插件检测）
+  - `whale_environment_plan`（把漂移转换为不可执行的对齐步骤）
 - 插件在 `fleetMcp.enabled` 时启动本机服务器，并通过 `ctx.mcpManager.register` 注册
   `whale-fleet`，让同 profile 的 DS-Bot Bot 与 DSH Agent 自动获得工具。
 - 外部客户端令牌：`packages/plugin/scripts/fleet-mcp-token.mjs --file <mcp.json> --name <client>`；
@@ -642,3 +643,16 @@ fleetEnvironment:
 `m4-approve`，环境门禁 `matched=true`，v3 回执 `6fd9c57a...65e1` 含 environment，
 离线验签 `verified=true` / `receiptBound=true`。证据：
 `/data/openlet/evidence/dsh-fusion-m4-20261123/`。
+
+## 22. 环境对齐计划
+
+已实现 `whale_environment_plan` 与 `GET /plugins/dsh-fusion/fleet/plan`：
+
+- 匹配环境返回 `ready`；未知/无期望清单返回 `unknown`；漂移返回 `plan`。
+- 把 bundle 缺失/版本/启用、patch、工作区提交/脏状态、缺失凭据、运行时、能力、
+  provider/MCP 差异转换为安装、更新、启用、恢复 patch、检出、清理、提供凭据、升级主机、
+  配置或人工复核步骤。
+- 每步带风险、是否重启和原因；不生成任意命令，不自动执行。
+- 面板“对齐计划”展示同一结果。
+
+验证：插件全量 434 项、原生面板 67 项通过；双端类型检查与构建通过。

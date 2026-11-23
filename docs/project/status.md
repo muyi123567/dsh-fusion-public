@@ -42,6 +42,15 @@ scope，只能创建待审批意图；人类批准后复用环境门禁执行，
 
 验证：插件全量 429 项、原生面板 66 项通过。
 
+### 环境对齐计划（2026-11-23）
+
+新增 `whale_environment_plan` 只读工具、`GET /plugins/dsh-fusion/fleet/plan` 与面板
+“对齐计划”。把 bundle 缺失/版本、patch、工作区提交、密钥、运行时、provider/MCP 漂移
+转换为安装/更新/启用/检出/凭据/人工复核等步骤，标注风险与是否重启；不生成任意命令、
+不自动执行。未知环境只返回 unknown，不冒充 ready。
+
+验证：插件全量 434 项、原生面板 67 项通过；双端类型检查与构建通过。
+
 实机验收：`muse-logged-in` 隔离 profile 中，request scope 创建待审批请求，只读令牌被
 `whale/scope-required` 拒绝，面板批准后环境门禁执行 `m4-approve`；v3 回执
 `6fd9c57a...65e1` 含 environment，离线验签通过。证据：

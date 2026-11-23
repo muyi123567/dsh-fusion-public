@@ -35,6 +35,10 @@ function fakeService(overrides: Partial<WhaleFleetServiceV1> = {}): WhaleFleetSe
       checks: [{ id: "dsh.version", status: "ok", summary: "ok" }],
       integrations: [], nextActions: [],
     }),
+    plan: async () => ({
+      contractVersion: 1, hostId: SHA, expectedDigest: SHA, observedDigest: SHA,
+      overall: "ready" as const, steps: [],
+    }),
     subscribe: () => () => {},
     ...overrides,
   };
@@ -61,6 +65,7 @@ describe("fleet routes", () => {
     expect((await exchange(routes, "/plugins/dsh-fusion/fleet/environment")).json).toMatchObject({ hostId: SHA });
     expect((await exchange(routes, "/plugins/dsh-fusion/fleet/hosts")).json).toEqual({ hosts: [] });
     expect((await exchange(routes, "/plugins/dsh-fusion/fleet/doctor")).json).toMatchObject({ overall: "ok" });
+    expect((await exchange(routes, "/plugins/dsh-fusion/fleet/plan", { url: `/plugins/dsh-fusion/fleet/plan?hostId=${SHA}` })).json).toMatchObject({ overall: "ready" });
   });
 
   it("requires hostId for diff and maps unknown hosts to 404", async () => {

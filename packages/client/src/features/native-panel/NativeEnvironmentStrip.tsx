@@ -31,11 +31,17 @@ interface DoctorReport {
   nextActions: string[];
 }
 
+interface PlanStep { id: string; action: string; target: string; risk: "low" | "medium" | "high"; requiresRestart: boolean; reason: string }
+interface PlanReport { overall: "ready" | "plan" | "unknown"; steps: PlanStep[]; note?: string }
+
 export function NativeEnvironmentStrip({ environment }: { environment?: NativeEnvironmentView }) {
   const [open, setOpen] = useState(false);
   const [doctor, setDoctor] = useState<DoctorReport>();
   const [doctorOpen, setDoctorOpen] = useState(false);
   const [doctorBusy, setDoctorBusy] = useState(false);
+  const [plan, setPlan] = useState<PlanReport>();
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planBusy, setPlanBusy] = useState(false);
   if (environment === undefined) return null;
   const { items } = environment;
   const summary = environment.overall === "match" ? "环境匹配"
@@ -61,6 +67,25 @@ export function NativeEnvironmentStrip({ environment }: { environment?: NativeEn
       setDoctorBusy(false);
     }
   };
+  const loadPlan = async () => {
+    if (planBusy) return;
+    setPlanBusy(true);
+    try {
+      const response = await fetch(fusionBrowserUrl(`/plugins/dsh-fusion/fleet/plan?hostId=${encodeURIComponent(environment.hostId)}`));
+      if (!response.ok) throw new Error("plan unavailable");
+      const value: unknown = await response.json();
+      if (value === null || typeof value !== "object") throw new Error("plan invalid");
+      const report = value as PlanReport;
+      if (report.overall !== "ready" && report.overall !== "plan" && report.overall !== "unknown") throw new Error("plan invalid");
+      setPlan(report);
+      setPlanOpen(true);
+    } catch {
+      setPlan({ overall: "unknown", steps: [], note: "对齐计划读取失败" });
+      setPlanOpen(true);
+    } finally {
+      setPlanBusy(false);
+    }
+  };
   return <section className={styles.environment} data-severity={environment.overall === "unknown" ? "warn" : environment.overall}
     aria-label="环境一致性">
     <div className={styles.environmentSummary}>
@@ -69,6 +94,7 @@ export function NativeEnvironmentStrip({ environment }: { environment?: NativeEn
       <button type="button" aria-expanded={open} aria-controls="native-environment-items"
         disabled={!canExpand} onClick={() => setOpen(value => !value)}>环境详情</button>
       <button type="button" aria-expanded={doctorOpen} onClick={() => void diagnose()} disabled={doctorBusy}>{doctorBusy ? "诊断中…" : "诊断"}</button>
+      <button type="button" aria-expanded={planOpen} onClick={() => void loadPlan()} disabled={planBusy}>{planBusy ? "计划中…" : "对齐计划"}</button>
     </div>
     {environment.overall === "unknown" && environment.reason !== undefined && <p className={styles.environmentReason}>{environment.reason}</p>}
     {open && canExpand && <ul id="native-environment-items" className={styles.environmentItems}>
@@ -94,6 +120,18 @@ export function NativeEnvironmentStrip({ environment }: { environment?: NativeEn
         </li>)}
       </ul>
       {doctor.nextActions.length > 0 && <ol>{doctor.nextActions.map(action => <li key={action}>{action}</li>)}</ol>}
+    </div>}
+    {planOpen && plan && <div className={styles.environmentDoctor}>
+      <p role="status" data-status={plan.overall === "ready" ? "ok" : plan.overall === "plan" ? "warn" : "fail"}>
+        {plan.overall === "ready" ? "环境已对齐" : plan.overall === "plan" ? `对齐计划 · ${plan.steps.length} 步` : "对齐计划未知"}
+      </p>
+      {plan.note !== undefined && <p>{plan.note}</p>}
+      {plan.steps.length > 0 && <ol>
+        {plan.steps.map(step => <li key={step.id} data-status={step.risk === "high" ? "fail" : step.risk === "medium" ? "warn" : "ok"}>
+          <strong>{step.action}</strong> <code>{step.target}</code> {step.reason}
+          {step.requiresRestart && <span>需要重启 profile</span>}
+        </li>)}
+      </ol>}
     </div>}
   </section>;
 }
