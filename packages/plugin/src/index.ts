@@ -83,7 +83,13 @@ import { createFleetMcpServer } from "./fleet-mcp.js";
 import { FleetMcpStore } from "./fleet-mcp-store.js";
 import { createFleetDispatchRequests } from "./fleet-dispatch-requests.js";
 import { createFleetDispatchRoutes } from "./fleet-dispatch-routes.js";
-import { createFleetWebhook, formatFleetNotification, type FleetNotificationEvent } from "./fleet-notifications.js";
+import type { FleetNotificationEvent } from "./fleet-notifications.js";
+import {
+  createFleetNotificationService,
+  type DshImNotifier,
+  type FleetNotificationAdapterConfig,
+  type WhaleNotificationServiceV1,
+} from "./fleet-notification-adapters.js";
 import {
   CloudConnectorRegistry,
   createCloudConnectorService,
@@ -92,6 +98,7 @@ import {
 } from "./cloud-connectors.js";
 import { registerBuiltinCloudConnectors } from "./cloud-providers.js";
 import { createFleetConnectorRoutes } from "./fleet-connector-routes.js";
+import { createFleetNotificationRoutes } from "./fleet-notification-routes.js";
 
 export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
 export type {
@@ -130,6 +137,23 @@ export type {
   WhaleConnectorServiceV1,
 } from "./cloud-connectors.js";
 export { registerBuiltinCloudConnectors } from "./cloud-providers.js";
+export {
+  FleetNotificationRegistry,
+  NotificationAdapterError,
+  createFleetNotificationService,
+  registerBuiltinNotificationAdapters,
+} from "./fleet-notification-adapters.js";
+export type {
+  DshImNotifier,
+  FleetDeliveryReceipt,
+  FleetNotificationAdapter,
+  FleetNotificationAdapterConfig,
+  FleetNotificationAdapterDefinition,
+  FleetNotificationAdapterStatus,
+  FleetNotificationFactory,
+  FleetNotificationFactoryContext,
+  WhaleNotificationServiceV1,
+} from "./fleet-notification-adapters.js";
 import {
   BridgeRoundCache,
   type BridgeRound,
@@ -279,6 +303,8 @@ export interface FusionHostConfig {
   fleetNotifications?: {
     dshIm?: { botId: string; targetId: string; format?: "plain" | "markdown" };
     webhook?: { url: string; secret?: string; secretEnv?: string; timeoutMs?: number };
+    directory?: string;
+    adapters?: FleetNotificationAdapterConfig[];
   };
   /**
    * Read-only open cloud-drive connectors. Credentials are named by
@@ -1375,7 +1401,7 @@ export async function apply(
       ctx.logger?.info?.("dsh-fusion: host has no ctx.provide; whaleFleet stays local to this plugin");
     }
     const dshImNotification = config.fleetNotifications?.dshIm;
-    let dshImService: { send?: (botId: string, targetId: string, text: string, options?: Record<string, unknown>) => Promise<unknown> } | undefined;
+    let dshImService: DshImNotifier | undefined;
     const captureDshIm = (scope: FusionHostContext) => {
       dshImService = ((scope as FusionHostContext & {
         dshIm?: typeof dshImService;
@@ -1385,39 +1411,57 @@ export async function apply(
       if (typeof ctx.inject === "function") ctx.inject(["dshIm"], (scope) => captureDshIm(scope));
       else captureDshIm(ctx);
     }
-    let webhookNotify: ((event: FleetNotificationEvent) => Promise<boolean>) | undefined;
+    const dshImProxy: DshImNotifier = {
+      get sendChecked() { return dshImService?.sendChecked?.bind(dshImService); },
+      get send() { return dshImService?.send?.bind(dshImService); },
+    };
+    const notificationAdapters: FleetNotificationAdapterConfig[] = [];
+    if (dshImNotification !== undefined) {
+      notificationAdapters.push({
+        id: "legacy-dsh-im",
+        kind: "dsh-im",
+        botId: dshImNotification.botId,
+        targetId: dshImNotification.targetId,
+        ...(dshImNotification.format === undefined ? {} : { format: dshImNotification.format }),
+      });
+    }
     if (config.fleetNotifications?.webhook !== undefined) {
-      try {
-        const webhook = config.fleetNotifications.webhook;
-        const secret = webhook.secret
-          ?? (webhook.secretEnv === undefined ? undefined : process.env[webhook.secretEnv]);
-        webhookNotify = createFleetWebhook({
-          url: webhook.url,
-          ...(secret === undefined ? {} : { secret }),
-          ...(webhook.timeoutMs === undefined ? {} : { timeoutMs: webhook.timeoutMs }),
-        });
-      } catch (error) {
-        ctx.logger?.warn?.(`dsh-fusion: webhook notification disabled: ${error instanceof Error ? error.message : String(error)}`);
+      const webhook = config.fleetNotifications.webhook;
+      notificationAdapters.push({
+        id: "legacy-webhook",
+        kind: "webhook",
+        url: webhook.url,
+        ...(webhook.secret === undefined ? {} : { secret: webhook.secret }),
+        ...(webhook.secretEnv === undefined ? {} : { secretEnv: webhook.secretEnv }),
+        ...(webhook.timeoutMs === undefined ? {} : { timeoutMs: webhook.timeoutMs }),
+      });
+    }
+    notificationAdapters.push(...(config.fleetNotifications?.adapters ?? []));
+    let notificationService: WhaleNotificationServiceV1 | undefined;
+    try {
+      notificationService = createFleetNotificationService({
+        adapters: notificationAdapters,
+        dshIm: dshImProxy,
+        directory: config.fleetNotifications?.directory ?? join(fleetDirectory, "notification-receipts.json"),
+      });
+      if (typeof ctx.provide === "function") {
+        try {
+          ctx.provide("whaleNotifications", notificationService);
+        } catch (error) {
+          ctx.logger?.warn?.(`dsh-fusion: whaleNotifications service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-fusion: notifications disabled: ${error instanceof Error ? error.message : String(error)}`);
     }
     const notifyFleet = async (event: FleetNotificationEvent): Promise<void> => {
-      const tasks: Array<Promise<unknown>> = [];
-      if (dshImNotification !== undefined && dshImService?.send !== undefined) {
-        tasks.push(dshImService.send(
-          dshImNotification.botId,
-          dshImNotification.targetId,
-          formatFleetNotification(event),
-          { format: dshImNotification.format ?? "plain" },
-        ).catch((error: unknown) => {
-          ctx.logger?.warn?.(`dsh-fusion: dsh-im notification failed: ${error instanceof Error ? error.message : String(error)}`);
-        }));
+      if (notificationService === undefined) return;
+      const receipts = await notificationService.deliver(event);
+      for (const receipt of receipts) {
+        if (receipt.status === "failed" || receipt.status === "unknown") {
+          ctx.logger?.warn?.(`dsh-fusion: notification ${receipt.adapterId} ${receipt.status} ${receipt.errorCode ?? ""}`.trim());
+        }
       }
-      if (webhookNotify !== undefined) {
-        tasks.push(webhookNotify(event).then((delivered) => {
-          if (!delivered) ctx.logger?.warn?.(`dsh-fusion: webhook notification not delivered: ${event.type}`);
-        }));
-      }
-      if (tasks.length > 0) await Promise.all(tasks);
     };
     const dispatchRequests = executionService === undefined ? undefined : createFleetDispatchRequests({
       path: join(fleetDirectory, "dispatch-requests.json"),
@@ -1460,6 +1504,7 @@ export async function apply(
             ...(executionService === undefined ? {} : { execution: executionService }),
             ...(dispatchRequests === undefined ? {} : { requests: dispatchRequests }),
             ...(whaleConnectorService === undefined ? {} : { connectors: whaleConnectorService }),
+            ...(notificationService === undefined ? {} : { notifications: notificationService }),
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -2501,6 +2546,15 @@ export async function apply(
       if (whaleConnectorService !== undefined) {
         for (const route of createFleetConnectorRoutes({
           service: whaleConnectorService,
+          authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+          readBody: readJsonBody,
+        })) {
+          effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+        }
+      }
+      if (notificationService !== undefined) {
+        for (const route of createFleetNotificationRoutes({
+          service: notificationService,
           authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
           readBody: readJsonBody,
         })) {

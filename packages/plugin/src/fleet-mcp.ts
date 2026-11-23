@@ -7,6 +7,7 @@ import type { FleetMcpStore } from "./fleet-mcp-store.js";
 import type { FleetDispatchRequestService } from "./fleet-dispatch-requests.js";
 import { DispatchRequestError } from "./fleet-dispatch-requests.js";
 import type { WhaleConnectorServiceV1 } from "./cloud-connectors.js";
+import type { WhaleNotificationServiceV1 } from "./fleet-notification-adapters.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -28,6 +29,7 @@ export interface FleetMcpServerOptions {
   execution?: FleetMcpExecutionReader;
   requests?: FleetDispatchRequestService;
   connectors?: WhaleConnectorServiceV1;
+  notifications?: WhaleNotificationServiceV1;
   autoApproveDispatch?: boolean;
   version?: string;
 }
@@ -147,6 +149,22 @@ const CONNECTOR_TOOLS = [
   },
 ] as const;
 
+const NOTIFICATION_TOOLS = [
+  {
+    name: "whale_notifications",
+    description: "List notification adapters and their last delivery receipts without exposing credentials.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "whale_notify_test",
+    description: "Send one synthetic test notification through one adapter, or all adapters. Requires the request scope.",
+    inputSchema: {
+      type: "object",
+      properties: { adapterId: { type: "string" } },
+    },
+  },
+] as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -230,6 +248,19 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
           ...(maxBytes === undefined ? {} : { maxBytes }),
         });
       }
+      case "whale_notifications": {
+        if (options.notifications === undefined) throw new ToolError("whale/notifications-unavailable", "通知适配器未配置");
+        return {
+          catalog: options.notifications.catalog(),
+          adapters: options.notifications.adapters(),
+          receipts: options.notifications.receipts().slice(-20),
+        };
+      }
+      case "whale_notify_test": {
+        if (options.notifications === undefined) throw new ToolError("whale/notifications-unavailable", "通知适配器未配置");
+        if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
+        return { receipts: await options.notifications.test(optional(args, "adapterId")) };
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -281,6 +312,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
           tools: [
             ...TOOLS,
             ...(options.connectors === undefined ? [] : CONNECTOR_TOOLS),
+            ...(options.notifications === undefined ? [] : NOTIFICATION_TOOLS),
             ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
           ],
         };
@@ -291,14 +323,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
           const result = await handleCall(params.name, isRecord(params.arguments) ? params.arguments : {}, client);
           return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
         } catch (error) {
-          const code = error instanceof ToolError ? error.code
-            : error instanceof FleetServiceError ? error.code
-            : typeof (error as { code?: unknown } | undefined)?.code === "string"
-              ? (error as { code: string }).code.startsWith("connector/")
-                ? (error as { code: string }).code
-                : `whale/${(error as { code: string }).code}`
-            : "whale/unavailable";
-          return { isError: true, content: [{ type: "text", text: code }] };
+          return { isError: true, content: [{ type: "text", text: toolErrorCode(error) }] };
         }
       }
       default:
@@ -443,6 +468,15 @@ function optionalNumber(args: Record<string, unknown>, name: string): number | u
     throw new ToolError("whale/invalid-input", `${name} 无效`);
   }
   return value;
+}
+
+function toolErrorCode(error: unknown): string {
+  if (error instanceof ToolError) return error.code;
+  if (error instanceof FleetServiceError) return error.code;
+  const code = (error as { code?: unknown } | undefined)?.code;
+  if (typeof code !== "string") return "whale/unavailable";
+  if (code.startsWith("connector/") || code.startsWith("notification/") || code === "send-result-unknown") return code;
+  return `whale/${code}`;
 }
 
 function send(response: ServerResponse, status: number, body?: unknown, headers: Record<string, string> = {}): void {

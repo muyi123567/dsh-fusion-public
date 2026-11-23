@@ -68,6 +68,25 @@ MCP 新增 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
 设计：[开放云盘连接器](../design/2026-11-23-cloud-connectors.md)。证据：
 `/data/openlet/evidence/dsh-fusion-cloud-20261123/`。
 
+### 开放通知适配器（2026-11-23）
+
+把原来只支持 webhook/dsh-im 的直连通知升级为适配器系统：内置 `dsh-im`、`webhook`、
+`slack`、`feishu`、`dingtalk`、`telegram`、`discord`，支持第三方命名空间注册。
+dsh-im 适配器优先调用 `sendChecked(..., { receipt: true })`，保存 messageId /
+conversationId；遇到 `send-result-unknown` 记录 unknown 且不自动重试。每个适配器有
+事件过滤、超时、失败隔离与最近 100 条元数据回执（0600 原子持久化）。
+
+新增 `whale_notifications`（目录/状态/最近回执）和需要 `request` scope 的
+`whale_notify_test`；HTTP 增加 `/fleet/notifications` 列表与测试路由；面板新增
+“通知适配器”区，可查看最近状态并逐项测试。旧 `fleetNotifications.dshIm/webhook`
+自动映射为 legacy 适配器。
+
+验证：插件 462 项、原生面板 70 项通过。协议级测试覆盖六种 HTTP 载荷、钉钉加签、
+dsh-im 回执与 unknown 不重试、事件过滤、失败隔离和回执持久化。真实平台账号与真实
+dsh-im 渠道尚未发送验证。
+
+设计：[开放通知适配器](../design/2026-11-23-notification-adapters.md)。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

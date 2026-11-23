@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 
-export type FleetNotificationType = "created" | "approved" | "rejected" | "failed";
+export type FleetNotificationType = "created" | "approved" | "rejected" | "failed" | "test";
 
 export interface FleetNotificationEvent {
   type: FleetNotificationType;
@@ -19,7 +19,8 @@ export function formatFleetNotification(event: FleetNotificationEvent): string {
   const title = event.type === "created" ? "待审批派发"
     : event.type === "approved" ? "派发已批准"
     : event.type === "rejected" ? "派发已拒绝"
-    : "派发失败";
+    : event.type === "failed" ? "派发失败"
+    : "连接器测试";
   const lines = [
     `[鲸群] ${title}`,
     `请求：${event.requestedBy} · ${event.jobId} @ ${event.nodeId}`,

@@ -69,6 +69,7 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
       enabled: true
       port: 8797
     fleetNotifications:
+      directory: /var/lib/dsh-fusion/fleet/notification-receipts.json
       dshIm:
         botId: <dsh-im bot id>
         targetId: <dsh-im target id>
@@ -76,6 +77,20 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
       webhook:
         url: https://example.invalid/dsh-fusion
         secretEnv: FUSION_WEBHOOK_SECRET
+      adapters:
+        - id: ops-slack
+          kind: slack
+          label: Ops Slack
+          urlEnv: FUSION_SLACK_WEBHOOK
+        - id: team-feishu
+          kind: feishu
+          label: 团队飞书
+          urlEnv: FUSION_FEISHU_WEBHOOK
+        - id: oncall-telegram
+          kind: telegram
+          label: On-call Telegram
+          tokenEnv: FUSION_TELEGRAM_BOT_TOKEN
+          chatId: "-1001234567890"
     fleetConnectors:
       directory: /var/lib/dsh-fusion/fleet/imports
       maxBytes: 67108864
@@ -114,6 +129,13 @@ node packages/plugin/scripts/fleet-mcp-token.mjs --file /var/lib/dsh-fusion/flee
 会通过 `dshIm.send` 发到指定目标；没有 dsh-im 或未配置时完全静默，不影响请求状态。
 `fleetNotifications.webhook` 是另一个可选出口，POST 事件 JSON 并用
 `X-DSH-Fusion-Signature: sha256=<HMAC>` 签名（secret 建议从 `secretEnv` 读取）。
+`fleetNotifications.adapters` 是开放适配器列表：内置 `dsh-im`（优先使用
+`sendChecked` 回执，支持 dsh-im 已接入的 Slack/Telegram/Discord/飞书/钉钉/QQ 等渠道）、
+`webhook`、`slack`、`feishu`、`dingtalk`、`telegram`、`discord`。每个适配器可配置
+`events` 过滤、`timeoutMs` 和独立 `id`；失败互不影响，最近 100 条只含元数据的回执写入
+`directory`（0600）。面板与 `whale_notifications` 可查看状态，带 `request` scope 的
+`whale_notify_test` 可发测试消息。第三方插件可通过
+`ctx.get("whaleNotifications").register(definition, factory)` 注册适配器。
 
 `fleetConnectors` 是只读云盘连接器：内置 Google Drive、OneDrive、Dropbox 和
 WebDAV/Nextcloud。凭据只写环境变量名，值不进配置、日志或清单；拉取文件进入私有
@@ -126,6 +148,7 @@ Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
 设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·
 [开放云盘连接器](docs/design/2026-11-23-cloud-connectors.md) ·
+[开放通知适配器](docs/design/2026-11-23-notification-adapters.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级

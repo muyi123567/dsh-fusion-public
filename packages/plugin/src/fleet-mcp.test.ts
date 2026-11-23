@@ -58,6 +58,7 @@ async function start(options: {
   execution?: { read: (taskId: string) => Promise<unknown> };
   requests?: unknown;
   connectors?: unknown;
+  notifications?: unknown;
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
@@ -68,6 +69,7 @@ async function start(options: {
     ...(options.execution === undefined ? {} : { execution: options.execution as never }),
     ...(options.requests === undefined ? {} : { requests: options.requests as never }),
     ...(options.connectors === undefined ? {} : { connectors: options.connectors as never }),
+    ...(options.notifications === undefined ? {} : { notifications: options.notifications as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -167,6 +169,53 @@ describe("fleet MCP server", () => {
     }));
     expect(await pulled.json()).toMatchObject({
       result: { structuredContent: { connectorId: "gd", name: "a.txt", bytes: 3 } },
+    });
+  });
+
+  it("lists notification adapters and enforces the request scope for tests", async () => {
+    const notifications = {
+      contractVersion: 1 as const,
+      catalog: () => [{
+        kind: "slack", displayName: "Slack", category: "im", description: "slack", receipt: false, fields: [],
+      }],
+      adapters: () => [{
+        id: "ops", kind: "slack", label: "Ops", enabled: true, state: "configured",
+        events: ["created", "approved", "rejected", "failed", "test"], capabilities: { receipt: false },
+      }],
+      deliver: vi.fn(async () => []),
+      test: vi.fn(async (adapterId?: string) => [{
+        adapterId: adapterId ?? "ops", kind: "slack", eventType: "test", status: "delivered",
+        at: "2026-11-23T12:00:00.000Z", durationMs: 1, httpStatus: 204,
+      }]),
+      receipts: () => [],
+      register: () => () => {},
+    };
+    const { url, token, store } = await start({ notifications });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toEqual([
+      "whale_list_hosts", "whale_host_manifest", "whale_environment_diff", "whale_receipt", "whale_doctor",
+      "whale_environment_plan", "whale_notifications", "whale_notify_test",
+    ]);
+
+    const listedAdapters = await post(url, token, rpc(3, "tools/call", {
+      name: "whale_notifications", arguments: {},
+    }));
+    expect(await listedAdapters.json()).toMatchObject({
+      result: { structuredContent: { adapters: [{ id: "ops" }], receipts: [] } },
+    });
+
+    const denied = await post(url, token, rpc(4, "tools/call", {
+      name: "whale_notify_test", arguments: { adapterId: "ops" },
+    }));
+    expect(await denied.json()).toMatchObject({ result: { isError: true, content: [{ text: "whale/scope-required" }] } });
+
+    const writer = store.createClient({ name: "notifier", scopes: ["read", "request"] }).token;
+    const tested = await post(url, writer, rpc(5, "tools/call", {
+      name: "whale_notify_test", arguments: { adapterId: "ops" },
+    }));
+    expect(await tested.json()).toMatchObject({
+      result: { structuredContent: { receipts: [{ adapterId: "ops", status: "delivered" }] } },
     });
   });
 
