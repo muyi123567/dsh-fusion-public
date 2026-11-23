@@ -119,7 +119,7 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.14.tgz
 | Node.js | >=24.9.0 |
 | DSH 安装范围 | >=0.2.0-rc.2 <0.3.0 |
 | 本轮推荐宿主 | 0.2.2-rc.5；最新 stable，已实机启动 / MCP / 执行验证 |
-| 最新 alpha | 0.2.3-alpha.2；隔离启动、MCP 与环境采集验证通过，未覆盖原生 UI 全量 |
+| 最新 alpha | 0.2.3-alpha.2；隔离启动、6 个只读 MCP 工具、签名清单、漂移/诊断与认证边界通过；未覆盖原生 UI 全量 |
 | 候选宿主 | 0.2.0-rc.2 / 0.2.2-rc.1 / 0.2.2-rc.3；API 已核实存在，未全部重测 |
 | AgentTeams companion | 0.1.30 |
 | Room / AgentBus | 0.7.0 / 0.1.1（兼容补丁版） |

@@ -20,12 +20,29 @@ task/attempt 回执；签名不符、摘要被改、未签名字段或回执不�
 recommended `0.2.2-rc.5`，tested `0.2.2-rc.5` 与 `0.2.3-alpha.2`，rc.3 保留为 candidate。
 
 - `0.2.2-rc.5`：Instabox 隔离 profile 完成 M2 DS-Bot Chief 工具调用与 M3 环境门禁/v3 回执实机验证。
-- `0.2.3-alpha.2`：本机隔离 DSH_HOME 启动成功，插件加载无错误，MCP `8899` 的四个只读工具
+- `0.2.3-alpha.2`：本机隔离 DSH_HOME 启动成功，插件加载无错误，MCP `8899` 的只读工具
   与 `whale_list_hosts` 环境清单/签名正常；未重跑完整原生 UI、DS-Bot 全链路或真实模型。
 
 证据：`/data/openlet/evidence/dsh-fusion-dsh-compat-20261122/`（含 alpha 日志、工具清单、
 环境返回、版本与 SHA256SUMS）。`packages/plugin/{compatibility.json,release.json}` 与
 `src/compatibility.ts` 已同步；setup 契约在 Node 24 下 12 项通过。
+
+### 最新内核复核（2026-11-23）
+
+再次核对上游与 npm：最新标签仍为 `dsh-v0.2.3-alpha.2`，dist-tags 为 stable/next
+`0.2.2-rc.5`、alpha `0.2.3-alpha.2`，没有更新内核。
+
+用当前分支 `feat/open-fleet-expected`（`e3f7413`）重新构建并打包插件，安装进
+`0.2.3-alpha.2` 隔离 profile 后复测：六个只读 MCP 工具全部出现；`whale_host_manifest`
+返回 `dsh.version=0.2.3-alpha.2` 与 Ed25519 签名；`whale_doctor` 的版本、环境、
+MCP 注册与服务检查为 ok；错误 digest 触发 `manifest.digest` 阻断漂移；
+无令牌 / 跨站 Origin / GET 分别为 401 / 403 / 405。安装后的 `dist/index.js` 与本次
+tarball sha256 一致，排除旧包冒充。
+
+边界：未在 alpha 下验证完整原生 UI 业务流、真实模型、DS-Bot Chief 调用与门禁派发；
+这些仍以 stable `0.2.2-rc.5` 的 Instabox 实机证据为准。
+
+证据：`/data/openlet/evidence/dsh-fusion-dsh-compat-20261123/`。
 
 ### 生态诊断与热门插件检测（2026-11-23）
 
