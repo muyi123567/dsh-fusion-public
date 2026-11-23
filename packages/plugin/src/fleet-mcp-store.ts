@@ -6,9 +6,11 @@ export interface FleetMcpClient {
   id: string;
   name: string;
   tokenSha256: string;
-  scopes: Array<"read">;
+  scopes: FleetMcpScope[];
   createdAt: string;
 }
+
+export type FleetMcpScope = "read" | "request";
 
 export interface FleetMcpFile {
   version: 1;
@@ -63,14 +65,15 @@ export class FleetMcpStore {
     renameSync(temporary, this.path);
   }
 
-  createClient(input: { name: string; scopes?: Array<"read"> }): { client: FleetMcpClient; token: string } {
+  createClient(input: { name: string; scopes?: FleetMcpScope[] }): { client: FleetMcpClient; token: string } {
     if (!NAME.test(input.name)) throw new Error("FLEET_MCP_CLIENT_NAME_INVALID");
+    const scopes = normalizeScopes(input.scopes ?? ["read"]);
     const token = randomBytes(32).toString("base64url");
     const client: FleetMcpClient = {
       id: randomUUID(),
       name: input.name,
       tokenSha256: sha256(token),
-      scopes: input.scopes ?? ["read"],
+      scopes,
       createdAt: new Date().toISOString(),
     };
     this.data.clients.push(client);
@@ -94,11 +97,12 @@ export class FleetMcpStore {
         id: "dsh-internal",
         name: "DSH host",
         tokenSha256: sha256(token),
-        scopes: ["read"],
+        scopes: ["read", "request"],
         createdAt: new Date().toISOString(),
       });
     } else {
       existing.tokenSha256 = sha256(token);
+      existing.scopes = ["read", "request"];
     }
     this.save();
     return token;
@@ -140,7 +144,7 @@ function validateFile(value: unknown): FleetMcpFile {
       || typeof client.name !== "string" || !NAME.test(client.name)
       || typeof client.tokenSha256 !== "string" || !HASH.test(client.tokenSha256)
       || typeof client.createdAt !== "string"
-      || !Array.isArray(client.scopes) || client.scopes.length !== 1 || client.scopes[0] !== "read") {
+      || !Array.isArray(client.scopes)) {
       throw new Error("FLEET_MCP_STORE_INVALID");
     }
     if (ids.has(client.id) || hashes.has(client.tokenSha256)) throw new Error("FLEET_MCP_STORE_INVALID");
@@ -148,7 +152,7 @@ function validateFile(value: unknown): FleetMcpFile {
     hashes.add(client.tokenSha256);
     return {
       id: client.id, name: client.name, tokenSha256: client.tokenSha256,
-      scopes: ["read"], createdAt: client.createdAt,
+      scopes: normalizeScopes(client.scopes as FleetMcpScope[]), createdAt: client.createdAt,
     };
   });
   return { version: 1, enabled: file.enabled, port: file.port!, clients };
@@ -156,4 +160,13 @@ function validateFile(value: unknown): FleetMcpFile {
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function normalizeScopes(value: FleetMcpScope[]): FleetMcpScope[] {
+  const scopes = [...new Set(value)];
+  if (scopes.length === 0 || !scopes.includes("read")
+    || scopes.some(scope => scope !== "read" && scope !== "request")) {
+    throw new Error("FLEET_MCP_SCOPES_INVALID");
+  }
+  return scopes;
 }

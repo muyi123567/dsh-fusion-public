@@ -37,7 +37,16 @@ describe("fleet MCP token store", () => {
     expect(second).not.toBe(first);
     expect(tokens.authorize(first)).toBeUndefined();
     expect(tokens.authorize(second)?.id).toBe("dsh-internal");
+    expect(tokens.authorize(second)?.scopes).toEqual(["read", "request"]);
     expect(tokens.file.clients.filter(client => client.id === "dsh-internal")).toHaveLength(1);
+  });
+
+  it("grants request scope only when explicitly asked", () => {
+    const tokens = store();
+    const reader = tokens.createClient({ name: "reader" });
+    const chief = tokens.createClient({ name: "chief", scopes: ["read", "request"] });
+    expect(reader.client.scopes).toEqual(["read"]);
+    expect(chief.client.scopes).toEqual(["read", "request"]);
   });
 
   it("rejects a malformed file instead of guessing", () => {

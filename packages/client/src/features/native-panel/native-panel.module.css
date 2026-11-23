@@ -68,6 +68,13 @@
 .environmentDoctor li[data-status="fail"] strong { color: var(--voyage-danger); }
 .environmentDoctor li[data-status="warn"] strong { color: var(--voyage-warning); }
 .environmentDoctor li span { display: block; color: var(--voyage-secondary); }
+.approvals { flex: 0 0 auto; padding: 8px 20px; border-bottom: 1px solid var(--voyage-line); background: var(--voyage-paper); }
+.approvalHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.approvalHeader button { padding: 1px 6px; font-size: 11px; }
+.approvals ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; max-height: 30vh; overflow: auto; }
+.approvals li { padding: 6px 8px; border: 1px solid var(--voyage-line); border-radius: 4px; background: var(--voyage-reader); }
+.approvalRow { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.approvalActions { display: flex; gap: 6px; margin-top: 5px; }
 .tabs button { border: 0; color: var(--voyage-secondary); border-bottom: 2px solid transparent; padding: 4px 0 3px; border-radius: 0; font-size: 13px; }
 .tabs button[aria-pressed="true"] { border-color: var(--voyage-sea); color: var(--voyage-ink); font-weight: 600; }
 .workspace { flex: 1; min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }

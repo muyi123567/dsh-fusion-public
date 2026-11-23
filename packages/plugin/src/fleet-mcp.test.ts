@@ -48,7 +48,11 @@ afterEach(async () => {
   running = undefined;
 });
 
-async function start(options: { service?: WhaleFleetServiceV1; execution?: { read: (taskId: string) => Promise<unknown> } } = {}) {
+async function start(options: {
+  service?: WhaleFleetServiceV1;
+  execution?: { read: (taskId: string) => Promise<unknown> };
+  requests?: unknown;
+} = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
   const token = store.createClient({ name: "test" }).token;
@@ -56,6 +60,7 @@ async function start(options: { service?: WhaleFleetServiceV1; execution?: { rea
     service: options.service ?? service(),
     store,
     ...(options.execution === undefined ? {} : { execution: options.execution as never }),
+    ...(options.requests === undefined ? {} : { requests: options.requests as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -172,4 +177,39 @@ describe("fleet MCP server", () => {
     expect(body.result.isError).toBe(true);
     expect(body.result.content[0]?.text).toContain("whale/host-unknown");
   });
+
+  it("keeps dispatch requests behind the request scope and queues them for approval", async () => {
+    const requests = {
+      create: vi.fn(async (input: { requestId: string }) => ({
+        request: { id: "request-1", requestId: input.requestId, status: "pending" }, created: true,
+      })),
+      approve: vi.fn(),
+      list: vi.fn(async () => []),
+      reject: vi.fn(),
+      path: "/tmp/unused",
+    };
+    const { url, token, store } = await start({ requests });
+    const reader = store.createClient({ name: "reader" });
+    const denied = await post(url, reader.token, rpc(5, "tools/call", {
+      name: "whale_request_dispatch",
+      arguments: { taskId: "task-1", sourceToken: sourceToken(), jobId: "verify", nodeId: "worker-a" },
+    }));
+    const deniedBody = await denied.json() as { result: { isError: boolean; content: Array<{ text: string }> } };
+    expect(deniedBody.result.isError).toBe(true);
+    expect(deniedBody.result.content[0]?.text).toBe("whale/scope-required");
+
+    const chief = store.createClient({ name: "Chief", scopes: ["read", "request"] });
+    const accepted = await post(url, chief.token, rpc(6, "tools/call", {
+      name: "whale_request_dispatch",
+      arguments: { taskId: "task-1", sourceToken: sourceToken(), jobId: "verify", nodeId: "worker-a" },
+    }));
+    const acceptedBody = await accepted.json() as { result: { structuredContent: unknown } };
+    expect(acceptedBody.result.structuredContent).toMatchObject({ status: "pending", approval: "pending" });
+    expect(requests.create).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: "task-1", jobId: "verify", nodeId: "worker-a", requestedBy: "Chief", source: expect.stringMatching(/^mcp:/u),
+    }));
+    expect(token).toBeTruthy();
+  });
 });
+
+function sourceToken() { return "a".repeat(64); }

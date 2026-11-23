@@ -34,6 +34,14 @@ recommended `0.2.2-rc.5`，tested `0.2.2-rc.5` 与 `0.2.3-alpha.2`，rc.3 保留
 并检测 DS-Bot、dsh-im、QQBot、Modlens 的安装与启用状态。缺失可选插件只展示，不影响整体通过；
 阻塞级问题才把 overall 置为 fail。纯逻辑测试与 MCP/路由/面板测试覆盖。
 
+### 待审批派发（2026-11-23）
+
+新增 `whale_request_dispatch`、`dispatch-requests` HTTP 与面板审批区。Bot 需要 `request`
+scope，只能创建待审批意图；人类批准后复用环境门禁执行，失败记录错误码。请求文件 0600，
+24 小时过期；内部 DSH 客户端自动拥有 read+request，外部令牌需 `--request`。
+
+验证：插件全量 429 项、原生面板 66 项通过。
+
 ### M1：只读环境清单与漂移（2026-11-22）
 
 已实现 `whaleFleet` `contractVersion: 1` 的只读切片：`manifest()`、`host()`、

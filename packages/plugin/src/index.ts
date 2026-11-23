@@ -81,6 +81,8 @@ import { createFleetRoutes } from "./fleet-routes.js";
 import { buildFleetDoctorReport, type FleetDoctorReport } from "./fleet-doctor.js";
 import { createFleetMcpServer } from "./fleet-mcp.js";
 import { FleetMcpStore } from "./fleet-mcp-store.js";
+import { createFleetDispatchRequests } from "./fleet-dispatch-requests.js";
+import { createFleetDispatchRoutes } from "./fleet-dispatch-routes.js";
 
 export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
 export type {
@@ -1307,6 +1309,10 @@ export async function apply(
     } else {
       ctx.logger?.info?.("dsh-fusion: host has no ctx.provide; whaleFleet stays local to this plugin");
     }
+    const dispatchRequests = executionService === undefined ? undefined : createFleetDispatchRequests({
+      path: join(fleetDirectory, "dispatch-requests.json"),
+      dispatch: async (input) => await executionService.start(input),
+    });
     const fleetMcpConfig = config.fleetMcp;
     let fleetMcpStore: FleetMcpStore | undefined;
     try {
@@ -1341,6 +1347,7 @@ export async function apply(
             service: fleetService,
             store: fleetMcpStore,
             ...(executionService === undefined ? {} : { execution: executionService }),
+            ...(dispatchRequests === undefined ? {} : { requests: dispatchRequests }),
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -2377,6 +2384,15 @@ export async function apply(
         authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
       })) {
         effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
+      if (dispatchRequests !== undefined) {
+        for (const route of createFleetDispatchRoutes({
+          service: dispatchRequests,
+          authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+          readBody: readJsonBody,
+        })) {
+          effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+        }
       }
       effectScope.effect?.(() => webServer.register({
         kind: "exact",

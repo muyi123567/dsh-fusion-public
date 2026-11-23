@@ -5,6 +5,7 @@ import { NativeTaskList } from "./NativeTaskList.js";
 import { NativePanelDetails } from "./NativePanelDetails.js";
 import { NativeOceanBoundary } from "./NativeOceanBoundary.js";
 import { NativeEnvironmentStrip } from "./NativeEnvironmentStrip.js";
+import { NativeDispatchApprovals } from "./NativeDispatchApprovals.js";
 import { nativeTaskLabel, nativeTaskStatus } from "./native-task-status.js";
 import { useNativeData } from "./use-native-data.js";
 import type { NativePanelSelection, NativeWhalePanelProps } from "./types.js";
@@ -136,6 +137,7 @@ export function NativeWhalePanel({ snapshotUrl = "/plugins/dsh-fusion/state", vi
     }
   }}>
     <NativeEnvironmentStrip {...(data.environment === undefined ? {} : { environment: data.environment })} />
+    {data.environment && <NativeDispatchApprovals visible={visible} />}
     {(!selection || split) && <nav className={styles.tabs} aria-label="面板视图">
       {tabs.map(item => <button type="button" key={item.id} ref={element => {
         if (element) tabsRef.current.set(item.id, element); else tabsRef.current.delete(item.id);

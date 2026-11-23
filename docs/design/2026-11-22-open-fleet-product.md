@@ -620,3 +620,19 @@ fleetEnvironment:
 证据见 `/data/openlet/evidence/dsh-fusion-m3-20261122/`。
 
 验证：插件全量 415 项、原生面板 63 项通过；插件与 client 类型检查、构建、v1/v2/v3 签名 smoke 通过。
+
+## 21. 待审批派发（Bot → 人类审批 → 门禁执行）
+
+已实现：
+
+- `whale_request_dispatch` MCP 工具：要求客户端具备 `request` scope；只创建待审批意图，
+  不直接执行。`requestId` 支持幂等，重复请求返回同一条意图。
+- `fleet-dispatch-requests.json`（0600）保存任务、作业、节点、环境要求、请求者与来源；
+  不含 MCP 令牌。24 小时未处理自动过期。
+- 面板“待审批派发”列出请求，批准后调用原生执行（含环境门禁）；门禁/执行失败记录
+  `failed` 与错误码。拒绝需给出原因。
+- HTTP：`GET /plugins/dsh-fusion/fleet/dispatch-requests`、
+  `POST .../approve`、`POST .../reject`，沿用 DSH 认证与同源 JSON 检查。
+- 内部 DSH 客户端默认 `read + request`；外部令牌默认只读，`--request` 显式授予。
+
+验证：插件全量 429 项、原生面板 66 项通过；新增请求存储、scope、审批路由与面板测试。

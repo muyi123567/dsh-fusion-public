@@ -1,8 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { FleetHostManifest } from "./fleet-environment.js";
 import { FleetServiceError, type WhaleFleetServiceV1 } from "./fleet-service.js";
 import type { FleetMcpStore } from "./fleet-mcp-store.js";
+import type { FleetDispatchRequestService } from "./fleet-dispatch-requests.js";
+import { DispatchRequestError } from "./fleet-dispatch-requests.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -22,6 +25,8 @@ export interface FleetMcpServerOptions {
   service: WhaleFleetServiceV1;
   store: FleetMcpStore;
   execution?: FleetMcpExecutionReader;
+  requests?: FleetDispatchRequestService;
+  autoApproveDispatch?: boolean;
   version?: string;
 }
 
@@ -71,6 +76,30 @@ const TOOLS = [
   },
 ] as const;
 
+const REQUEST_TOOL = {
+  name: "whale_request_dispatch",
+  description: "Request one environment-gated dispatch from an allowlisted job. It stays pending until a human approves it in the Whale panel unless auto-approval is explicitly enabled.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      taskId: { type: "string" },
+      sourceToken: { type: "string" },
+      jobId: { type: "string" },
+      nodeId: { type: "string" },
+      requestId: { type: "string" },
+      environment: {
+        type: "object",
+        properties: {
+          hostId: { type: "string" },
+          requireDigest: { type: "string" },
+          policy: { enum: ["exact", "compatible"] },
+        },
+      },
+    },
+    required: ["taskId", "sourceToken", "jobId", "nodeId"],
+  },
+} as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -81,7 +110,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
   let server: ReturnType<typeof createServer> | undefined;
   let port: number | undefined;
 
-  const handleCall = async (name: string, args: Record<string, unknown>): Promise<unknown> => {
+  const handleCall = async (name: string, args: Record<string, unknown>, client: { id: string; name: string; scopes: readonly string[] }): Promise<unknown> => {
     switch (name) {
       case "whale_list_hosts":
         return { hosts: await options.service.listHosts() };
@@ -122,12 +151,37 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         if (options.service.doctor === undefined) throw new ToolError("whale/doctor-unavailable", "诊断不可用");
         return await options.service.doctor();
       }
+      case "whale_request_dispatch": {
+        if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
+        if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
+        const requestId = optional(args, "requestId") ?? randomUUID();
+        try {
+          const created = await options.requests.create({
+            requestId,
+            taskId: required(args, "taskId"),
+            sourceToken: required(args, "sourceToken"),
+            jobId: required(args, "jobId"),
+            nodeId: required(args, "nodeId"),
+            ...(args.environment === undefined ? {} : { environment: args.environment as never }),
+            requestedBy: client.name,
+            source: `mcp:${client.id}`,
+          });
+          if (options.autoApproveDispatch !== true) {
+            return { requestId: created.request.requestId, id: created.request.id, status: created.request.status, approval: "pending" };
+          }
+          const approved = await options.requests.approve(created.request.id, "mcp-auto");
+          return { requestId: created.request.requestId, id: created.request.id, status: approved.request.status, attemptId: approved.attemptId, approval: "auto" };
+        } catch (error) {
+          if (error instanceof DispatchRequestError) throw new ToolError(`whale/${error.code}`, error.code);
+          throw error;
+        }
+      }
       default:
         throw new ToolError("whale/tool-unknown", `未知工具：${name}`);
     }
   };
 
-  const rpc = async (message: Record<string, unknown>): Promise<unknown> => {
+  const rpc = async (message: Record<string, unknown>, client: { id: string; name: string; scopes: readonly string[] }): Promise<unknown> => {
     const method = message.method;
     const id = message.id;
     if (typeof method !== "string") throw Object.assign(new Error("Invalid request"), { rpc: -32600 });
@@ -144,12 +198,12 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
       case "ping":
         return {};
       case "tools/list":
-        return { tools: TOOLS };
+        return { tools: options.requests === undefined ? TOOLS : [...TOOLS, REQUEST_TOOL] };
       case "tools/call": {
         const params = (message.params ?? {}) as { name?: unknown; arguments?: unknown };
         if (typeof params.name !== "string") throw Object.assign(new Error("Unknown tool"), { rpc: -32602 });
         try {
-          const result = await handleCall(params.name, isRecord(params.arguments) ? params.arguments : {});
+          const result = await handleCall(params.name, isRecord(params.arguments) ? params.arguments : {}, client);
           return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
         } catch (error) {
           const code = error instanceof ToolError ? error.code
@@ -202,7 +256,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
     for (const message of messages) {
       if (!isRecord(message) || message.id === undefined || message.id === null) continue;
       try {
-        replies.push({ jsonrpc: "2.0", id: message.id, result: await rpc(message) });
+        replies.push({ jsonrpc: "2.0", id: message.id, result: await rpc(message, client) });
       } catch (error) {
         replies.push({
           jsonrpc: "2.0", id: message.id,

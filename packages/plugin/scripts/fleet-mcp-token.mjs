@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 const usage = `用法：
-  node scripts/fleet-mcp-token.mjs --file <mcp.json> --name <客户端名>
+  node scripts/fleet-mcp-token.mjs --file <mcp.json> --name <客户端名> [--request]
   node scripts/fleet-mcp-token.mjs --file <mcp.json> --list
   node scripts/fleet-mcp-token.mjs --file <mcp.json> --revoke <client-id>
   node scripts/fleet-mcp-token.mjs --file <mcp.json> --enable
@@ -17,6 +17,7 @@ const usage = `用法：
 const { values } = parseArgs({ args: process.argv.slice(2), options: {
   file: { type: "string" }, name: { type: "string" }, list: { type: "boolean" },
   revoke: { type: "string" }, enable: { type: "boolean" }, help: { type: "boolean" },
+  request: { type: "boolean" },
 } });
 if (values.help === true) {
   console.log(usage);
@@ -49,7 +50,7 @@ data.clients.push({
   id: randomUUID(),
   name: values.name.trim(),
   tokenSha256: createHash("sha256").update(token).digest("hex"),
-  scopes: ["read"],
+  scopes: values.request === true ? ["read", "request"] : ["read"],
   createdAt: new Date().toISOString(),
 });
 write(file, data);

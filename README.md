@@ -50,7 +50,9 @@ M1/M2 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
 `whale_list_hosts`、`whale_host_manifest`、`whale_environment_diff`、`whale_receipt`、
 `whale_doctor`。`whale_doctor` 同时检测 DSH 版本、环境漂移、MCP、执行节点与已安装的
 DS-Bot、dsh-im、QQBot、Modlens；面板“诊断”按钮提供同一报告。
-派发工具、环境门禁与自动对齐仍是设计稿；当前执行仍走既有面板与执行路由。
+M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业时再增加
+`whale_request_dispatch`：Bot 只能创建待审批意图，必须在面板“待审批派发”批准后才执行。
+只有带 `--request` 的外部令牌才拥有该 scope；自动对齐仍是后续工作。
 
 ```yaml
 - id: dsh-fusion
