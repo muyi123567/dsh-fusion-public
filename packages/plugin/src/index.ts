@@ -83,6 +83,7 @@ import { createFleetMcpServer } from "./fleet-mcp.js";
 import { FleetMcpStore } from "./fleet-mcp-store.js";
 import { createFleetDispatchRequests } from "./fleet-dispatch-requests.js";
 import { createFleetDispatchRoutes } from "./fleet-dispatch-routes.js";
+import { formatFleetNotification } from "./fleet-notifications.js";
 
 export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
 export type {
@@ -244,6 +245,10 @@ export interface FusionHostConfig {
     enabled?: boolean;
     port?: number;
     tokenFile?: string;
+  };
+  /** Optional proactive notification adapter; disabled by default. */
+  fleetNotifications?: {
+    dshIm?: { botId: string; targetId: string; format?: "plain" | "markdown" };
   };
   modelTaskCommands?: string[];
   /**
@@ -1309,9 +1314,34 @@ export async function apply(
     } else {
       ctx.logger?.info?.("dsh-fusion: host has no ctx.provide; whaleFleet stays local to this plugin");
     }
+    const dshImNotification = config.fleetNotifications?.dshIm;
+    let dshImService: { send?: (botId: string, targetId: string, text: string, options?: Record<string, unknown>) => Promise<unknown> } | undefined;
+    const captureDshIm = (scope: FusionHostContext) => {
+      dshImService = ((scope as FusionHostContext & {
+        dshIm?: typeof dshImService;
+      }).dshIm ?? scope.get?.("dshIm")) as typeof dshImService;
+    };
+    if (dshImNotification !== undefined) {
+      if (typeof ctx.inject === "function") ctx.inject(["dshIm"], (scope) => captureDshIm(scope));
+      else captureDshIm(ctx);
+    }
+    const notifyFleet = async (event: Parameters<typeof formatFleetNotification>[0]): Promise<void> => {
+      if (dshImNotification === undefined || dshImService?.send === undefined) return;
+      try {
+        await dshImService.send(
+          dshImNotification.botId,
+          dshImNotification.targetId,
+          formatFleetNotification(event),
+          { format: dshImNotification.format ?? "plain" },
+        );
+      } catch (error) {
+        ctx.logger?.warn?.(`dsh-fusion: dsh-im notification failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
     const dispatchRequests = executionService === undefined ? undefined : createFleetDispatchRequests({
       path: join(fleetDirectory, "dispatch-requests.json"),
       dispatch: async (input) => await executionService.start(input),
+      onEvent: notifyFleet,
     });
     const fleetMcpConfig = config.fleetMcp;
     let fleetMcpStore: FleetMcpStore | undefined;

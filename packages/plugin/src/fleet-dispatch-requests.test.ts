@@ -81,4 +81,19 @@ describe("fleet dispatch requests", () => {
     writeFileSync((requests as unknown as { path: string }).path, "{not json");
     await expect(requests.list()).rejects.toBeInstanceOf(DispatchRequestError);
   });
+
+  it("emits best-effort events for created, approved and rejected requests", async () => {
+    const events: Array<{ type: string; status: string }> = [];
+    const { input } = service();
+    const requests = createFleetDispatchRequests({
+      path: join(mkdtempSync(join(tmpdir(), "fleet-dispatch-")), "requests.json"),
+      dispatch: async () => ({ id: "attempt-1" }),
+      onEvent: event => { events.push({ type: event.type, status: event.status }); },
+    });
+    const created = await requests.create({ ...input, requestId: "req-1" });
+    await requests.approve(created.request.id, "operator");
+    const other = await requests.create({ ...input, requestId: "req-2", jobId: "verify-2" });
+    await requests.reject(other.request.id, "no", "operator");
+    expect(events.map(event => event.type)).toEqual(["created", "approved", "created", "rejected"]);
+  });
 });

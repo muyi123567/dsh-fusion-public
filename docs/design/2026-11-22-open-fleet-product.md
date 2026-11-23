@@ -656,3 +656,14 @@ fleetEnvironment:
 - 面板“对齐计划”展示同一结果。
 
 验证：插件全量 434 项、原生面板 67 项通过；双端类型检查与构建通过。
+
+## 23. dsh-im 通知适配
+
+已实现可选的 `fleetNotifications.dshIm`：
+
+- 通过 `ctx.inject(['dshIm'])` 获取 dsh-im 宿主服务，调用 `dshIm.send(botId, targetId, text, { format })`。
+- 待审批、批准、拒绝、失败事件发送短文本通知；不包含 MCP 令牌、私钥或命令正文。
+- 默认关闭；没有 dsh-im、服务未就绪或发送失败时完全静默降级，请求状态不受影响。
+- `botId` / `targetId` 来自 dsh-im 自己的目标列表，不在鲸群复制 IM 凭据。
+
+验证：通知格式与请求事件共 9 项定向测试；插件全量 437 项、原生面板 67 项通过。

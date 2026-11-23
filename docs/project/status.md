@@ -51,6 +51,14 @@ scope，只能创建待审批意图；人类批准后复用环境门禁执行，
 
 验证：插件全量 434 项、原生面板 67 项通过；双端类型检查与构建通过。
 
+### dsh-im 通知适配（2026-11-23）
+
+新增可选 `fleetNotifications.dshIm`：通过 `ctx.inject(['dshIm'])` 获取 dsh-im 服务，
+在待审批/批准/拒绝/失败时发送短通知。默认关闭，无 dsh-im 或发送失败静默降级；
+通知不含令牌、私钥或命令正文。`botId`/`targetId` 取自 dsh-im 自己的目标列表。
+
+验证：通知格式与请求事件 9 项定向测试；插件全量 437 项、原生面板 67 项通过。
+
 实机验收：`muse-logged-in` 隔离 profile 中，request scope 创建待审批请求，只读令牌被
 `whale/scope-required` 拒绝，面板批准后环境门禁执行 `m4-approve`；v3 回执
 `6fd9c57a...65e1` 含 environment，离线验签通过。证据：

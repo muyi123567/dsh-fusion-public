@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { NativeExecutionEnvironmentRequest } from "./native-task-execution.js";
+import type { FleetNotificationEvent } from "./fleet-notifications.js";
 
 export type DispatchRequestStatus = "pending" | "approved" | "rejected" | "failed" | "expired";
 
@@ -60,10 +61,18 @@ export function createFleetDispatchRequests(options: {
   dispatch: (input: FleetDispatchRequestInput) => Promise<{ id: string }>;
   now?: () => number;
   ttlMs?: number;
+  onEvent?: (event: FleetNotificationEvent) => void | Promise<void>;
 }): FleetDispatchRequestService {
   const now = options.now ?? Date.now;
   const ttlMs = options.ttlMs ?? TTL_MS;
   const inFlight = new Set<string>();
+  const emit = async (event: FleetNotificationEvent): Promise<void> => {
+    try {
+      await options.onEvent?.(event);
+    } catch {
+      // Notifications are best effort; they never change the request decision.
+    }
+  };
 
   const read = (): StoredFile => {
     let parsed: unknown;
@@ -129,6 +138,11 @@ export function createFleetDispatchRequests(options: {
     };
     file.requests.push(request);
     save(file);
+    await emit({
+      type: "created", requestId: request.requestId, taskId: request.taskId,
+      jobId: request.jobId, nodeId: request.nodeId, requestedBy: request.requestedBy,
+      status: request.status,
+    });
     return { request, created: true };
   };
 
@@ -155,6 +169,12 @@ export function createFleetDispatchRequests(options: {
       request.decidedAt = new Date(now()).toISOString();
       request.updatedAt = request.decidedAt;
       save(file);
+      await emit({
+        type: "approved", requestId: request.requestId, taskId: request.taskId,
+        jobId: request.jobId, nodeId: request.nodeId, requestedBy: request.requestedBy,
+        status: request.status,
+        ...(request.attemptId === undefined ? {} : { attemptId: request.attemptId }),
+      });
       return { request, attemptId: attempt.id };
     } catch (error) {
       request.status = "failed";
@@ -165,6 +185,12 @@ export function createFleetDispatchRequests(options: {
       request.decidedAt = new Date(now()).toISOString();
       request.updatedAt = request.decidedAt;
       save(file);
+      await emit({
+        type: "failed", requestId: request.requestId, taskId: request.taskId,
+        jobId: request.jobId, nodeId: request.nodeId, requestedBy: request.requestedBy,
+        status: request.status,
+        ...(request.error === undefined ? {} : { error: request.error }),
+      });
       throw new DispatchRequestError("dispatch-failed");
     }
     } finally {
@@ -188,6 +214,12 @@ export function createFleetDispatchRequests(options: {
     request.decidedAt = new Date(now()).toISOString();
     request.updatedAt = request.decidedAt;
     save(file);
+    await emit({
+      type: "rejected", requestId: request.requestId, taskId: request.taskId,
+      jobId: request.jobId, nodeId: request.nodeId, requestedBy: request.requestedBy,
+      status: request.status,
+      ...(request.reason === undefined ? {} : { reason: request.reason }),
+    });
     return request;
     } finally {
       inFlight.delete(id);
