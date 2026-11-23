@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import {
   diffFleetManifests,
   FLEET_CONTRACT_VERSION,
@@ -44,6 +44,7 @@ export interface WhaleFleetServiceV1 {
   panelView(): Promise<FleetPanelView>;
   doctor?(): Promise<FleetDoctorReport>;
   plan(hostId: string, expectedDigest?: string): Promise<FleetPlanReport>;
+  saveExpected(hostId: string): Promise<{ hostId: string; digest: string; path: string }>;
   subscribe(listener: (event: { hostId: string; digest: string }) => void): () => void;
 }
 
@@ -221,6 +222,19 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     return planFleetAlignment(expected.manifest, observed, report);
   };
 
+  const saveExpected = async (hostId: string) => {
+    const observed = await host(hostId);
+    if (observed === undefined) throw new FleetServiceError("whale/host-unknown", "未知主机：" + hostId);
+    if (verifyOne(observed) === false) throw new FleetServiceError("whale/signature-invalid", "清单签名未通过");
+    const path = options.expectedManifestPath ?? join(options.directory, "expected-manifest.json");
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    const temporary = `${path}.${process.pid}.tmp`;
+    writeFileSync(temporary, `${JSON.stringify(observed, null, 2)}\n`, { mode: 0o600 });
+    try { chmodSync(temporary, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
+    renameSync(temporary, path);
+    return { hostId: observed.hostId, digest: observed.environmentDigest, path };
+  };
+
   const panelView = async (): Promise<FleetPanelView> => {
     const local = await manifest();
     const report = await diff(local.hostId);
@@ -327,6 +341,7 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     diff,
     panelView,
     plan,
+    saveExpected,
     ...(options.doctor === undefined ? {} : { doctor: options.doctor }),
     subscribe,
   });

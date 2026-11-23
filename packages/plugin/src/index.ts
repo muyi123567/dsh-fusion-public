@@ -2434,6 +2434,7 @@ export async function apply(
       for (const route of createFleetRoutes({
         service: fleetService,
         authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+        readBody: readJsonBody,
       })) {
         effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
       }

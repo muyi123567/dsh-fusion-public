@@ -693,3 +693,15 @@ fleetEnvironment:
 
 边界：A 使用 B 的缓存清单做门禁，不能证明 B 在 worker 执行瞬间环境未变化；两台均为
 Instabox VM，任务由测试种子创建。
+
+## 26. 期望环境一键保存
+
+已实现：
+
+- 服务 `saveExpected(hostId)` 读取已签名主机清单，原子写入
+  `expectedManifestPath` 或 `<fleetEnvironment.directory>/expected-manifest.json`（0600）。
+- HTTP `POST /plugins/dsh-fusion/fleet/expected`，body `{hostId}`；要求 DSH 认证、同源与 JSON。
+- 面板“保存为期望”按钮调用同一路由，保存后 diff、环境门禁和对齐计划自动使用该基线。
+- 本地主机签名无效时拒绝保存；远端缓存清单按当前信任边界保存。
+
+验证：插件全量 441 项、原生面板 68 项通过；新增服务写入、路由同源校验与面板测试。

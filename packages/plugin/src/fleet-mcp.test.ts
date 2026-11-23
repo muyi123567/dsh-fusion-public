@@ -41,6 +41,7 @@ function service(overrides: Partial<WhaleFleetServiceV1> = {}): WhaleFleetServic
       contractVersion: 1 as const, hostId: SHA, expectedDigest: SHA, observedDigest: SHA,
       overall: "ready" as const, steps: [],
     }),
+    saveExpected: async () => ({ hostId: SHA, digest: SHA, path: "/tmp/expected.json" }),
     subscribe: () => () => {},
     ...overrides,
   };

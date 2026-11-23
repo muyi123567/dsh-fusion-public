@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -137,5 +137,17 @@ describe("whaleFleet service", () => {
     expect(plan.steps).toEqual(expect.arrayContaining([
       expect.objectContaining({ action: "update", target: "dsh-fusion", requiresRestart: true }),
     ]));
+  });
+
+  it("saves one host manifest as the expected environment and then matches it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fleet-service-"));
+    const service = createWhaleFleetService({
+      collect: async () => manifest(SHA), directory: dir,
+    });
+    const saved = await service.saveExpected(SHA);
+    expect(saved).toMatchObject({ hostId: SHA, digest: SHA });
+    expect(saved.path).toBe(join(dir, "expected-manifest.json"));
+    expect(JSON.parse(readFileSync(saved.path, "utf8"))).toMatchObject({ hostId: SHA, environmentDigest: SHA });
+    expect((await service.diff(SHA)).overall).toBe("match");
   });
 });

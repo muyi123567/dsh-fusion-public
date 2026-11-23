@@ -42,6 +42,8 @@ export function NativeEnvironmentStrip({ environment }: { environment?: NativeEn
   const [plan, setPlan] = useState<PlanReport>();
   const [planOpen, setPlanOpen] = useState(false);
   const [planBusy, setPlanBusy] = useState(false);
+  const [expectedBusy, setExpectedBusy] = useState(false);
+  const [expectedStatus, setExpectedStatus] = useState("");
   if (environment === undefined) return null;
   const { items } = environment;
   const summary = environment.overall === "match" ? "环境匹配"
@@ -86,6 +88,24 @@ export function NativeEnvironmentStrip({ environment }: { environment?: NativeEn
       setPlanBusy(false);
     }
   };
+  const saveExpected = async () => {
+    if (expectedBusy) return;
+    setExpectedBusy(true);
+    setExpectedStatus("");
+    try {
+      const response = await fetch(fusionBrowserUrl("/plugins/dsh-fusion/fleet/expected"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hostId: environment.hostId }),
+      });
+      if (!response.ok) throw new Error("save failed");
+      setExpectedStatus("已保存期望环境。");
+    } catch {
+      setExpectedStatus("保存期望环境失败。");
+    } finally {
+      setExpectedBusy(false);
+    }
+  };
   return <section className={styles.environment} data-severity={environment.overall === "unknown" ? "warn" : environment.overall}
     aria-label="环境一致性">
     <div className={styles.environmentSummary}>
@@ -95,8 +115,10 @@ export function NativeEnvironmentStrip({ environment }: { environment?: NativeEn
         disabled={!canExpand} onClick={() => setOpen(value => !value)}>环境详情</button>
       <button type="button" aria-expanded={doctorOpen} onClick={() => void diagnose()} disabled={doctorBusy}>{doctorBusy ? "诊断中…" : "诊断"}</button>
       <button type="button" aria-expanded={planOpen} onClick={() => void loadPlan()} disabled={planBusy}>{planBusy ? "计划中…" : "对齐计划"}</button>
+      <button type="button" onClick={() => void saveExpected()} disabled={expectedBusy}>{expectedBusy ? "保存中…" : "保存为期望"}</button>
     </div>
     {environment.overall === "unknown" && environment.reason !== undefined && <p className={styles.environmentReason}>{environment.reason}</p>}
+    {expectedStatus !== "" && <p className={styles.environmentReason} role="status">{expectedStatus}</p>}
     {open && canExpand && <ul id="native-environment-items" className={styles.environmentItems}>
       {items.map((item, index) => {
         const expected = valueText(item.expected);

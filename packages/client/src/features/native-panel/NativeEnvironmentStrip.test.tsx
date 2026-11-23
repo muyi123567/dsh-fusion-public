@@ -78,3 +78,16 @@ it("loads an alignment plan without executing it", async () => {
   expect(screen.getByText("更新到 0.2.0-beta.15")).toBeVisible();
   expect(screen.getByText("需要重启 profile")).toBeVisible();
 });
+
+it("saves the current environment as the expected baseline", async () => {
+  const user = userEvent.setup();
+  const fetcher = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({
+    hostId: base.hostId, digest: base.digest, path: "/tmp/expected-manifest.json",
+  }), { status: 200 }));
+  vi.stubGlobal("fetch", fetcher);
+  render(<NativeEnvironmentStrip environment={base} />);
+  await user.click(screen.getByRole("button", { name: "保存为期望" }));
+  expect(await screen.findByText("已保存期望环境。")).toBeVisible();
+  expect(fetcher.mock.calls[0]?.[0]).toContain("/fleet/expected");
+  expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual({ hostId: base.hostId });
+});

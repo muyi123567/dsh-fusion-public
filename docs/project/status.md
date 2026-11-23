@@ -74,6 +74,13 @@ scope，只能创建待审批意图；人类批准后复用环境门禁执行，
 
 边界：A 使用 B 的缓存清单，不能证明 B 在 worker 执行瞬间环境未变化；两台均为 Instabox VM。
 
+### 期望环境一键保存（2026-11-23）
+
+新增 `saveExpected(hostId)`、`POST /fleet/expected` 与面板“保存为期望”。清单原子写入
+`expected-manifest.json`（0600），后续 diff、门禁与对齐计划直接使用；本地签名无效拒绝保存。
+
+验证：插件全量 441 项、原生面板 68 项通过。
+
 实机验收：`muse-logged-in` 隔离 profile 中，request scope 创建待审批请求，只读令牌被
 `whale/scope-required` 拒绝，面板批准后环境门禁执行 `m4-approve`；v3 回执
 `6fd9c57a...65e1` 含 environment，离线验签通过。证据：

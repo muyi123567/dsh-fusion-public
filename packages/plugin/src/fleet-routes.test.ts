@@ -39,6 +39,7 @@ function fakeService(overrides: Partial<WhaleFleetServiceV1> = {}): WhaleFleetSe
       contractVersion: 1, hostId: SHA, expectedDigest: SHA, observedDigest: SHA,
       overall: "ready" as const, steps: [],
     }),
+    saveExpected: async () => ({ hostId: SHA, digest: SHA, path: "/tmp/expected-manifest.json" }),
     subscribe: () => () => {},
     ...overrides,
   };
@@ -89,5 +90,38 @@ describe("fleet routes", () => {
     const openRoutes = createFleetRoutes({ service, authenticate: () => false });
     const post = await exchange(openRoutes, "/plugins/dsh-fusion/fleet/environment", { method: "POST" });
     expect(post.status).toBe(405);
+  });
+
+  it("saves one host as the expected environment only for same-origin JSON", async () => {
+    const saveExpected = vi.fn(async () => ({ hostId: SHA, digest: SHA, path: "/tmp/expected-manifest.json" }));
+    const routes = createFleetRoutes({
+      service: fakeService({ saveExpected }),
+      authenticate: () => false,
+      readBody: async () => ({ hostId: SHA }),
+    });
+    const route = routes.find(item => item.path === "/plugins/dsh-fusion/fleet/expected")!;
+    const result = { status: 0, body: "" };
+    await route.handler({
+      method: "POST",
+      url: "/plugins/dsh-fusion/fleet/expected",
+      headers: { "content-type": "application/json" },
+    }, {
+      writeHead: status => { result.status = status; },
+      end: body => { result.body = body ?? ""; },
+    });
+    expect(result.status).toBe(200);
+    expect(JSON.parse(result.body)).toMatchObject({ digest: SHA });
+    expect(saveExpected).toHaveBeenCalledWith(SHA);
+
+    const blocked = { status: 0, body: "" };
+    await route.handler({
+      method: "POST",
+      url: "/plugins/dsh-fusion/fleet/expected",
+      headers: { "content-type": "application/json", origin: "https://evil.example", host: "local" },
+    }, {
+      writeHead: status => { blocked.status = status; },
+      end: body => { blocked.body = body ?? ""; },
+    });
+    expect(blocked.status).toBe(403);
   });
 });

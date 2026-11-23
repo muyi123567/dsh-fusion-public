@@ -51,6 +51,8 @@ M1/M2 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
 `whale_doctor`、`whale_environment_plan`。诊断检测 DSH 版本、环境漂移、MCP、执行节点与
 已安装的 DS-Bot、dsh-im、QQBot、Modlens；对齐计划把漂移转成带风险与重启要求的人工步骤。
 面板“诊断”“对齐计划”按钮提供同一报告。
+面板“保存为期望”可把当前主机清单原子写入 `expected-manifest.json`（0600），
+后续 diff、门禁和对齐计划直接使用，不再需要手写期望文件。
 M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业时再增加
 `whale_request_dispatch`：Bot 只能创建待审批意图，必须在面板“待审批派发”批准后才执行。
 只有带 `--request` 的外部令牌才拥有该 scope；自动对齐仍是后续工作。
