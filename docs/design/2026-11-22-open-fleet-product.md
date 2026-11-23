@@ -636,3 +636,9 @@ fleetEnvironment:
 - 内部 DSH 客户端默认 `read + request`；外部令牌默认只读，`--request` 显式授予。
 
 验证：插件全量 429 项、原生面板 66 项通过；新增请求存储、scope、审批路由与面板测试。
+
+实机验收（2026-11-23）：Instabox `muse-logged-in` 隔离 profile 中，MCP `request` 客户端创建
+待审批请求 `e7f92e19-...`，只读令牌被 `whale/scope-required` 拒绝；面板批准后执行
+`m4-approve`，环境门禁 `matched=true`，v3 回执 `6fd9c57a...65e1` 含 environment，
+离线验签 `verified=true` / `receiptBound=true`。证据：
+`/data/openlet/evidence/dsh-fusion-m4-20261123/`。

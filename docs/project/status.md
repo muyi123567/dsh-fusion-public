@@ -42,6 +42,11 @@ scope，只能创建待审批意图；人类批准后复用环境门禁执行，
 
 验证：插件全量 429 项、原生面板 66 项通过。
 
+实机验收：`muse-logged-in` 隔离 profile 中，request scope 创建待审批请求，只读令牌被
+`whale/scope-required` 拒绝，面板批准后环境门禁执行 `m4-approve`；v3 回执
+`6fd9c57a...65e1` 含 environment，离线验签通过。证据：
+`/data/openlet/evidence/dsh-fusion-m4-20261123/`（含 SHA256SUMS）。
+
 ### M1：只读环境清单与漂移（2026-11-22）
 
 已实现 `whaleFleet` `contractVersion: 1` 的只读切片：`manifest()`、`host()`、
