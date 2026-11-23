@@ -59,6 +59,15 @@
 .environmentCode { color: var(--voyage-secondary); font-size: 11px; }
 .environmentValue { color: var(--voyage-secondary); overflow-wrap: anywhere; }
 .environmentRemedy { color: var(--voyage-ink); overflow-wrap: anywhere; }
+.environmentDoctor { margin-top: 8px; padding: 7px 8px; border: 1px solid var(--voyage-line); border-radius: 4px; background: var(--voyage-paper); font-size: 12px; }
+.environmentDoctor > p { margin: 0 0 5px; font-weight: 600; }
+.environmentDoctor > p[data-status="fail"] { color: var(--voyage-danger); }
+.environmentDoctor > p[data-status="warn"] { color: var(--voyage-warning); }
+.environmentDoctor ul, .environmentDoctor ol { margin: 4px 0 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+.environmentDoctor li { overflow-wrap: anywhere; }
+.environmentDoctor li[data-status="fail"] strong { color: var(--voyage-danger); }
+.environmentDoctor li[data-status="warn"] strong { color: var(--voyage-warning); }
+.environmentDoctor li span { display: block; color: var(--voyage-secondary); }
 .tabs button { border: 0; color: var(--voyage-secondary); border-bottom: 2px solid transparent; padding: 4px 0 3px; border-radius: 0; font-size: 13px; }
 .tabs button[aria-pressed="true"] { border-color: var(--voyage-sea); color: var(--voyage-ink); font-weight: 600; }
 .workspace { flex: 1; min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }

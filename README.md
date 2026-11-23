@@ -46,8 +46,10 @@ beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e731461
 
 M1/M2 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
 `/plugins/dsh-fusion/fleet/{environment,hosts,diff}` 只读路由、面板顶部的环境条，
-以及本机 MCP 的四个只读工具：
-`whale_list_hosts`、`whale_host_manifest`、`whale_environment_diff`、`whale_receipt`。
+以及本机 MCP 的五个只读工具：
+`whale_list_hosts`、`whale_host_manifest`、`whale_environment_diff`、`whale_receipt`、
+`whale_doctor`。`whale_doctor` 同时检测 DSH 版本、环境漂移、MCP、执行节点与已安装的
+DS-Bot、dsh-im、QQBot、Modlens；面板“诊断”按钮提供同一报告。
 派发工具、环境门禁与自动对齐仍是设计稿；当前执行仍走既有面板与执行路由。
 
 ```yaml

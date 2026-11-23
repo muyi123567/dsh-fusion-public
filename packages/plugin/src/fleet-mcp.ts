@@ -64,6 +64,11 @@ const TOOLS = [
       required: ["taskId"],
     },
   },
+  {
+    name: "whale_doctor",
+    description: "Diagnose DSH compatibility, environment drift, MCP registration, execution readiness and installed ecosystem plugins.",
+    inputSchema: { type: "object", properties: {} },
+  },
 ] as const;
 
 class ToolError extends Error {
@@ -112,6 +117,10 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
           receipt: attempt.receipt ?? null,
           review: attempt.review ?? null,
         };
+      }
+      case "whale_doctor": {
+        if (options.service.doctor === undefined) throw new ToolError("whale/doctor-unavailable", "诊断不可用");
+        return await options.service.doctor();
       }
       default:
         throw new ToolError("whale/tool-unknown", `未知工具：${name}`);

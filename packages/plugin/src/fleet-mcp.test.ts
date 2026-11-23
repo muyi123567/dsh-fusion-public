@@ -33,6 +33,10 @@ function service(overrides: Partial<WhaleFleetServiceV1> = {}): WhaleFleetServic
       checkedAt: "2026-11-22T10:00:00.000Z", overall: "match" as const, items: [],
     })),
     panelView: vi.fn(),
+    doctor: async () => ({
+      overall: "ok" as const, checkedAt: "2026-11-22T10:00:00.000Z",
+      checks: [], integrations: [], nextActions: [],
+    }),
     subscribe: () => () => {},
     ...overrides,
   };
@@ -105,7 +109,7 @@ describe("fleet MCP server", () => {
     expect(listed.status).toBe(200);
     const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
     expect(body.result.tools.map(tool => tool.name)).toEqual([
-      "whale_list_hosts", "whale_host_manifest", "whale_environment_diff", "whale_receipt",
+      "whale_list_hosts", "whale_host_manifest", "whale_environment_diff", "whale_receipt", "whale_doctor",
     ]);
   });
 
@@ -154,6 +158,7 @@ describe("fleet MCP server", () => {
     expect((await call("whale_list_hosts")).isError).toBeUndefined();
     expect((await call("whale_host_manifest", { hostId: SHA })).isError).toBeUndefined();
     expect((await call("whale_environment_diff", { hostId: SHA })).isError).toBeUndefined();
+    expect((await call("whale_doctor")).isError).toBeUndefined();
     const receipt = await call("whale_receipt", { taskId: "task-1", attemptId: "attempt-1" });
     expect(receipt.structuredContent).toMatchObject({ taskId: "task-1", attemptId: "attempt-1", executionState: "exited" });
   });

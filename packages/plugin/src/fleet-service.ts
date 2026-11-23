@@ -8,6 +8,7 @@ import {
   type FleetDriftReport,
   type FleetHostManifest,
 } from "./fleet-environment.js";
+import type { FleetDoctorReport } from "./fleet-doctor.js";
 
 export interface FleetHostSummary {
   hostId: string;
@@ -40,6 +41,7 @@ export interface WhaleFleetServiceV1 {
   listHosts(): Promise<FleetHostSummary[]>;
   diff(hostId: string, expectedDigest?: string): Promise<FleetDriftReport>;
   panelView(): Promise<FleetPanelView>;
+  doctor?(): Promise<FleetDoctorReport>;
   subscribe(listener: (event: { hostId: string; digest: string }) => void): () => void;
 }
 
@@ -65,6 +67,7 @@ export interface FleetServiceOptions {
   readFile?: (path: string) => string;
   readdir?: (path: string) => string[];
   verifyManifest?: (manifest: FleetHostManifest) => boolean | undefined;
+  doctor?: () => Promise<FleetDoctorReport>;
 }
 
 const DEFAULT_TTL_MS = 30_000;
@@ -306,6 +309,7 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     listHosts,
     diff,
     panelView,
+    ...(options.doctor === undefined ? {} : { doctor: options.doctor }),
     subscribe,
   });
 }

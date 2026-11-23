@@ -78,6 +78,7 @@ import { collectFleetManifest } from "./fleet-environment-collector.js";
 import { hostIdFromPublicKey, verifyFleetManifest, type FleetDriftReport } from "./fleet-environment.js";
 import { createWhaleFleetService, FleetServiceError } from "./fleet-service.js";
 import { createFleetRoutes } from "./fleet-routes.js";
+import { buildFleetDoctorReport, type FleetDoctorReport } from "./fleet-doctor.js";
 import { createFleetMcpServer } from "./fleet-mcp.js";
 import { FleetMcpStore } from "./fleet-mcp-store.js";
 
@@ -1164,6 +1165,7 @@ export async function apply(
     const executionConfig = config.demo === true ? undefined : config.nativeTaskExecution;
     const executionDirectory = executionConfig?.directory
       ?? (taskLedgerPath === undefined ? undefined : `${taskLedgerPath}.executions`);
+    let fleetDoctorProvider: (() => Promise<FleetDoctorReport>) | undefined;
     let fleetEnvironmentGate: ((input: {
       taskId: string; nodeId: string; hostId?: string; requireDigest?: string; policy: "exact" | "compatible";
     }) => Promise<{
@@ -1265,6 +1267,10 @@ export async function apply(
           ? verifyFleetManifest(manifest, fleetPublicKeyPem)
           : undefined;
       },
+      doctor: async () => {
+        if (fleetDoctorProvider === undefined) throw new Error("FLEET_DOCTOR_UNAVAILABLE");
+        return await fleetDoctorProvider();
+      },
     });
     fleetEnvironmentGate = async (input) => {
       const local = await fleetService.manifest();
@@ -1313,6 +1319,14 @@ export async function apply(
       ctx.logger?.warn?.(`dsh-fusion: fleet MCP disabled: ${error instanceof Error ? error.message : String(error)}`);
     }
     const mcpEnabled = fleetMcpConfig?.enabled ?? fleetMcpStore?.file.enabled ?? false;
+    const fleetMcpRuntime = {
+      enabled: mcpEnabled,
+      listening: false,
+      registered: false,
+      port: undefined as number | undefined,
+      clients: fleetMcpStore?.file.clients.length ?? 0,
+      error: undefined as string | undefined,
+    };
     if (mcpEnabled && fleetMcpStore !== undefined) {
       const port = fleetMcpConfig?.port ?? fleetMcpStore.file.port;
       if (!Number.isInteger(port) || port < 1024 || port > 65_535) {
@@ -1330,6 +1344,9 @@ export async function apply(
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
+          fleetMcpRuntime.listening = true;
+          fleetMcpRuntime.port = started.port;
+          fleetMcpRuntime.clients = fleetMcpStore.file.clients.length;
           ctx.effect?.(() => () => { void server.stop(); });
           const registerWithManager = (scope: FusionHostContext) => {
             const manager = ((scope as FusionHostContext & {
@@ -1344,6 +1361,7 @@ export async function apply(
                 url: `http://127.0.0.1:${started.port}/mcp`,
                 headers: { Authorization: `Bearer ${internalToken}` },
               });
+              fleetMcpRuntime.registered = true;
               if (typeof unregister === "function") (scope.effect ?? ctx.effect)?.(() => unregister);
             } catch (error) {
               ctx.logger?.warn?.(`dsh-fusion: MCP manager registration failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -1358,10 +1376,67 @@ export async function apply(
             }
           }
         } catch (error) {
+          fleetMcpRuntime.error = error instanceof Error ? error.message : String(error);
           ctx.logger?.warn?.(`dsh-fusion: fleet MCP failed to start: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     }
+    fleetDoctorProvider = async () => {
+      const manager = ctx.get?.("pluginManager") as { listBundles?: () => Promise<unknown> } | undefined;
+      let bundles: Array<{ name: string; version?: string; enabled: boolean; availability?: string }> = [];
+      try {
+        const listed = await manager?.listBundles?.();
+        if (Array.isArray(listed)) {
+          bundles = listed.flatMap((value) => {
+            if (value === null || typeof value !== "object") return [];
+            const bundle = value as Record<string, unknown>;
+            if (typeof bundle.name !== "string" || typeof bundle.enabled !== "boolean") return [];
+            return [{
+              name: bundle.name,
+              enabled: bundle.enabled,
+              ...(typeof bundle.version === "string" ? { version: bundle.version } : {}),
+              ...(typeof bundle.availability === "string" ? { availability: bundle.availability } : {}),
+            }];
+          });
+        }
+      } catch {
+        bundles = [];
+      }
+      let environment: Parameters<typeof buildFleetDoctorReport>[0]["environment"] = { available: false };
+      try {
+        const manifest = await fleetService.manifest();
+        const report = await fleetService.diff(manifest.hostId);
+        environment = {
+          available: true,
+          digest: manifest.environmentDigest,
+          signed: manifest.signature.alg === "ed25519",
+          report,
+        };
+      } catch (error) {
+        environment = { available: false, error: error instanceof Error ? error.message : String(error) };
+      }
+      const state = dshCompatibility.state === "verified" || dshCompatibility.state === "unsupported"
+        || dshCompatibility.state === "untested" ? dshCompatibility.state : "unknown";
+      return buildFleetDoctorReport({
+        dsh: { version: dshCompatibility.version ?? version, state },
+        environment,
+        mcp: {
+          enabled: fleetMcpRuntime.enabled,
+          listening: fleetMcpRuntime.listening,
+          registered: fleetMcpRuntime.registered,
+          clients: fleetMcpRuntime.clients,
+          ...(fleetMcpRuntime.port === undefined ? {} : { port: fleetMcpRuntime.port }),
+          ...(fleetMcpRuntime.error === undefined ? {} : { error: fleetMcpRuntime.error }),
+        },
+        execution: {
+          jobs: executionConfig?.jobs.length ?? 0,
+          nodes: fleetNodeDefinitions.sshNodes.length + fleetNodeDefinitions.instaboxNodes.length,
+          ledgerConfigured: taskLedgerPath !== undefined,
+          directoryConfigured: executionDirectory !== undefined,
+        },
+        bundles,
+      });
+    };
     const dispatchPreview = fleetRouter === undefined ? undefined : createDispatchPreviewService({
       configuredNodeIds,
       fleet: {

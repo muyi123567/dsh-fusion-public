@@ -50,5 +50,9 @@ export function createFleetRoutes<T extends Request>(options: {
       if (hostId === null || hostId === "") throw new FleetServiceError("whale/invalid-input", "hostId 必填");
       return await options.service.diff(hostId, url.searchParams.get("expectedDigest") ?? undefined);
     }),
+    get(`${BASE}/doctor`, async () => {
+      if (options.service.doctor === undefined) throw new FleetServiceError("whale/doctor-unavailable", "诊断不可用");
+      return await options.service.doctor();
+    }),
   ];
 }

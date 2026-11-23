@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { NativeEnvironmentStrip } from "./NativeEnvironmentStrip.js";
 import type { NativeEnvironmentView } from "./types.js";
 
@@ -15,7 +15,7 @@ const base: NativeEnvironmentView = {
   items: [],
 };
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 it("shows a compact match state and the environment digest", () => {
   render(<NativeEnvironmentStrip environment={base} />);
@@ -49,4 +49,18 @@ it("keeps unknown honest instead of rendering it as a match", () => {
   expect(screen.getByRole("status")).toHaveTextContent("环境未知");
   expect(screen.getByText("未配置期望环境")).toBeVisible();
   expect(screen.queryByText("环境匹配")).toBeNull();
+});
+
+it("runs the ecosystem doctor and shows blocking checks", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+    overall: "fail",
+    checks: [{ id: "mcp.endpoint", status: "fail", summary: "MCP 已启用但未监听", remedy: "检查端口占用" }],
+    nextActions: ["检查端口占用"],
+  }), { status: 200 })));
+  render(<NativeEnvironmentStrip environment={base} />);
+  await user.click(screen.getByRole("button", { name: "诊断" }));
+  expect(await screen.findByText("诊断有阻塞")).toBeVisible();
+  expect(screen.getByText("mcp.endpoint")).toBeVisible();
+  expect(screen.getAllByText("检查端口占用").length).toBeGreaterThan(0);
 });

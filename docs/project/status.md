@@ -27,6 +27,13 @@ recommended `0.2.2-rc.5`，tested `0.2.2-rc.5` 与 `0.2.3-alpha.2`，rc.3 保留
 环境返回、版本与 SHA256SUMS）。`packages/plugin/{compatibility.json,release.json}` 与
 `src/compatibility.ts` 已同步；setup 契约在 Node 24 下 12 项通过。
 
+### 生态诊断与热门插件检测（2026-11-23）
+
+新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，
+检查 DSH 版本、环境清单/漂移、MCP 监听与 mcpManager 注册、客户端令牌、执行作业/节点/账本，
+并检测 DS-Bot、dsh-im、QQBot、Modlens 的安装与启用状态。缺失可选插件只展示，不影响整体通过；
+阻塞级问题才把 overall 置为 fail。纯逻辑测试与 MCP/路由/面板测试覆盖。
+
 ### M1：只读环境清单与漂移（2026-11-22）
 
 已实现 `whaleFleet` `contractVersion: 1` 的只读切片：`manifest()`、`host()`、
