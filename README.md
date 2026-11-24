@@ -11,7 +11,7 @@
 与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
 beta.15 新增云盘连接器（读取与批准导出）、通知适配器、远端信任表、预设/热备、
 环境对齐执行与统一状态诊断；安装包 SHA-256：
-`c421675a9498059a3fac65468d875cdd8264bd3aa20052775449c7c48f44a811`。
+`d9c083ca930a3c4b9de6579107b67c5fb497668a1ea632ac11fd899898ae2ee8`。
 beta.14 的 UI/来源记录保留为历史，不用旧包摘要代替 beta.15 验收。
 
 ## 原生右栏面板

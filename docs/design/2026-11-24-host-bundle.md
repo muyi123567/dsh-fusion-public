@@ -63,6 +63,7 @@ node scripts/fleet-join.mjs --bundle host-b.json --fleet <dir> --trust --expecte
 1. 缓存到 `hosts/<hostId>.json`（0600）；
 2. `pinTrust:true` 时写入 `trusted-hosts.json`；
 3. `saveExpected:true` 时写入 `expected-manifest.json`；
+   如果该文件已存在，先复制为 `expected-manifest.json.bak-<timestamp>`（0600）；
 4. 刷新本机 manifest 缓存，让下一次 diff 立即看到远端。
 
 默认两个开关都是 false；面板/运维必须显式选择。

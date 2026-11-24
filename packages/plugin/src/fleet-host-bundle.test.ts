@@ -104,6 +104,20 @@ describe("fleet host bundle", () => {
     expect(statSync(join(dir, "hosts", `${hostId.slice(7)}.json`)).mode & 0o777).toBe(0o600);
     expect(statSync(join(dir, "expected-manifest.json")).mode & 0o777).toBe(0o600);
   });
+
+  it("backs up an existing expected manifest before overwriting it", () => {
+    const { bundle: value } = bundle();
+    const dir = root();
+    const expected = join(dir, "expected-manifest.json");
+    writeFileSync(expected, "{\"old\":true}\n", { mode: 0o600 });
+    const result = importFleetHostBundle(value, {
+      directory: dir, saveExpected: true, now: () => Date.parse("2026-11-24T07:00:00Z"),
+    });
+    expect(result.expectedBackupPath).toBeDefined();
+    expect(readFileSync(result.expectedBackupPath!, "utf8")).toBe("{\"old\":true}\n");
+    expect(readFileSync(expected, "utf8")).toContain(value.manifest.hostId);
+    expect(statSync(result.expectedBackupPath!).mode & 0o777).toBe(0o600);
+  });
 });
 
 function codeOf(run: () => unknown): string | undefined {

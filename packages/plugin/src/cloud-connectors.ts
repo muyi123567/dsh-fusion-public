@@ -401,6 +401,7 @@ export function createCloudConnectorService(options: CloudConnectorServiceOption
       const maxBytes = Math.min(Math.max(input.maxBytes ?? defaultMaxBytes, 1), HARD_MAX_BYTES);
       if (info.size > maxBytes) throw new CloudConnectorError("connector/limit", "文件超过允许的大小");
       const body = readFileSync(sourcePath);
+      if (body.byteLength > maxBytes) throw new CloudConnectorError("connector/limit", "文件超过允许的大小");
       const uploaded = await instance.connector!.upload({
         path: remotePath,
         overwrite: input.overwrite === true,

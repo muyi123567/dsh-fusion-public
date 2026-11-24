@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   canonicalJson,
@@ -24,6 +24,7 @@ export interface FleetHostBundleImportResult {
   cachedPath: string;
   trusted: boolean;
   expectedPath?: string;
+  expectedBackupPath?: string;
 }
 
 export class FleetBundleError extends Error {
@@ -151,8 +152,14 @@ export function importFleetHostBundle(bundle: unknown, options: {
   }
 
   let expectedPath: string | undefined;
+  let expectedBackupPath: string | undefined;
   if (options.saveExpected === true) {
     expectedPath = options.expectedManifestPath ?? join(options.directory, "expected-manifest.json");
+    if (existsSync(expectedPath)) {
+      expectedBackupPath = `${expectedPath}.bak-${new Date((options.now ?? Date.now)()).toISOString().replaceAll(/[-:.]/gu, "")}`;
+      copyFileSync(expectedPath, expectedBackupPath);
+      chmodSync(expectedBackupPath, 0o600);
+    }
     atomicJson(expectedPath, verified.manifest);
   }
   return {
@@ -161,6 +168,7 @@ export function importFleetHostBundle(bundle: unknown, options: {
     cachedPath,
     trusted,
     ...(expectedPath === undefined ? {} : { expectedPath }),
+    ...(expectedBackupPath === undefined ? {} : { expectedBackupPath }),
   };
 }
 
