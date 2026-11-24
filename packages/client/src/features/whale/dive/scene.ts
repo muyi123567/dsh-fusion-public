@@ -3,6 +3,7 @@ import type {OceanLife} from "../ambient/life-types.js";
 import panelAssetUrl from "../ambient/assets/whale-panel.glb?url";
 import * as THREE from "three";
 import { samplePodMotion } from "../ambient/pod-motion.js";
+import type { PodMotion } from "../ambient/pod-motion.js";
 import type { HabitatActivity, HabitatTier, HabitatPod, HabitatView } from "../ambient/contracts.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
@@ -23,9 +24,12 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   spout:THREE.Points<THREE.BufferGeometry,THREE.PointsMaterial>;
   krill:THREE.Points<THREE.BufferGeometry,THREE.PointsMaterial>;
   ripple:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>;
-  workTime:number};
+  workTime:number; selected:boolean};
  const podWhales:PodWhale[]=[];
+ const podById=new Map<string,PodWhale>();
+ const podMotion:PodMotion={position:[0,0,0],rotation:[0,0,0],scale:1,swimTime:0,spout:0};
  const breathLocal=new THREE.Vector3(), breathWorld=new THREE.Vector3();
+ const mixedColor=new THREE.Color();
  let modelRadius=8;
  const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
  const skyColor=new THREE.Color("#668b9f"), deepColor=new THREE.Color("#032333");
@@ -217,6 +221,7 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
  const rippleGeometry=new THREE.RingGeometry(.94,1,48);resources.push(rippleGeometry);
  function clearPod(entry:PodWhale){
   scene.remove(entry.root,entry.spout,entry.krill,entry.ripple);
+  podById.delete(entry.id);
   for(const material of entry.materials)material.dispose();
   entry.spout.material.dispose();entry.krill.material.dispose();entry.ripple.material.dispose();
  }
@@ -249,7 +254,8 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
    const ripple=new THREE.Mesh(rippleGeometry,new THREE.MeshBasicMaterial({color:"#b5dfe1",transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
    ripple.rotation.x=-Math.PI/2;spout.visible=false;krill.visible=false;ripple.visible=false;
    scene.add(root,spout,krill,ripple);
-   podWhales.push({id:pod.id,root,clock:swimClock,materials,spout,krill,ripple,workTime:0});
+   const entry={id:pod.id,root,clock:swimClock,materials,spout,krill,ripple,workTime:0,selected:false};
+   podWhales.push(entry);podById.set(pod.id,entry);
   }
  }
  function deformModel(model:THREE.Object3D,swimClock:{value:number}){
@@ -313,6 +319,8 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
 
  const deepFog=scene.fog;
  let lastPodTime=0;
+ // 0 = deep, 1 = surface; eased in render so view switches glide.
+ let viewMix=currentView==="surface"?1:0;
  // Fixed point cloud is shared across the at-most-three short mist bursts.
  for(let i=0;i<48;i++){
   const a=i*2.39996, h=(i+.5)/48;
@@ -357,15 +365,19 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
   }
   if(ambient){
    renderer.toneMappingExposure=.4+.7*smooth(0,3,seconds);
-   const surface=currentView==="surface";
+   const delta=Math.max(0,Math.min(.1,seconds-lastPodTime));lastPodTime=seconds;
+   const targetMix=currentView==="surface"?1:0;
+   viewMix+=(targetMix-viewMix)*(1-Math.exp(-delta*2.6));
+   if(Math.abs(targetMix-viewMix)<.002)viewMix=targetMix;
    whaleRoot.visible=false;bubbles.visible=false;
-   volume.visible=!surface;dust.visible=!surface;
-   scene.background=surface?skyColor:deepColor;
-   scene.fog=surface?null:deepFog;
-   for(const beam of beams)beam.visible=!surface&&currentQuality!=="eco";
+   // Cross-fade the medium and props before the far camera settles.
+   volume.visible=viewMix<.55;dust.visible=viewMix<.55;
+   (scene.background as THREE.Color).copy(deepColor).lerp(skyColor,viewMix);
+   deepFog.density=.022+(.0007-.022)*viewMix;
+   for(const beam of beams)beam.visible=viewMix<.2&&currentQuality!=="eco";
    // Keep the surface camera above the 5.4 water plane, including mobile.
-   camera.position.set(surface?18:15,surface?16:1,mobile?(surface?40:36):(surface?28:26));
-   target.set(0,surface?3:-1,0);
+   camera.position.set(15+3*viewMix,1+15*viewMix,mobile?36+4*viewMix:26+2*viewMix);
+   target.set(0,-1+4*viewMix,0);
    // Fit a conservative envelope of all motion lanes and the full source mesh.
    // Horizontal FOV, not just vertical FOV, limits narrow portrait canvases.
    const halfVertical=THREE.MathUtils.degToRad(camera.fov*.5);
@@ -374,35 +386,45 @@ export function createDiveScene({canvas,assetUrl,onReady,onError,mode="dive",qua
    const fitDistance=podEnvelope/Math.sin(Math.min(halfVertical,halfHorizontal))*1.08;
    const currentDistance=camera.position.distanceTo(target);
    if(fitDistance>currentDistance)camera.position.sub(target).multiplyScalar(fitDistance/currentDistance).add(target);
-   camera.far=Math.max(250,fitDistance+200);camera.updateProjectionMatrix();
+   const nextFar=Math.max(250,fitDistance+200);
+   // The projection matrix only depends on far here; update it when it moves.
+   if(Math.abs(nextFar-camera.far)>1){camera.far=nextFar;camera.updateProjectionMatrix();}
    camera.lookAt(target);
-   const delta=Math.max(0,Math.min(.1,seconds-lastPodTime));lastPodTime=seconds;
    for(let index=0;index<currentPods.length;index++){
-    const pod=currentPods[index]!, entry=podWhales.find(w=>w.id===pod.id);
+    const pod=currentPods[index]!, entry=podById.get(pod.id);
     if(!entry)continue;
-    const motion=samplePodMotion(seconds,index,currentPods.length,currentView,pod,camera.aspect);
+    const motion=samplePodMotion(seconds,index,currentPods.length,currentView,pod,camera.aspect,podMotion,viewMix);
     entry.root.position.set(...motion.position);entry.root.rotation.set(...motion.rotation);
     entry.root.scale.setScalar(motion.scale);entry.clock.value=motion.swimTime;
     // Preserve original texture; selected team gets only a restrained material lift.
-    for(const material of entry.materials)if(material instanceof THREE.MeshStandardMaterial){
-     material.emissive.set(selectedId===entry.id?"#12353e":"#000000");
-     material.emissiveIntensity=selectedId===entry.id ? .22 : 0;
+    const selected=selectedId===entry.id;
+    if(selected!==entry.selected){
+     entry.selected=selected;
+     for(const material of entry.materials)if(material instanceof THREE.MeshStandardMaterial){
+      material.emissive.set(selected?"#12353e":"#000000");
+      material.emissiveIntensity=selected ? .22 : 0;
+     }
     }
-    entry.root.updateMatrixWorld(true);
-    breathWorld.copy(breathLocal).applyMatrix4(entry.root.matrixWorld);
-    const wave=.13*Math.sin(breathWorld.x*.32+breathWorld.z*.24-seconds*.54)
-      +.07*Math.sin(breathWorld.z*.67-breathWorld.x*.43+seconds*.39)
-      +.018*Math.sin(breathWorld.x*1.8+seconds*.8);
     const strength=clamp(motion.spout,0,1);
-    const breathing=surface&&strength>0&&breathWorld.y>WATER_Y+wave+.03;
-    entry.spout.visible=breathing;entry.spout.material.opacity=breathing?strength*.45:0;
-    entry.spout.position.copy(breathWorld);
-    // Expand into a short soft mist, never a continuous underwater jet.
-    entry.spout.scale.set(.25+strength*.65,.25+strength*.9,.25+strength*.65);
-    entry.ripple.visible=breathing;
-    entry.ripple.position.set(breathWorld.x,WATER_Y+.04,breathWorld.z);
-    entry.ripple.scale.setScalar(.6+(1-strength)*2.2);
-    entry.ripple.material.opacity=breathing?strength*.13:0;
+    if(viewMix>.5&&strength>0){
+     // Only the surface view needs the world-space blowhole position.
+     entry.root.updateMatrixWorld();
+     breathWorld.copy(breathLocal).applyMatrix4(entry.root.matrixWorld);
+     const wave=.13*Math.sin(breathWorld.x*.32+breathWorld.z*.24-seconds*.54)
+       +.07*Math.sin(breathWorld.z*.67-breathWorld.x*.43+seconds*.39)
+       +.018*Math.sin(breathWorld.x*1.8+seconds*.8);
+     const breathing=breathWorld.y>WATER_Y+wave+.03;
+     entry.spout.visible=breathing;entry.spout.material.opacity=breathing?strength*.45:0;
+     entry.spout.position.copy(breathWorld);
+     // Expand into a short soft mist, never a continuous underwater jet.
+     entry.spout.scale.set(.25+strength*.65,.25+strength*.9,.25+strength*.65);
+     entry.ripple.visible=breathing;
+     entry.ripple.position.set(breathWorld.x,WATER_Y+.04,breathWorld.z);
+     entry.ripple.scale.setScalar(.6+(1-strength)*2.2);
+     entry.ripple.material.opacity=breathing?strength*.13:0;
+    } else {
+     entry.spout.visible=false;entry.ripple.visible=false;
+    }
     const working=pod.observed&&pod.active>0;
     entry.krill.visible=working;
     if(working)entry.workTime+=delta*Math.min(1,pod.active/(pod.active+Math.max(0,pod.blocked)));

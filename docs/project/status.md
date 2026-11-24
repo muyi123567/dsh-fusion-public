@@ -46,6 +46,20 @@ prerelease；Release 产物 tarball 的 SHA-256
 边界：仓库仍为 `main`（旧候选）默认分支，公开 Release 位于
 `feat/open-fleet-expected` 的 tag；Star / Fork 仍为 0，尚无外部采用或第三方反馈。
 
+### 海域动画平滑与每帧开销（2026-11-24，发布后分支）
+
+`samplePodMotion` 新增可选 `out` 缓冲与 `viewMix` 混合：深海/海面切换改为约
+1.5s 的相机、雾、背景与鲸群高度连续过渡；深潜段加入慢涌浪，横向转向带
+≤0.018 rad 侧倾。场景循环去掉了每帧线性查找、重复投影矩阵更新、逐帧材质写入，
+并只在海面视图计算喷潮世界坐标。
+
+实测：采样 3.58M → 4.12M ops/s（+15%，零每帧分配）；真实 WebGL 预览
+深海→海面→深海帧计数 12→22→56→76，page/console 错误 0；客户端 453 项通过。
+详见[海域动画设计](../design/2026-11-24-ambient-motion.md)。
+
+边界：该优化在 `v0.2.0-beta.15` 发布之后提交，已发布 tarball 不包含，
+需下一版本重新打包；SwiftShader 帧数不代表真实 GPU/移动端。
+
 ## 同类调研与离线复核校验（2026-11-22）
 
 公开检索到 5 个 DSH 多机插件：dsh-fleet、Constellation、WispOps、dsh-anywhere、dsh-cow。

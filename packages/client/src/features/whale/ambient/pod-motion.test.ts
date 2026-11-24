@@ -69,4 +69,59 @@ describe("pod life motion", () => {
    expect(values(m).every(Number.isFinite)).toBe(true);
   }
  });
+ it("reuses a caller-provided buffer for allocation-free frames", () => {
+  const out = {
+   position: [0, 0, 0] as [number, number, number],
+   rotation: [0, 0, 0] as [number, number, number],
+   scale: 0, swimTime: 0, spout: 0,
+  };
+  const position = out.position, rotation = out.rotation;
+  const written = samplePodMotion(12.5, 1, 3, "surface", idle, 1.4, out);
+  expect(written).toBe(out);
+  const fresh = samplePodMotion(12.5, 1, 3, "surface", idle, 1.4);
+  expect(out).toEqual(fresh);
+  samplePodMotion(13.5, 1, 3, "surface", idle, 1.4, out);
+  expect(out.position).toBe(position);
+  expect(out.rotation).toBe(rotation);
+ });
+ it("blends deep and surface views without a jump", () => {
+  const deep = samplePodMotion(20, 0, 3, "deep", idle, 1.2);
+  const surface = samplePodMotion(20, 0, 3, "surface", idle, 1.2);
+  const low = Math.min(deep.position[1], surface.position[1]);
+  const high = Math.max(deep.position[1], surface.position[1]);
+  for (const mix of [0.25, 0.5, 0.75]) {
+   const m = samplePodMotion(20, 0, 3, "surface", idle, 1.2, undefined, mix);
+   expect(m.position[1]).toBeGreaterThan(low);
+   expect(m.position[1]).toBeLessThan(high);
+   expect(m.spout).toBeGreaterThanOrEqual(0);
+   expect(m.spout).toBeLessThanOrEqual(surface.spout + 1e-12);
+  }
+  expect(samplePodMotion(20, 0, 3, "surface", idle, 1.2, undefined, 0))
+   .toEqual(samplePodMotion(20, 0, 3, "deep", idle, 1.2));
+  const full = samplePodMotion(20, 0, 3, "surface", idle, 1.2, undefined, 1);
+  expect(full.position[1]).toBeCloseTo(surface.position[1], 10);
+  expect(full.spout).toBeCloseTo(surface.spout, 10);
+ });
+ it("banks gently into lateral turns", () => {
+  let min = Infinity, max = -Infinity;
+  for (let t = 0; t < 60; t += 0.1) {
+   const z = samplePodMotion(t, 0, 1, "deep", idle, 1).rotation[2];
+   min = Math.min(min, z); max = Math.max(max, z);
+  }
+  expect(max - min).toBeGreaterThan(0.01);
+  expect(max - min).toBeLessThan(0.09);
+  expect(Math.abs(max)).toBeLessThan(0.12);
+  expect(Math.abs(min)).toBeLessThan(0.12);
+ });
+ it("keeps the deep cruise alive without leaving its lane", () => {
+  let min = Infinity, max = -Infinity;
+  for (let t = 0; t < 90; t += 0.1) {
+   const value = samplePodMotion(t, 0, 3, "deep", idle, 1.2).position[1];
+   min = Math.min(min, value); max = Math.max(max, value);
+  }
+  expect(max - min).toBeGreaterThan(0.15);
+  expect(max - min).toBeLessThan(0.6);
+  expect(min).toBeGreaterThan(-5.2);
+  expect(max).toBeLessThan(5.1);
+ });
 });
