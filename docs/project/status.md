@@ -184,6 +184,11 @@ scope）或 `scripts/fleet-join.mjs` 一次导入：缓存远端 manifest、固�
 验证：插件 516 项、原生面板 74 项通过；真实 Ed25519 导出/导入、篡改三类拒绝、
 0600 文件；MCP approve scope 测试。
 
+跨真实主机验收（2026-11-24）：Host B 在 Instabox `muse-instabox-2`、DSH `0.2.0-rc.2`
+上以 beta.15 导出加入包；本机 alpha `0.2.3-alpha.2` 导入后，B 显示
+`match / verified`，trust 1 条 manual，diff 匹配。证据：
+`/data/openlet/evidence/dsh-fusion-crosshost-beta15-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，
