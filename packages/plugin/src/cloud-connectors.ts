@@ -1,7 +1,16 @@
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import { open } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { basename, extname, join, resolve as resolvePath, sep } from "node:path";
 
 export type CloudConnectorCategory = "drive" | "storage" | "generic" | string;
 
@@ -70,6 +79,12 @@ export interface CloudPullInput {
   maxBytes?: number;
 }
 
+export interface CloudUploadInput {
+  path: string;
+  overwrite?: boolean;
+  maxBytes?: number;
+}
+
 export interface CloudConnectorSink {
   write(chunk: Uint8Array): Promise<void>;
 }
@@ -85,6 +100,12 @@ export interface CloudConnector {
   list(input: CloudListInput, signal?: AbortSignal): Promise<CloudConnectorEntry[]>;
   pull(input: CloudPullInput, sink: CloudConnectorSink, signal?: AbortSignal): Promise<CloudPullMeta>;
   stat?(path: string, signal?: AbortSignal): Promise<CloudConnectorEntry>;
+  upload?(input: CloudUploadInput, body: Uint8Array, signal?: AbortSignal): Promise<{
+    name: string;
+    path: string;
+    bytes: number;
+    webUrl?: string;
+  }>;
 }
 
 export interface CloudConnectorFactoryContext {
@@ -118,12 +139,25 @@ export interface CloudPullResult {
   pulledAt: string;
 }
 
+export interface CloudUploadResult {
+  connectorId: string;
+  kind: string;
+  path: string;
+  name: string;
+  localPath: string;
+  bytes: number;
+  sha256: string;
+  uploadedAt: string;
+  webUrl?: string;
+}
+
 export interface WhaleConnectorServiceV1 {
   readonly contractVersion: 1;
   catalog(): CloudConnectorDefinition[];
   instances(): CloudConnectorInstanceStatus[];
   list(id: string, input: CloudListInput): Promise<CloudConnectorEntry[]>;
   pull(id: string, input: CloudPullInput): Promise<CloudPullResult>;
+  upload(id: string, input: CloudUploadInput & { sourcePath: string }): Promise<CloudUploadResult>;
   register(definition: CloudConnectorDefinition, factory: CloudConnectorFactory): () => void;
 }
 
@@ -215,6 +249,7 @@ export interface CloudConnectorServiceOptions {
   fetch?: typeof fetch;
   now?: () => number;
   maxBytes?: number;
+  uploadRoots?: string[];
 }
 
 interface Instance {
@@ -229,6 +264,7 @@ export function createCloudConnectorService(options: CloudConnectorServiceOption
   const now = options.now ?? (() => Date.now());
   const defaultMaxBytes = Math.min(Math.max(options.maxBytes ?? DEFAULT_MAX_BYTES, 1), HARD_MAX_BYTES);
   const importsDirectory = options.importsDirectory;
+  const uploadRoots = (options.uploadRoots ?? [importsDirectory]).map(root => resolvePath(root));
   const instances = new Map<string, Instance>();
 
   for (const config of options.connectors) {
@@ -340,6 +376,45 @@ export function createCloudConnectorService(options: CloudConnectorServiceOption
         bytes,
         sha256: hash.digest("hex"),
         pulledAt: new Date(now()).toISOString(),
+      };
+    },
+    async upload(id, input) {
+      const instance = resolve(id);
+      if (instance.connector!.upload === undefined) {
+        throw new CloudConnectorError("connector/upload-unsupported", "连接器不支持上传");
+      }
+      const remotePath = normalizeRemotePath(input.path);
+      if (remotePath === undefined) throw new CloudConnectorError("connector/path", "缺少远程路径");
+      assertSafeRelativePath(remotePath);
+      const sourcePath = realpathSync(resolvePath(input.sourcePath));
+      const allowed = uploadRoots.some(root => {
+        try {
+          const realRoot = realpathSync(root);
+          return sourcePath === realRoot || sourcePath.startsWith(`${realRoot}${sep}`);
+        } catch {
+          return false;
+        }
+      });
+      if (!allowed) throw new CloudConnectorError("connector/path", "源文件不在允许的上传目录");
+      const info = statSync(sourcePath);
+      if (!info.isFile()) throw new CloudConnectorError("connector/path", "源路径不是文件");
+      const maxBytes = Math.min(Math.max(input.maxBytes ?? defaultMaxBytes, 1), HARD_MAX_BYTES);
+      if (info.size > maxBytes) throw new CloudConnectorError("connector/limit", "文件超过允许的大小");
+      const body = readFileSync(sourcePath);
+      const uploaded = await instance.connector!.upload({
+        path: remotePath,
+        overwrite: input.overwrite === true,
+      }, body);
+      return {
+        connectorId: id,
+        kind: instance.config.kind,
+        path: remotePath,
+        name: uploaded.name,
+        localPath: sourcePath,
+        bytes: body.byteLength,
+        sha256: createHash("sha256").update(body).digest("hex"),
+        uploadedAt: new Date(now()).toISOString(),
+        ...(uploaded.webUrl === undefined ? {} : { webUrl: uploaded.webUrl }),
       };
     },
     register(definition, factory) {

@@ -18,6 +18,8 @@ function errorStatus(error: CloudConnectorError): number {
     case "connector/disabled":
     case "connector/auth":
       return 409;
+    case "connector/exists":
+      return 409;
     case "connector/config":
     case "connector/path":
     case "connector/limit":
@@ -102,6 +104,44 @@ export function createFleetConnectorRoutes<T extends Request>(options: {
           jsonResponse(response, 200, await options.service.pull(id, {
             path,
             ...(typeof body.name === "string" && body.name !== "" ? { name: body.name } : {}),
+            ...(maxBytes === undefined ? {} : { maxBytes }),
+          }));
+        } catch (error) {
+          routeError(response, error);
+        }
+      },
+    },
+    {
+      kind: "exact" as const,
+      path: `${BASE}/upload`,
+      handler: async (request: T, response: HttpResponse) => {
+        if (options.authenticate(request, response)) return;
+        if (request.method !== "POST") {
+          jsonResponse(response, 405, { error: "METHOD_NOT_ALLOWED" });
+          return;
+        }
+        if (!isSameOriginMutation(request.headers)) {
+          jsonResponse(response, 403, { error: "CROSS_SITE_MUTATION_REJECTED" });
+          return;
+        }
+        if (!isJsonRequest(request.headers)) {
+          jsonResponse(response, 415, { error: "APPLICATION_JSON_REQUIRED" });
+          return;
+        }
+        try {
+          const body = options.readBody === undefined ? {} : await options.readBody(request);
+          const id = body.id;
+          const path = body.path;
+          const sourcePath = body.sourcePath;
+          if (typeof id !== "string" || id === "" || typeof path !== "string" || path === ""
+            || typeof sourcePath !== "string" || sourcePath === "") {
+            throw new CloudConnectorError("connector/config", "id、path 与 sourcePath 必填");
+          }
+          const maxBytes = typeof body.maxBytes === "number" && Number.isFinite(body.maxBytes) ? body.maxBytes : undefined;
+          jsonResponse(response, 200, await options.service.upload(id, {
+            path,
+            sourcePath,
+            overwrite: body.overwrite === true,
             ...(maxBytes === undefined ? {} : { maxBytes }),
           }));
         } catch (error) {

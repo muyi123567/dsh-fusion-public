@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -177,6 +177,31 @@ describe("Google Drive connector", () => {
       .toBe("Bearer fresh-token");
     expect(JSON.stringify(await connector.list({ path: "root" }))).not.toContain("fresh-token");
   });
+
+  it("uploads through the multipart endpoint and refuses an existing name", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fakeFetch = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, ...(init === undefined ? {} : { init }) });
+      if (url.includes("/drive/v3/files?") && url.includes("name+%3D")) {
+        return json({ files: [] });
+      }
+      if (url.includes("/upload/drive/v3/files") && url.includes("uploadType=multipart")) {
+        return json({ id: "new-1", name: "upload.txt", webViewLink: "https://drive.example/new-1" });
+      }
+      return json({ files: [{ id: "old", name: "upload.txt" }] });
+    });
+    const registry = new CloudConnectorRegistry();
+    registerBuiltinCloudConnectors(registry);
+    const connector = registry.create(
+      { id: "gd", kind: "gdrive", tokenEnv: "GOOGLE_DRIVE_TOKEN", root: "root-1" },
+      { env: { GOOGLE_DRIVE_TOKEN: "token-1" }, fetch: fakeFetch as typeof fetch, now: () => 0 },
+    );
+    const uploaded = await connector.upload!({ path: "upload.txt" }, Buffer.from("hi"));
+    expect(uploaded).toMatchObject({ name: "upload.txt", bytes: 2, webUrl: "https://drive.example/new-1" });
+    const multipart = calls.find(call => call.url.includes("uploadType=multipart"));
+    expect(String(multipart?.init?.body)).toContain("\"name\":\"upload.txt\"");
+  });
 });
 
 describe("OneDrive connector", () => {
@@ -245,6 +270,7 @@ describe("WebDAV connector", () => {
           </d:multistatus>`, { status: 207 });
       }
       if (url === "http://127.0.0.1:9001/dav/notes/a.txt") return new Response("abc", { status: 200 });
+      if (init?.method === "PUT") return new Response("", { status: 201 });
       return new Response("missing", { status: 404 });
     });
 
@@ -272,6 +298,8 @@ describe("WebDAV connector", () => {
     expect(await connector.pull({ path: "notes/a.txt" }, output)).toMatchObject({ name: "a.txt", bytes: 3 });
     expect(Buffer.concat(output.chunks).toString()).toBe("abc");
     await expect(connector.pull({ path: "../etc/passwd" }, sink())).rejects.toMatchObject({ code: "connector/path" });
+    const uploaded = await connector.upload!({ path: "notes/out.txt", overwrite: true }, Buffer.from("xyz"));
+    expect(uploaded).toMatchObject({ name: "out.txt", bytes: 3 });
   });
 });
 
@@ -390,5 +418,42 @@ describe("cloud connector service", () => {
     expect(service.instances()).toEqual([
       expect.objectContaining({ id: "gd", kind: "gdrive", enabled: true, state: "invalid", errorCode: "connector/auth" }),
     ]);
+  });
+
+  it("uploads only from allowlisted roots, enforces the cap, and returns a sha256 receipt", async () => {
+    const root = tempRoot();
+    const imports = join(root, "imports");
+    mkdirSync(imports, { recursive: true });
+    const inside = join(imports, "artifact.txt");
+    const outside = join(root, "outside.txt");
+    writeFileSync(inside, "abc");
+    writeFileSync(outside, "secret");
+    const upload = vi.fn(async (input: { path: string; overwrite?: boolean }, body: Uint8Array) => ({
+      name: input.path.split("/").pop() ?? "upload",
+      path: input.path,
+      bytes: body.byteLength,
+    }));
+    const registry = new CloudConnectorRegistry();
+    registry.register(definition("acme/memory"), () => ({
+      async list() { return []; },
+      async pull() { return { name: "x" }; },
+      upload,
+    }) as never);
+    const service = createCloudConnectorService({
+      registry,
+      connectors: [{ id: "mem", kind: "acme/memory" }],
+      importsDirectory: imports,
+      env: {},
+      now: () => Date.parse("2026-11-24T06:00:00Z"),
+    });
+
+    const result = await service.upload("mem", { path: "out/artifact.txt", sourcePath: inside });
+    expect(result).toMatchObject({
+      connectorId: "mem", path: "out/artifact.txt", name: "artifact.txt", bytes: 3,
+      sha256: createHash("sha256").update("abc").digest("hex"),
+    });
+    expect(upload).toHaveBeenCalledWith({ path: "out/artifact.txt", overwrite: false }, Buffer.from("abc"));
+    await expect(service.upload("mem", { path: "out/x", sourcePath: outside })).rejects.toMatchObject({ code: "connector/path" });
+    await expect(service.upload("mem", { path: "out/x", sourcePath: inside, maxBytes: 2 })).rejects.toMatchObject({ code: "connector/limit" });
   });
 });

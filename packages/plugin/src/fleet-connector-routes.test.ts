@@ -29,6 +29,10 @@ function service(): WhaleConnectorServiceV1 {
         localPath: "/tmp/imports/a.txt", bytes: 3, sha256: "a".repeat(64), pulledAt: "2026-11-23T12:00:00.000Z",
       };
     },
+    upload: async (id, input) => ({
+      connectorId: id, kind: "gdrive", path: input.path, name: "a.txt",
+      localPath: input.sourcePath, bytes: 3, sha256: "a".repeat(64), uploadedAt: "2026-11-24T06:00:00.000Z",
+    }),
     register: () => () => {},
   };
 }
@@ -96,5 +100,22 @@ describe("fleet connector routes", () => {
       method: "POST",
       body: { id: "disabled", path: "a.txt" },
     })).status).toBe(409);
+  });
+
+  it("uploads with same-origin JSON checks", async () => {
+    const routes = createFleetConnectorRoutes({
+      service: service(),
+      authenticate: () => false,
+      readBody: async request => (request as unknown as { body?: Record<string, unknown> }).body ?? {},
+    });
+    const path = "/plugins/dsh-fusion/fleet/connectors/upload";
+    expect((await exchange(routes, path, {
+      method: "POST", headers: { origin: "https://evil.example" },
+      body: { id: "gd", path: "out/a.txt", sourcePath: "/tmp/a.txt" },
+    })).status).toBe(403);
+    expect((await exchange(routes, path, {
+      method: "POST",
+      body: { id: "gd", path: "out/a.txt", sourcePath: "/tmp/a.txt" },
+    })).json).toMatchObject({ connectorId: "gd", path: "out/a.txt", bytes: 3 });
   });
 });

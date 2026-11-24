@@ -12,9 +12,9 @@
 2. **凭据与配置分离**：配置只写环境变量名，令牌只在校验/请求时读取；
 3. **开放注册**：其他 DSH 插件可以注册自己的连接器，不必改鲸群源码。
 
-鲸群不做 DS-Bot 那种“把所有远程 MCP 都挂进来”的通用网关。当前只做只读云盘，
-因为多机协作最缺的是“把同一份材料从云端可靠地拿到执行主机”，而不是再复制一个
-MCP 市场。
+鲸群不做 DS-Bot 那种“把所有远程 MCP 都挂进来”的通用网关。当前只做云盘材料：
+把同一份材料可靠地拿到执行主机，并在人工批准后把本地产物导出回云盘，而不是再复制
+一个 MCP 市场。
 
 ## 模型
 
@@ -29,13 +29,14 @@ WhaleConnectorServiceV1   实例状态、浏览、拉取、注册；通过 ctx.p
 
 | kind | 服务 | 认证 | 能力 |
 | --- | --- | --- | --- |
-| `gdrive` | Google Drive REST v3 | access token 或 refresh token 三件套 | 列表、搜索、读取、Google 文档导出 |
-| `onedrive` | Microsoft Graph v1.0 | access token 或 refresh token 三件套 | 列表、搜索、读取 |
-| `dropbox` | Dropbox HTTP API v2 | access token 或 refresh token 三件套 | 列表、搜索、读取 |
-| `webdav` | WebDAV / Nextcloud / ownCloud | Basic（用户名 + 应用密码） | 列表、读取 |
+| `gdrive` | Google Drive REST v3 | access token 或 refresh token 三件套 | 列表、搜索、读取、Google 文档导出、上传 |
+| `onedrive` | Microsoft Graph v1.0 | access token 或 refresh token 三件套 | 列表、搜索、读取、上传 |
+| `dropbox` | Dropbox HTTP API v2 | access token 或 refresh token 三件套 | 列表、搜索、读取、上传 |
+| `webdav` | WebDAV / Nextcloud / ownCloud | Basic（用户名 + 应用密码） | 列表、读取、上传 |
 
-所有 provider 只实现读取。`upload` 在目录里显式为 `false`，避免“先有上传能力再补
-审批”造成既成事实。后续若加上传，必须走人类批准和独立 scope。
+上传不是默认能力：MCP 只有 `approve` scope 的运维令牌可调用；源文件必须位于
+`uploadRoots`（默认 imports 目录）内；覆盖必须显式 `overwrite: true`；服务端先做
+存在性检查并返回 sha256。删除仍未开放。
 
 ## 凭据
 
@@ -85,6 +86,8 @@ fleetConnectors:
 - `whale_connectors`：目录与实例状态，不含凭据；
 - `whale_cloud_list`：`id` + 可选 `path` / `query` / `limit`；
 - `whale_cloud_pull`：`id` + `path`，需要 `request` scope；只写私有 imports 目录。
+- `whale_cloud_upload`：`id` + `path` + `sourcePath`，需要 `approve` scope；只上传
+  allowlist 根目录内的文件，覆盖必须显式。
 
 ### HTTP
 
@@ -120,7 +123,7 @@ const unregister = connectors.register({
 | --- | --- | --- |
 | 主要目标 | 把远程 MCP 服务接到 Bot | 把云盘材料接到多机执行 |
 | 传输 | MCP 网关 + OAuth | 原生 REST/WebDAV |
-| 写入 | 取决于上游 MCP | 本版全部只读 |
+| 写入 | 取决于上游 MCP | 人工批准后的单文件上传 |
 | 凭据 | Bot 密钥库 | 宿主环境变量名 |
 | 扩展 | 自定义 MCP 条目 | provider 注册表 + 稳定接口 |
 
@@ -130,9 +133,9 @@ const unregister = connectors.register({
 ## 验证
 
 - `cloud-connectors.test.ts`：注册表保留名/命名空间/重复注册；Google Drive 列表、
-  查询、导出、refresh 缓存；OneDrive 列表/搜索/下载；WebDAV PROPFIND 解析、Basic
-  认证、路径穿越拒绝；Dropbox 列表/下载头；importer 的 0600、sha256、大小上限、
-  文件名清理、重名与禁用实例。
+  查询、导出、refresh 缓存、multipart 上传；OneDrive 列表/搜索/下载；WebDAV
+  PROPFIND 解析、Basic 认证、PUT；Dropbox 列表/下载头；importer 的 0600、sha256、
+  大小上限、文件名清理、重名与禁用实例；upload allowlist、大小上限与 sha256 回执。
 - `fleet-connector-routes.test.ts`：目录/实例/浏览、同源校验、错误码映射。
 - `fleet-mcp.test.ts`：工具清单、浏览调用、`request` scope 拒绝与放行。
 - `NativeCloudConnectors.test.tsx`：浏览、拉取和回执展示。
@@ -142,8 +145,8 @@ const unregister = connectors.register({
 
 ## 后续
 
-1. 上传/导出：人类批准 + 独立 scope + 远端摘要校验；
+1. 删除/移动与双向同步：需要更细的审批与冲突策略；
 2. S3/MinIO、Box、Quark 等 provider；
-3. 把拉取结果自动绑定为执行材料，并在 v3 回执里记录材料 sha256；
+3. 把拉取/上传结果自动绑定为执行材料，并在 v3 回执里记录材料 sha256；
 4. 连接器健康检查与最近错误缓存；
 5. 令牌轮换与只读窗口。

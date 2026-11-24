@@ -151,6 +151,10 @@ describe("fleet MCP server", () => {
         connectorId: "gd", kind: "gdrive", path: "a.txt", name: "a.txt",
         localPath: "/tmp/imports/a.txt", bytes: 3, sha256: "a".repeat(64), pulledAt: "2026-11-23T12:00:00.000Z",
       })),
+      upload: vi.fn(async () => ({
+        connectorId: "gd", kind: "gdrive", path: "out/a.txt", name: "a.txt",
+        localPath: "/tmp/imports/a.txt", bytes: 3, sha256: "a".repeat(64), uploadedAt: "2026-11-24T06:00:00.000Z",
+      })),
       register: () => () => {},
     };
     const { url, token, store } = await start({ connectors });
@@ -159,6 +163,7 @@ describe("fleet MCP server", () => {
     expect(body.result.tools.map(tool => tool.name)).toEqual([
       "whale_list_hosts", "whale_host_manifest", "whale_environment_diff", "whale_receipt", "whale_doctor",
       "whale_environment_plan", "whale_connectors", "whale_cloud_list", "whale_cloud_pull",
+      "whale_cloud_upload",
     ]);
 
     const browsed = await post(url, token, rpc(3, "tools/call", {
@@ -180,6 +185,19 @@ describe("fleet MCP server", () => {
     }));
     expect(await pulled.json()).toMatchObject({
       result: { structuredContent: { connectorId: "gd", name: "a.txt", bytes: 3 } },
+    });
+
+    const uploadDenied = await post(url, writer, rpc(6, "tools/call", {
+      name: "whale_cloud_upload", arguments: { id: "gd", path: "out/a.txt", sourcePath: "/tmp/imports/a.txt" },
+    }));
+    expect(await uploadDenied.json()).toMatchObject({ result: { isError: true, content: [{ text: "whale/scope-required" }] } });
+
+    const approver = store.createClient({ name: "uploader", scopes: ["read", "approve"] }).token;
+    const uploaded = await post(url, approver, rpc(7, "tools/call", {
+      name: "whale_cloud_upload", arguments: { id: "gd", path: "out/a.txt", sourcePath: "/tmp/imports/a.txt" },
+    }));
+    expect(await uploaded.json()).toMatchObject({
+      result: { structuredContent: { connectorId: "gd", path: "out/a.txt", bytes: 3 } },
     });
   });
 

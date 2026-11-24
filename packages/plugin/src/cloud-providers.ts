@@ -19,7 +19,9 @@ import {
   type CloudListInput,
   type CloudPullInput,
   type CloudPullMeta,
+  type CloudUploadInput,
 } from "./cloud-connectors.js";
+import { randomUUID } from "node:crypto";
 
 const DRIVE_FIELDS = "id,name,mimeType,size,modifiedTime,webViewLink,parents";
 const GRAPH_FIELDS = "id,name,size,file,folder,lastModifiedDateTime,webUrl,parentReference,@microsoft.graph.downloadUrl";
@@ -30,7 +32,7 @@ const GDRIVE: CloudConnectorDefinition = {
   category: "drive",
   description: "列出、搜索并拉取 Google Drive 文件；Google 原生文档导出为文本或 CSV。",
   docsUrl: "https://developers.google.com/drive/api/guides/about-sdk",
-  capabilities: { list: true, stat: true, pull: true, upload: false },
+  capabilities: { list: true, stat: true, pull: true, upload: true },
   fields: [
     { key: "tokenEnv", label: "访问令牌环境变量", env: true, secret: true, description: "短期 access token；与 refresh 三件套二选一" },
     { key: "refreshTokenEnv", label: "刷新令牌环境变量", env: true, secret: true },
@@ -46,7 +48,7 @@ const ONEDRIVE: CloudConnectorDefinition = {
   category: "drive",
   description: "通过 Microsoft Graph 浏览、搜索并拉取 OneDrive 文件。",
   docsUrl: "https://learn.microsoft.com/graph/api/resources/onedrive",
-  capabilities: { list: true, stat: true, pull: true, upload: false },
+  capabilities: { list: true, stat: true, pull: true, upload: true },
   fields: [
     { key: "tokenEnv", label: "访问令牌环境变量", env: true, secret: true },
     { key: "refreshTokenEnv", label: "刷新令牌环境变量", env: true, secret: true },
@@ -62,7 +64,7 @@ const WEBDAV: CloudConnectorDefinition = {
   category: "storage",
   description: "连接 Nextcloud、ownCloud 或任意 WebDAV 服务，浏览并拉取文件。",
   docsUrl: "https://datatracker.ietf.org/doc/html/rfc4918",
-  capabilities: { list: true, stat: true, pull: true, upload: false },
+  capabilities: { list: true, stat: true, pull: true, upload: true },
   fields: [
     { key: "baseUrl", label: "WebDAV 根地址", required: true, placeholder: "https://cloud.example.com/remote.php/dav/files/me" },
     { key: "usernameEnv", label: "用户名环境变量", env: true },
@@ -76,7 +78,7 @@ const DROPBOX: CloudConnectorDefinition = {
   category: "drive",
   description: "浏览、搜索并拉取 Dropbox 文件。",
   docsUrl: "https://www.dropbox.com/developers/documentation/http/documentation",
-  capabilities: { list: true, stat: true, pull: true, upload: false },
+  capabilities: { list: true, stat: true, pull: true, upload: true },
   fields: [
     { key: "tokenEnv", label: "访问令牌环境变量", env: true, secret: true },
     { key: "refreshTokenEnv", label: "刷新令牌环境变量", env: true, secret: true },
@@ -155,6 +157,64 @@ function createGdrive(context: CloudConnectorFactoryContext): CloudConnector {
         bytes,
         ...(entry.mimeType === undefined ? {} : { mimeType: entry.mimeType }),
         ...(entry.webUrl === undefined ? {} : { webUrl: entry.webUrl }),
+      };
+    },
+    async upload(input: CloudUploadInput, body: Uint8Array) {
+      const name = input.path.split("/").pop();
+      if (name === undefined || name.trim() === "") throw new CloudConnectorError("connector/path", "上传路径不合法");
+      const existing = await requestJson<{ files?: DriveFile[] }>(context.fetch, (() => {
+        const url = new URL("/drive/v3/files", api);
+        url.searchParams.set("q", `name = '${escapeDriveQuery(name)}' and '${escapeDriveQuery(rootId)}' in parents and trashed = false`);
+        url.searchParams.set("fields", "files(id,name,webViewLink)");
+        url.searchParams.set("supportsAllDrives", "true");
+        return url;
+      })(), { headers: asBearer(await token()) });
+      const found = existing.files?.[0];
+      if (found?.id !== undefined && input.overwrite !== true) {
+        throw new CloudConnectorError("connector/exists", "目标文件已存在");
+      }
+      if (found?.id !== undefined) {
+        const url = new URL(`/upload/drive/v3/files/${encodeURIComponent(found.id)}`, api);
+        url.searchParams.set("uploadType", "media");
+        url.searchParams.set("supportsAllDrives", "true");
+        const response = await context.fetch(url, {
+          method: "PATCH",
+          headers: { ...asBearer(await token()), "content-type": "application/octet-stream" },
+          body: Buffer.from(body),
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!response.ok) throw new CloudConnectorError("connector/upstream", `Drive 返回 ${response.status}`);
+        return { name, path: input.path, bytes: body.byteLength, ...(found.webViewLink === undefined ? {} : { webUrl: found.webViewLink }) };
+      }
+      const boundary = `fusion-${randomUUID()}`;
+      const metadata = JSON.stringify({ name, parents: [rootId] });
+      const prefix = Buffer.from(
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n`
+        + `--${boundary}\r\nContent-Type: application/octet-stream\r\n\r\n`,
+      );
+      const suffix = Buffer.from(`\r\n--${boundary}--\r\n`);
+      const payload = Buffer.concat([prefix, Buffer.from(body), suffix]);
+      const url = new URL("/upload/drive/v3/files", api);
+      url.searchParams.set("uploadType", "multipart");
+      url.searchParams.set("supportsAllDrives", "true");
+      const response = await context.fetch(url, {
+        method: "POST",
+        headers: {
+          ...asBearer(await token()),
+          "content-type": `multipart/related; boundary=${boundary}`,
+        },
+        body: payload,
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) {
+        throw new CloudConnectorError(response.status === 401 ? "connector/auth" : "connector/upstream", `Drive 返回 ${response.status}`);
+      }
+      const uploaded = await response.json() as DriveFile;
+      return {
+        name,
+        path: input.path,
+        bytes: body.byteLength,
+        ...(uploaded.webViewLink === undefined ? {} : { webUrl: uploaded.webViewLink }),
       };
     },
   };
@@ -265,6 +325,31 @@ function createOnedrive(context: CloudConnectorFactoryContext): CloudConnector {
         ...(entry.webUrl === undefined ? {} : { webUrl: entry.webUrl }),
       };
     },
+    async upload(input: CloudUploadInput, body: Uint8Array) {
+      let exists = true;
+      try {
+        await stat(input.path);
+      } catch (error) {
+        if (error instanceof CloudConnectorError && error.code === "connector/not-found") exists = false;
+        else throw error;
+      }
+      if (exists && input.overwrite !== true) throw new CloudConnectorError("connector/exists", "目标文件已存在");
+      const url = new URL(`${itemUrl(input.path).toString()}/content`);
+      const response = await context.fetch(url, {
+        method: "PUT",
+        headers: { ...asBearer(await token()), "content-type": "application/octet-stream" },
+        body: Buffer.from(body),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) throw new CloudConnectorError("connector/upstream", `Graph 返回 ${response.status}`);
+      const item = await response.json().catch(() => undefined) as GraphItem | undefined;
+      return {
+        name: input.path.split("/").pop() ?? item?.name ?? "upload",
+        path: input.path,
+        bytes: body.byteLength,
+        ...(item?.webUrl === undefined ? {} : { webUrl: item.webUrl }),
+      };
+    },
   };
 }
 
@@ -354,6 +439,29 @@ function createWebdav(context: CloudConnectorFactoryContext): CloudConnector {
       }
       const bytes = await pipeResponseBody(response, sink);
       return { name: input.path.split("/").pop() ?? "download", bytes };
+    },
+    async upload(input: CloudUploadInput, body: Uint8Array) {
+      let exists = true;
+      try {
+        await propfind(input.path, "0");
+      } catch (error) {
+        if (error instanceof CloudConnectorError && error.code === "connector/not-found") exists = false;
+        else throw error;
+      }
+      if (exists && input.overwrite !== true) throw new CloudConnectorError("connector/exists", "目标文件已存在");
+      let response: Response;
+      try {
+        response = await context.fetch(davUrl(input.path), {
+          method: "PUT",
+          headers: { ...headers(), "content-type": "application/octet-stream" },
+          body: Buffer.from(body),
+          signal: AbortSignal.timeout(30_000),
+        });
+      } catch {
+        throw new CloudConnectorError("connector/upstream", "WebDAV 上传失败");
+      }
+      if (!response.ok) throw new CloudConnectorError("connector/upstream", `WebDAV 返回 ${response.status}`);
+      return { name: input.path.split("/").pop() ?? "upload", path: input.path, bytes: body.byteLength };
     },
   };
 }
@@ -470,6 +578,38 @@ function createDropbox(context: CloudConnectorFactoryContext): CloudConnector {
       return {
         name: meta?.name ?? input.path.split("/").pop() ?? "download",
         bytes,
+      };
+    },
+    async upload(input: CloudUploadInput, body: Uint8Array) {
+      const url = `${content.toString().replace(/\/$/u, "")}/2/files/upload`;
+      const response = await context.fetch(url, {
+        method: "POST",
+        headers: {
+          ...asBearer(await token()),
+          "content-type": "application/octet-stream",
+          "dropbox-api-arg": JSON.stringify({
+            path: dropboxPath(input.path),
+            mode: input.overwrite === true ? "overwrite" : "add",
+            autorename: false,
+            mute: true,
+          }),
+        },
+        body: Buffer.from(body),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) {
+        throw new CloudConnectorError(
+          response.status === 401 ? "connector/auth"
+            : response.status === 409 ? "connector/exists"
+            : "connector/upstream",
+          `Dropbox 返回 ${response.status}`,
+        );
+      }
+      const meta = await response.json().catch(() => undefined) as DropboxEntry | undefined;
+      return {
+        name: meta?.name ?? input.path.split("/").pop() ?? "upload",
+        path: input.path,
+        bytes: body.byteLength,
       };
     },
   };

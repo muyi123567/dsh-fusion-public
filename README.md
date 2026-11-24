@@ -162,13 +162,13 @@ node packages/plugin/scripts/fleet-mcp-token.mjs --file /var/lib/dsh-fusion/flee
 `whale_notify_test` 可发测试消息。第三方插件可通过
 `ctx.get("whaleNotifications").register(definition, factory)` 注册适配器。
 
-`fleetConnectors` 是只读云盘连接器：内置 Google Drive、OneDrive、Dropbox 和
-WebDAV/Nextcloud。凭据只写环境变量名，值不进配置、日志或清单；拉取文件进入私有
-`directory`（默认 `fleet/imports`，目录 0700、文件 0600），并返回 sha256 与字节数。
-Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
-`whale_cloud_pull` 使用；面板提供浏览与拉取。第三方插件可通过
-`ctx.get("whaleConnectors").register(definition, factory)` 注册自己的 provider。
-本版不提供上传、删除或任意命令执行。
+`fleetConnectors` 支持云盘读取与人工批准后的导出：内置 Google Drive、OneDrive、
+Dropbox 和 WebDAV/Nextcloud。凭据只写环境变量名；拉取文件进入私有 `directory`
+（默认 `fleet/imports`，0700/0600）。`whale_cloud_pull` 需要 `request` scope；
+`whale_cloud_upload` 需要 operator-only `approve` scope，源文件必须在
+`uploadRoots`（默认 imports）内，覆盖必须显式 `overwrite: true`，并返回 sha256。
+删除和任意命令执行仍不开放。第三方插件可通过
+`ctx.get("whaleConnectors").register(definition, factory)` 注册 provider。
 
 设计依据：[DSH 高质量项目调研](docs/research/2026-11-22-dsh-quality-projects.md) ·
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·

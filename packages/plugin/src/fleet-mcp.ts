@@ -155,6 +155,21 @@ const CONNECTOR_TOOLS = [
       required: ["id", "path"],
     },
   },
+  {
+    name: "whale_cloud_upload",
+    description: "Upload one local imports file to a cloud connector. Requires the operator-only approve scope; overwrite must be explicit.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        path: { type: "string" },
+        sourcePath: { type: "string" },
+        overwrite: { type: "boolean" },
+        maxBytes: { type: "number", minimum: 1 },
+      },
+      required: ["id", "path", "sourcePath"],
+    },
+  },
 ] as const;
 
 const NOTIFICATION_TOOLS = [
@@ -316,6 +331,17 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
           ...(maxBytes === undefined ? {} : { maxBytes }),
         });
       }
+      case "whale_cloud_upload": {
+        if (options.connectors === undefined) throw new ToolError("whale/connectors-unavailable", "云盘连接器未配置");
+        if (!client.scopes.includes("approve")) throw new ToolError("whale/scope-required", "客户端没有 approve scope");
+        const maxBytes = optionalNumber(args, "maxBytes");
+        return await options.connectors.upload(required(args, "id"), {
+          path: required(args, "path"),
+          sourcePath: required(args, "sourcePath"),
+          overwrite: args.overwrite === true,
+          ...(maxBytes === undefined ? {} : { maxBytes }),
+        });
+      }
       case "whale_notifications": {
         if (options.notifications === undefined) throw new ToolError("whale/notifications-unavailable", "通知适配器未配置");
         return {
@@ -418,7 +444,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             : PROTOCOL,
           capabilities: { tools: {} },
           serverInfo: { name: "whale-fleet", version: options.version ?? "0.2.0-beta.14" },
-          instructions: "Whale fleet MCP. Start with whale_status, then whale_list_hosts and whale_environment_diff. Read tools cover trust, cloud materials, notifications, presets, backups and alignment. request_* tools create pending requests (request scope); approving requires the operator-only approve scope. Never claim approval or success without reading a receipt.",
+          instructions: "Whale fleet MCP. Start with whale_status, then whale_list_hosts and whale_environment_diff. Read tools cover trust, cloud materials, notifications, presets, backups and alignment. request_* tools create pending requests (request scope); alignment approval and cloud upload require the operator-only approve scope. Never claim approval or success without reading a receipt.",
         };
       case "ping":
         return {};

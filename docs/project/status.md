@@ -153,6 +153,19 @@ fixture 后禁用，计划生成 `enable:dsh-align-fixture`；批准执行后 fi
 设计：[统一状态与诊断](../design/2026-11-24-unified-status.md)。
 证据：`/data/openlet/evidence/dsh-fusion-status-20261124/`。
 
+### 云盘人工批准导出（2026-11-24）
+
+云盘连接器新增上传：Google Drive multipart/PATCH、OneDrive Graph PUT、Dropbox
+content upload、WebDAV PUT。MCP `whale_cloud_upload` 需要 operator-only
+`approve` scope；源文件必须位于 `uploadRoots`（默认 imports）内，覆盖必须显式
+`overwrite:true`，返回 sha256。HTTP 增加 `/fleet/connectors/upload`。
+
+验证：插件 505 项、原生面板 73 项通过。实机拉取 `notes/a.txt` 后上传为
+`notes/export.txt`，WebDAV 收到 3 B 且 sha256 与回执一致；`request` scope 被拒绝，
+`/etc/hostname` 被 uploadRoots 拒绝，四个 provider 均显示 `upload=true`。
+
+证据：`/data/openlet/evidence/dsh-fusion-cloud-upload-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

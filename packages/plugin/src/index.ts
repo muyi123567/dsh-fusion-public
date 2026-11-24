@@ -158,6 +158,8 @@ export type {
   CloudListInput,
   CloudPullInput,
   CloudPullResult,
+  CloudUploadInput,
+  CloudUploadResult,
   WhaleConnectorServiceV1,
 } from "./cloud-connectors.js";
 export { registerBuiltinCloudConnectors } from "./cloud-providers.js";
@@ -386,6 +388,7 @@ export interface FusionHostConfig {
   fleetConnectors?: {
     directory?: string;
     maxBytes?: number;
+    uploadRoots?: string[];
     connectors?: CloudConnectorInstanceConfig[];
   };
   fleetPresets?: {
@@ -1487,6 +1490,7 @@ export async function apply(
         connectors: connectorConfig?.connectors ?? [],
         importsDirectory: connectorConfig?.directory ?? join(fleetDirectory, "imports"),
         ...(connectorConfig?.maxBytes === undefined ? {} : { maxBytes: connectorConfig.maxBytes }),
+        ...(connectorConfig?.uploadRoots === undefined ? {} : { uploadRoots: connectorConfig.uploadRoots }),
       });
     } catch (error) {
       ctx.logger?.warn?.(`dsh-fusion: cloud connectors disabled: ${error instanceof Error ? error.message : String(error)}`);
