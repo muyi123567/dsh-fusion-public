@@ -201,6 +201,11 @@ bundle 字段，只能作为安装范围，不应依赖 bundle 级比较/对齐�
 云盘、通知、信任、预设/热备、对齐全部可见，API 全 200，页面无异常，未认证仍 401。
 证据：`/data/openlet/evidence/dsh-fusion-ui-beta15-20261124/`。
 
+推荐 stable 宿主验收（2026-11-24）：全新 DSH_HOME 安装 DSH `0.2.2-rc.5` 与
+beta.15，MCP 22 工具、`whale_status` 与真实面板通过；全部插件 API 200、无页面异常，
+稳定版 `requestRejection` 与 alpha `admit` 双契约均通过。证据：
+`/data/openlet/evidence/dsh-fusion-stable15-ui-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，
