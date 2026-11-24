@@ -214,6 +214,9 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz
 verified 仅限实际启动、MCP 与环境采集范围，不覆盖真实模型、双机或全部原生 UI。
 包包含已构建的 host、客户端和类型声明，运行依赖仍需网络或已有缓存。
 安装范围不等于所有组合已经通过业务验收；缺少原生面板服务时会提示升级宿主。
+DSH `0.2.0-rc.2` 的 pluginManager 只返回部分 bundle 字段；鲸群会标记
+`bundleInventoryPartial=true`，该宿主只建议安装/基础使用，不应依赖 bundle 级环境比较
+或对齐。推荐 `0.2.2-rc.5`；`0.2.3-alpha.2` 已实机验证 bundle 加入与对齐执行。
 第一次使用请按[五分钟快速开始](docs/quickstart.md)完成安装、MCP、Skill、加入包与自检。
 
 ## 验证边界

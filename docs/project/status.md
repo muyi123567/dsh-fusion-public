@@ -189,6 +189,12 @@ scope）或 `scripts/fleet-join.mjs` 一次导入：缓存远端 manifest、固�
 `match / verified`，trust 1 条 manual，diff 匹配。证据：
 `/data/openlet/evidence/dsh-fusion-crosshost-beta15-20261124/`。
 
+真实对齐执行（2026-11-24）：Host B 改用 DSH `0.2.3-alpha.2` 后，用 fixture 制造
+disabled 漂移，计划 `enable:dsh-align-fixture-b`，approve scope 批准执行，
+`after=match`、状态 succeeded。另确认 `0.2.0-rc.2` 的 pluginManager 只返回部分
+bundle 字段，只能作为安装范围，不应依赖 bundle 级比较/对齐。证据：
+`/data/openlet/evidence/dsh-fusion-align-crosshost-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，
