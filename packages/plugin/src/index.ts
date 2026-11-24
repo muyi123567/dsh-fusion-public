@@ -114,6 +114,8 @@ import {
 import { createFleetAlignmentRoutes } from "./fleet-alignment-routes.js";
 import { createFleetStatusService, type WhaleStatusServiceV1 } from "./fleet-status.js";
 import { createFleetStatusRoutes } from "./fleet-status-routes.js";
+import { createFleetBundleService, type WhaleBundleServiceV1 } from "./fleet-host-bundle.js";
+import { createFleetBundleRoutes } from "./fleet-bundle-routes.js";
 
 export {
   FLEET_CONTRACT_VERSION,
@@ -216,6 +218,18 @@ export type {
   FleetStatusServiceOptions,
   WhaleStatusServiceV1,
 } from "./fleet-status.js";
+export {
+  FleetBundleError,
+  createFleetHostBundle,
+  createFleetBundleService,
+  importFleetHostBundle,
+  verifyFleetHostBundle,
+} from "./fleet-host-bundle.js";
+export type {
+  FleetHostBundle,
+  FleetHostBundleImportResult,
+  WhaleBundleServiceV1,
+} from "./fleet-host-bundle.js";
 export type {
   DshImNotifier,
   FleetDeliveryReceipt,
@@ -1454,6 +1468,14 @@ export async function apply(
         return await fleetDoctorProvider();
       },
     });
+    const bundleService = createFleetBundleService({
+      manifest: async () => await fleetService.manifest(),
+      publicKeyPem: () => fleetPublicKeyPem,
+      directory: fleetDirectory,
+      trust: fleetTrust,
+      ...(fleetExpectedManifest === undefined ? {} : { expectedManifestPath: fleetExpectedManifest }),
+      refresh: async () => await fleetService.refresh?.(),
+    });
     fleetEnvironmentGate = async (input) => {
       const local = await fleetService.manifest();
       const hostId = input.hostId ?? local.hostId;
@@ -1575,6 +1597,11 @@ export async function apply(
         ctx.provide("whaleFleet", fleetService);
       } catch (error) {
         ctx.logger?.warn?.(`dsh-fusion: whaleFleet service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      try {
+        ctx.provide("whaleBundle", bundleService);
+      } catch (error) {
+        ctx.logger?.warn?.(`dsh-fusion: whaleBundle service unavailable: ${error instanceof Error ? error.message : String(error)}`);
       }
       if (whaleConnectorService !== undefined) {
         try {
@@ -1732,6 +1759,7 @@ export async function apply(
             ...(backupService === undefined ? {} : { backups: backupService }),
             ...(alignmentService === undefined ? {} : { alignment: alignmentService }),
             status: statusService,
+            bundle: bundleService,
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -2859,6 +2887,13 @@ export async function apply(
       for (const route of createFleetStatusRoutes({
         service: statusService,
         authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+      })) {
+        effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
+      for (const route of createFleetBundleRoutes({
+        service: bundleService,
+        authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+        readBody: readJsonBody,
       })) {
         effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
       }

@@ -11,7 +11,7 @@
 与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
 beta.15 新增云盘连接器（读取与批准导出）、通知适配器、远端信任表、预设/热备、
 环境对齐执行与统一状态诊断；安装包 SHA-256：
-`7fd91e84d29d93cce45d84d9189f75bf8ed17ad362b8b321cccb00437e4f1fbc`。
+`c421675a9498059a3fac65468d875cdd8264bd3aa20052775449c7c48f44a811`。
 beta.14 的 UI/来源记录保留为历史，不用旧包摘要代替 beta.15 验收。
 
 ## 原生右栏面板
@@ -132,6 +132,12 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
 `trustMode: tofu` 是可选的首见即信任模式，只应在受控网络使用；密钥轮换是新的 hostId，
 旧条目需撤销。
 
+主机加入包把“信任公钥 + 远端清单 + 期望环境”合成一次操作：源主机提供
+`whale_host_bundle`（只含清单与公钥），目标主机用带 `approve` scope 的
+`whale_import_bundle` 或 `scripts/fleet-join.mjs --bundle ... --trust --expected`
+导入，缓存远端 manifest、固定信任并保存期望清单。加入包会校验自己的摘要、
+公钥与 hostId 绑定以及清单签名，任何篡改都会拒绝。
+
 `fleetPresets` 提供内置 DSH Skill 与配置模板：面板“预设与热备”可安装
 `whale-fleet-ops`（多机运维安全顺序），并查看云端材料、Chief 审批、严格信任和热门
 插件清单。`fleetBackup` 对 profile/cordis/lock 与鲸群状态做快照，明确排除
@@ -177,6 +183,7 @@ Dropbox 和 WebDAV/Nextcloud。凭据只写环境变量名；拉取文件进入�
 [预设与配置热备](docs/design/2026-11-24-presets-backup.md) ·
 [环境对齐执行](docs/design/2026-11-24-alignment-execution.md) ·
 [统一状态与诊断](docs/design/2026-11-24-unified-status.md) ·
+[主机加入包](docs/design/2026-11-24-host-bundle.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级

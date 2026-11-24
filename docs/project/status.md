@@ -174,6 +174,16 @@ content upload、WebDAV PUT。MCP `whale_cloud_upload` 需要 operator-only
 
 证据：`/data/openlet/evidence/dsh-fusion-cloud-upload-20261124/`。
 
+### 主机加入包（2026-11-24）
+
+新增 `whale_host_bundle` 导出本机清单+公钥+摘要，`whale_import_bundle`（approve
+scope）或 `scripts/fleet-join.mjs` 一次导入：缓存远端 manifest、固定信任、保存期望。
+加入包校验自身摘要、公钥与 hostId 绑定、清单签名，不包含私钥或密钥值。
+
+接入：`GET /fleet/bundle`、`POST /fleet/bundle/import`、面板/CLI 导入。
+验证：插件 512 项、原生面板 73 项通过；真实 Ed25519 导出/导入、篡改三类拒绝、
+0600 文件；MCP approve scope 测试。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

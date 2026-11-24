@@ -66,6 +66,7 @@ async function start(options: {
   backups?: unknown;
   alignment?: unknown;
   status?: unknown;
+  bundle?: unknown;
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
@@ -81,6 +82,7 @@ async function start(options: {
     ...(options.backups === undefined ? {} : { backups: options.backups as never }),
     ...(options.alignment === undefined ? {} : { alignment: options.alignment as never }),
     ...(options.status === undefined ? {} : { status: options.status as never }),
+    ...(options.bundle === undefined ? {} : { bundle: options.bundle as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -388,6 +390,35 @@ describe("fleet MCP server", () => {
     const called = await post(url, token, rpc(3, "tools/call", { name: "whale_status", arguments: {} }));
     expect(await called.json()).toMatchObject({
       result: { structuredContent: { host: { hostId: SHA, trust: "verified" } } },
+    });
+  });
+
+  it("exports a host bundle and requires approve scope for import", async () => {
+    const bundle = {
+      contractVersion: 1 as const,
+      exportHost: vi.fn(async () => ({ contractVersion: 1, digest: SHA, publicKeyPem: "key", manifest: { hostId: SHA } })),
+      importHost: vi.fn(async (_value: unknown, options?: { pinTrust?: boolean; saveExpected?: boolean }) => ({
+        hostId: SHA, digest: SHA, cachedPath: "/tmp/hosts/a.json",
+        trusted: options?.pinTrust === true,
+        ...(options?.saveExpected === true ? { expectedPath: "/tmp/expected.json" } : {}),
+      })),
+    };
+    const { url, token, store } = await start({ bundle });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toEqual(expect.arrayContaining(["whale_host_bundle", "whale_import_bundle"]));
+    const exported = await post(url, token, rpc(3, "tools/call", { name: "whale_host_bundle", arguments: {} }));
+    expect(await exported.json()).toMatchObject({ result: { structuredContent: { digest: SHA } } });
+    const denied = await post(url, token, rpc(4, "tools/call", {
+      name: "whale_import_bundle", arguments: { bundle: { digest: SHA } },
+    }));
+    expect(await denied.json()).toMatchObject({ result: { isError: true, content: [{ text: "whale/scope-required" }] } });
+    const approver = store.createClient({ name: "joiner", scopes: ["read", "approve"] }).token;
+    const imported = await post(url, approver, rpc(5, "tools/call", {
+      name: "whale_import_bundle", arguments: { bundle: { digest: SHA }, pinTrust: true, saveExpected: true },
+    }));
+    expect(await imported.json()).toMatchObject({
+      result: { structuredContent: { trusted: true, expectedPath: "/tmp/expected.json" } },
     });
   });
 

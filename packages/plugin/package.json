@@ -47,6 +47,7 @@
     "scripts/release-contract.mjs",
     "scripts/fleet-mcp-token.mjs",
     "scripts/fleet-trust.mjs",
+    "scripts/fleet-join.mjs",
     "compatibility.json",
     "presets",
     "vendor/README.md",

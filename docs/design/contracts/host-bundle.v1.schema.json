@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muyi123567/dsh-fusion-public/docs/design/contracts/host-bundle.v1.schema.json",
+  "title": "Whale host join bundle v1",
+  "type": "object",
+  "required": ["contractVersion", "createdAt", "manifest", "publicKeyPem", "digest"],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "manifest": { "type": "object" },
+    "publicKeyPem": { "type": "string", "pattern": "BEGIN PUBLIC KEY" },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

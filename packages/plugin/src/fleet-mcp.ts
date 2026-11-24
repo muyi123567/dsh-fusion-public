@@ -12,6 +12,7 @@ import type { WhaleBackupServiceV1 } from "./fleet-backup.js";
 import type { WhalePresetServiceV1 } from "./fleet-presets.js";
 import type { WhaleAlignmentServiceV1 } from "./fleet-alignment.js";
 import type { WhaleStatusServiceV1 } from "./fleet-status.js";
+import type { WhaleBundleServiceV1 } from "./fleet-host-bundle.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -38,6 +39,7 @@ export interface FleetMcpServerOptions {
   backups?: WhaleBackupServiceV1;
   alignment?: WhaleAlignmentServiceV1;
   status?: WhaleStatusServiceV1;
+  bundle?: WhaleBundleServiceV1;
   autoApproveDispatch?: boolean;
   version?: string;
 }
@@ -248,6 +250,27 @@ const STATUS_TOOL = {
   inputSchema: { type: "object", properties: {} },
 } as const;
 
+const BUNDLE_TOOLS = [
+  {
+    name: "whale_host_bundle",
+    description: "Export this host's signed join bundle: manifest, public key and digest.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "whale_import_bundle",
+    description: "Import a trusted host join bundle, cache its manifest, and optionally pin trust and save it as the expected environment. Requires the approve scope.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bundle: { type: "object" },
+        pinTrust: { type: "boolean" },
+        saveExpected: { type: "boolean" },
+      },
+      required: ["bundle"],
+    },
+  },
+] as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -402,6 +425,18 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         if (options.status === undefined) throw new ToolError("whale/status-unavailable", "状态汇总未配置");
         return await options.status.status();
       }
+      case "whale_host_bundle": {
+        if (options.bundle === undefined) throw new ToolError("whale/bundle-unavailable", "加入包服务未配置");
+        return await options.bundle.exportHost();
+      }
+      case "whale_import_bundle": {
+        if (options.bundle === undefined) throw new ToolError("whale/bundle-unavailable", "加入包服务未配置");
+        if (!client.scopes.includes("approve")) throw new ToolError("whale/scope-required", "客户端没有 approve scope");
+        return await options.bundle.importHost(args.bundle, {
+          pinTrust: args.pinTrust === true,
+          saveExpected: args.saveExpected === true,
+        });
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -458,6 +493,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             ...(options.presets === undefined && options.backups === undefined ? [] : PRESET_BACKUP_TOOLS),
             ...(options.alignment === undefined ? [] : ALIGNMENT_TOOLS),
             ...(options.status === undefined ? [] : [STATUS_TOOL]),
+            ...(options.bundle === undefined ? [] : BUNDLE_TOOLS),
             ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
           ],
         };
@@ -620,7 +656,10 @@ function toolErrorCode(error: unknown): string {
   if (error instanceof FleetServiceError) return error.code;
   const code = (error as { code?: unknown } | undefined)?.code;
   if (typeof code !== "string") return "whale/unavailable";
-  if (code.startsWith("connector/") || code.startsWith("notification/") || code === "send-result-unknown") return code;
+  if (["connector/", "notification/", "bundle/", "alignment/", "preset/", "backup/", "trust/"]
+    .some(prefix => code.startsWith(prefix)) || code === "send-result-unknown") {
+    return code;
+  }
   return `whale/${code}`;
 }
 
