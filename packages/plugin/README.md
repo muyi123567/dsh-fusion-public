@@ -2,7 +2,7 @@
 
 鲸是 DSH 原生多机协作插件，包含节点、任务证据、会话、Room/Teams/Bus 桥接、配置诊断和可选远程终端。
 
-当前候选为 **0.2.0-beta.14**：从侧栏「鲸」或右栏添加页打开 DSH 原生右侧面板，
+当前候选为 **0.2.0-beta.15**：从侧栏「鲸」或右栏添加页打开 DSH 原生右侧面板，
 默认查看任务，任务、主机和团队详情在同一面板内导航；海域由用户主动选择并按需加载。
 标签、关闭、宽度与主题由宿主管理。面板读取 Fusion 全局快照，
 不创建新的任务调度、完成或独立验收权威状态。
@@ -28,7 +28,7 @@ beta.14 与旧宿主的运行组合尚未重新实测。安装提示以最终包
 由 DSH 宿主将预构建 tarball 安装进目标 Web profile：
 
 ~~~sh
-dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.14.tgz
+dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz
 ~~~
 
 profile 名称可替换为自己的名字。重启或重新加载对应 profile，选择会话后，
@@ -129,7 +129,7 @@ DSH 兼容状态由 doctor 单独呈现：verified 为 `ok`，untested 或 unkno
 
 从 beta.13 升级到 beta.14 前，备份目标 profile 的 package.json、锁文件、
 Cordis 用户配置和 Fusion 自有状态，保留 beta.13 tarball。核对 beta.14 的最终校验值后，
-执行上方 `dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.14.tgz` 并重载 profile；
+执行上方 `dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz` 并重载 profile；
 由宿主处理插件安装，不手工覆盖依赖目录。需要回滚时通过宿主安装保留的 beta.13 包并重载，
 按需从升级前备份恢复状态。本轮仅在授权隔离 profile 验证，未改动用户 production profile；
 升级回滚矩阵尚未验收。模型写入和远程终端继续默认关闭。

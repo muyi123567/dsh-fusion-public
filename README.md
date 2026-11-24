@@ -5,15 +5,14 @@
 本 native 候选默认用于任务 / 主机 / 团队 / 海域查看和证据导航。旧 FusionApp 的派发、配置、
 运行与终端组件及 host API 保留在源码中，尚未全部迁入新入口；不承诺与 beta.13 UI 功能完全等价。
 
-当前候选：**0.2.0-beta.14**，MIT，可试验的原生面板预发布。任务默认显示，海域按需打开。
-[下载 beta.14 安装包与校验值](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.14) ·
-[发布说明与验证范围](docs/releases/2026-11-17-beta14.md)。
-当前公开预发布为 **0.2.0-beta.14**；历史版本 **0.2.0-beta.13**；[历史发布说明](docs/releases/2026-11-16-beta13.md)
+当前候选：**0.2.0-beta.15**，MIT，可试验的原生面板预发布。任务默认显示，海域按需打开。
+[发布说明与验证范围](docs/releases/2026-11-24-beta15.md)。
+当前公开预发布仍为 **0.2.0-beta.14**；历史版本 **0.2.0-beta.13**；[历史发布说明](docs/releases/2026-11-16-beta13.md)
 与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
-beta.14 当前发布候选 SHA-256：`3a317257ceb5e4f77b756c9e72a63530e56e73146109ecd5613163385139ee26`，已公开为 GitHub 预发布。
-海域分页按钮已调整以避免 companion 浮动控件拦截；同一新包的真实来源 / 公开扩展、修后性能 / 分页、
-420px DEMO 任务 / 海域预览三组运行均完成，`QA_EXIT=0`、`DSH_STOPPED=True`。
-较早候选的 UI 通过记录单独保留，beta.13 包或独立动画预览不代替本候选验收。
+beta.15 新增云盘连接器（读取与批准导出）、通知适配器、远端信任表、预设/热备、
+环境对齐执行与统一状态诊断；安装包 SHA-256：
+`7fd91e84d29d93cce45d84d9189f75bf8ed17ad362b8b321cccb00437e4f1fbc`。
+beta.14 的 UI/来源记录保留为历史，不用旧包摘要代替 beta.15 验收。
 
 ## 原生右栏面板
 
@@ -186,7 +185,7 @@ Dropbox 和 WebDAV/Nextcloud。凭据只写环境变量名；拉取文件进入�
 beta.13 升级到 beta.14 前备份目标 profile 与 Fusion 自有状态，并保留旧包：
 
 ~~~sh
-dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.14.tgz
+dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz
 ~~~
 
 重载对应 profile，选择会话后打开「鲸」。`web` 可替换成自己的 profile 名称。

@@ -443,7 +443,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             ? (message.params as { protocolVersion: string }).protocolVersion
             : PROTOCOL,
           capabilities: { tools: {} },
-          serverInfo: { name: "whale-fleet", version: options.version ?? "0.2.0-beta.14" },
+          serverInfo: { name: "whale-fleet", version: options.version ?? "0.2.0-beta.15" },
           instructions: "Whale fleet MCP. Start with whale_status, then whale_list_hosts and whale_environment_diff. Read tools cover trust, cloud materials, notifications, presets, backups and alignment. request_* tools create pending requests (request scope); alignment approval and cloud upload require the operator-only approve scope. Never claim approval or success without reading a receipt.",
         };
       case "ping":
