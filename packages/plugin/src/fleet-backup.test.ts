@@ -36,7 +36,7 @@ function setup() {
     ],
     now: () => Date.parse("2026-11-24T05:00:00Z"),
   });
-  return { dir, config, trust, key, service };
+  return { dir, config, trust, key, service, backupDir: join(dir, "backups") };
 }
 
 describe("fleet config backup", () => {
@@ -97,5 +97,16 @@ describe("fleet config backup", () => {
     await service.snapshot("three");
     expect(service.list()).toHaveLength(2);
     expect(service.list().map(item => item.reason)).toEqual(["three", "two"]);
+  });
+
+  it("refuses to restore a manifest path outside the current allowlist", async () => {
+    const { service, backupDir } = setup();
+    const manifest = await service.snapshot("test");
+    const path = join(backupDir, manifest.id, "manifest.json");
+    const tampered = JSON.parse(readFileSync(path, "utf8"));
+    tampered.files[0].path = "/tmp/fusion-evil";
+    writeFileSync(path, JSON.stringify(tampered));
+    await expect(service.restore(manifest.id, { dryRun: false, approve: true }))
+      .rejects.toMatchObject({ code: "backup/path-not-allowed" });
   });
 });

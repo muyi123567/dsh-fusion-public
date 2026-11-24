@@ -239,6 +239,12 @@ export function createFleetBackupService(options: FleetBackupServiceOptions): Wh
     if (restoreOptions.approve !== true) throw new BackupError("backup/approval-required", "恢复需要显式批准");
 
     const manifest = readManifest(join(directory, safeId(id)));
+    const allowed = new Set(sources.map(source => resolve(source.path)));
+    for (const file of manifest.files) {
+      if (!allowed.has(resolve(file.path))) {
+        throw new BackupError("backup/path-not-allowed", "快照包含不在当前 allowlist 的路径");
+      }
+    }
     const preRestore = await snapshot(`pre-restore:${id}`);
     for (const [index, file] of manifest.files.entries()) {
       const body = readFileSync(join(directory, manifest.id, "files", String(index)));

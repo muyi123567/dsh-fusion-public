@@ -79,6 +79,24 @@ describe("fleet environment collector", () => {
     expect(first.manifest.environmentDigest).toBe(second.manifest.environmentDigest);
   });
 
+  it("redacts credentials from bundle sources", async () => {
+    const fixtureFiles = makeFixture();
+    const { manifest } = await collectFleetManifest({
+      ctx: context(fixtureFiles, [{
+        name: "private", version: "1.0.0", enabled: true, availability: "profile", rows: [],
+        source: "https://user:pass@example.com/repo.git?token=abc&ref=main",
+      }]),
+      directory: join(fixtureFiles.root, "fleet"),
+      now: () => new Date("2026-11-24T07:00:00Z"),
+    });
+    const source = manifest.bundles[0]?.source ?? "";
+    expect(source).toContain("example.com/repo.git");
+    expect(source).not.toContain("user");
+    expect(source).not.toContain("pass");
+    expect(source).not.toContain("abc");
+    expect(decodeURIComponent(source)).toContain("<redacted>");
+  });
+
   it("degrades to an unknown inventory instead of inventing bundles", async () => {
     const fixtureFiles = makeFixture();
     const { manifest } = await collectFleetManifest({

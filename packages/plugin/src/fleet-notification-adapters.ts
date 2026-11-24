@@ -655,6 +655,7 @@ async function post(
       method: "POST",
       headers,
       body,
+      redirect: "error",
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {

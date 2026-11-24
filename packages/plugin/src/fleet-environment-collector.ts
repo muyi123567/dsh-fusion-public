@@ -196,11 +196,30 @@ function toBundle(value: unknown): FleetBundle | undefined {
     availability,
     ...(typeof bundle.official === "boolean" ? { official: bundle.official } : {}),
     ...(typeof bundle.optional === "boolean" ? { optional: bundle.optional } : {}),
-    ...(typeof bundle.source === "string" ? { source: bundle.source } : {}),
+    ...(typeof bundle.source === "string" ? { source: sanitizeBundleSource(bundle.source) } : {}),
     rows,
     ...(overrides.length === 0 ? {} : { overrides }),
   };
   return { ...normalized, digest: `sha256:${sha256Hex(canonicalJson(normalized))}` };
+}
+
+function sanitizeBundleSource(value: string): string {
+  const raw = value.trim().slice(0, 512);
+  try {
+    const url = new URL(raw);
+    url.username = "";
+    url.password = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(?:token|access_token|api_?key|key|secret|password|signature|sig|auth)$/iu.test(key)) {
+        url.searchParams.set(key, "<redacted>");
+      }
+    }
+    return url.toString();
+  } catch {
+    return raw
+      .replace(/\/\/[^/@\s]+:[^/@\s]+@/gu, "//")
+      .replace(/([?&](?:token|access_token|api_?key|key|secret|password|signature|sig|auth)=)[^&\s]+/giu, "$1<redacted>");
+  }
 }
 
 function readPatches(

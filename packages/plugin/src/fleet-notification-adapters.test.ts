@@ -213,6 +213,20 @@ describe("notification adapter service", () => {
     const receipts = await service.deliver(event);
     expect(receipts.every(receipt => receipt.status === "failed")).toBe(true);
   });
+
+  it("does not follow redirects for notification HTTP adapters", async () => {
+    const fetcher = vi.fn(async () => new Response(null, { status: 204 }));
+    const service = createFleetNotificationService({
+      adapters: [{ id: "slack", kind: "slack", url: "https://example.com/hook" }],
+      env: {},
+      fetch: fetcher as typeof fetch,
+    });
+    await service.deliver(event);
+    expect(fetcher).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ redirect: "error" }),
+    );
+  });
 });
 
 function codeOf(run: () => unknown): string | undefined {
