@@ -25,6 +25,27 @@
 安全复核（威胁模型、权限分离、路径与网络控制、本轮修复与残余风险）见
 [beta.15 安全复核](../security/2026-11-24-plugin-security-review.md)。
 
+### CI、公开 Release 与外部安装链路（2026-11-24）
+
+新增 `.github/workflows/ci.yml`：Node 24 的 Ubuntu 与 macOS 矩阵，执行依赖安装、
+core/config/host/plugin 构建、插件 520 项、客户端 449 项、根契约 68 项、
+27 项插件契约、13 项 setup/package 契约、release 校验与 tarball 内容检查。
+首次运行（run `45388689088`）两个平台均为 success。
+
+新增 `.github/workflows/release.yml`：`v*` tag 校验版本、跑插件测试、打包并上传
+tarball、`SHA256SUMS` 与 `PUBLIC_SOURCE_MANIFEST.json`。`v0.2.0-beta.15` 已发布为
+prerelease；Release 产物 tarball 的 SHA-256
+`86eaf82e65e6f1fb0e8ffbee0c7493c8eea1a906f8d6b0796746fbdb7fd65376`
+与本地 r2 构建一致，`sha256sum -c` 通过。
+
+外部安装链路实测：在全新 `DSH_HOME` 中直接
+`dsh plugin add https://github.com/muyi123567/dsh-fusion-public/releases/download/v0.2.0-beta.15/dsh-fusion-0.2.0-beta.15.tgz`
+安装成功，MCP 返回 22 个工具、`whale_status` 六子系统、签名与信任正常。
+证据：`/data/openlet/evidence/dsh-fusion-release-remote-20261124/`。
+
+边界：仓库仍为 `main`（旧候选）默认分支，公开 Release 位于
+`feat/open-fleet-expected` 的 tag；Star / Fork 仍为 0，尚无外部采用或第三方反馈。
+
 ## 同类调研与离线复核校验（2026-11-22）
 
 公开检索到 5 个 DSH 多机插件：dsh-fleet、Constellation、WispOps、dsh-anywhere、dsh-cow。

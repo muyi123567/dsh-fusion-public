@@ -3,6 +3,12 @@
 ## 1. 安装
 
 ```sh
+dsh plugin --profile web add https://github.com/muyi123567/dsh-fusion-public/releases/download/v0.2.0-beta.15/dsh-fusion-0.2.0-beta.15.tgz
+```
+
+或使用已下载的 tarball：
+
+```sh
 dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz
 ```
 

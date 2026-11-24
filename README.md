@@ -1,5 +1,7 @@
 # 🐋 鲸 · Whale
 
+[![CI](https://github.com/muyi123567/dsh-fusion-public/actions/workflows/ci.yml/badge.svg?branch=feat/open-fleet-expected)](https://github.com/muyi123567/dsh-fusion-public/actions/workflows/ci.yml)
+
 鲸是 DSH 原生多机协作插件，在宿主右侧面板查看任务、主机、团队与执行证据，
 上游会话与 Room / AgentTeams / AgentBus 保留自己的状态与执行语义，鲸不创建第二套权威状态。
 本 native 候选默认用于任务 / 主机 / 团队 / 海域查看和证据导航。旧 FusionApp 的派发、配置、
@@ -7,11 +9,12 @@
 
 当前候选：**0.2.0-beta.15**，MIT，可试验的原生面板预发布。任务默认显示，海域按需打开。
 [发布说明与验证范围](docs/releases/2026-11-24-beta15.md)。
-当前公开预发布仍为 **0.2.0-beta.14**；历史版本 **0.2.0-beta.13**；[历史发布说明](docs/releases/2026-11-16-beta13.md)
-与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
+当前公开预发布：**[v0.2.0-beta.15](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.15)**
+（tarball、`SHA256SUMS` 与源码清单由 CI 构建上传）。历史版本 **0.2.0-beta.14 / beta.13**
+的[发布说明](docs/releases/2026-11-17-beta14.md)与预构建包保留。
 beta.15 新增云盘连接器（读取与批准导出）、通知适配器、远端信任表、预设/热备、
 环境对齐执行与统一状态诊断；安装包 SHA-256：
-`0b68da9484a0611e8d628fc55c01fb370ddc85b8240aed9803d254f11325c0b7`。
+`86eaf82e65e6f1fb0e8ffbee0c7493c8eea1a906f8d6b0796746fbdb7fd65376`。
 beta.14 的 UI/来源记录保留为历史，不用旧包摘要代替 beta.15 验收。
 
 ## 原生右栏面板
@@ -189,14 +192,21 @@ Dropbox 和 WebDAV/Nextcloud。凭据只写环境变量名；拉取文件进入�
 
 ## 安装与升级
 
-从维护者提供的同一 release 下载 tarball 与 `SHA256SUMS`，核对后由 DSH 宿主安装。
-beta.13 升级到 beta.14 前备份目标 profile 与 Fusion 自有状态，并保留旧包：
+从 [v0.2.0-beta.15](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.15)
+下载 tarball 与 `SHA256SUMS`，核对后由 DSH 宿主安装；也可直接指向 release 资产：
+
+~~~sh
+dsh plugin --profile web add https://github.com/muyi123567/dsh-fusion-public/releases/download/v0.2.0-beta.15/dsh-fusion-0.2.0-beta.15.tgz
+~~~
+
+已下载时使用本地路径：
 
 ~~~sh
 dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz
 ~~~
 
 重载对应 profile，选择会话后打开「鲸」。`web` 可替换成自己的 profile 名称。
+升级前备份目标 profile 与 Fusion 自有状态，并保留旧包。
 查看面板不需要开启模型或发送消息，模型写入与远程终端默认关闭。
 本轮只验证隔离候选环境，未改动用户 production profile。
 完整升级、companion 安装、校验与回滚说明见 [插件说明](packages/plugin/README.md)。
@@ -222,8 +232,10 @@ DSH `0.2.0-rc.2` 的 pluginManager 只返回部分 bundle 字段；鲸群会标�
 
 ## 验证边界
 
-完整源码 1156 项、typecheck、27 项插件契约及既有 E2E / 审计结果保留于本轮记录。
-分页按钮位置微调后，新候选已重过 build、18 项原生加载契约、13 项 package 契约与 doctor，
+CI 在 Node 24 的 Linux 与 macOS 双平台运行：插件 520 项、客户端 449 项、根契约 68 项、
+27 项插件契约、13 项 setup/package 契约，并构建插件、客户端与 tarball 检查；
+2026-11-24 双平台均为 success。以下 beta.14 的 E2E / 审计记录保留为历史。
+分页按钮位置微调后，该历史候选曾重过 build、18 项原生加载契约、13 项 package 契约与 doctor，
 并通过宿主 `dsh plugin add` 更新；未宣称重新执行完整源码 suite。
 r3 浏览器报告记录模型 / 任务写入尝试为 0、errors 为空，详情 Escape 与焦点返回通过。
 r3 follow-up 已通过真实宿主设置切浅色 / 深色，以及关闭重开设置后的选中状态回读。
