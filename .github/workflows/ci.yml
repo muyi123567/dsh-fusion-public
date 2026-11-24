@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @dsh-fusion/core build
+      - run: pnpm --filter @dsh-fusion/config build
+      - run: pnpm --filter @dsh-fusion/host build
+      - run: pnpm --filter dsh-fusion build
+      - run: pnpm --filter dsh-fusion test
+      - run: pnpm --filter dsh-fusion typecheck
+      - run: pnpm --filter @dsh-fusion/client test
+      - run: pnpm --filter @dsh-fusion/client build
+      - run: pnpm exec vitest run --config vitest.root.config.ts
+      - run: node --test tests/plugin-contract.test.mjs
+      - name: release contract
+        working-directory: packages/plugin
+        run: node scripts/verify-release.mjs
+      - name: setup contract
+        working-directory: packages/plugin
+        run: node --test tests/setup.contract.mjs tests/native-package.contract.mjs
+      - name: pack and inspect tarball
+        working-directory: packages/plugin
+        run: |
+          pnpm pack --pack-destination "$RUNNER_TEMP"
+          tar -tzf "$RUNNER_TEMP"/dsh-fusion-*.tgz | grep -q 'package/presets/skills/whale-fleet-ops/SKILL.md'
+          tar -tzf "$RUNNER_TEMP"/dsh-fusion-*.tgz | grep -q 'package/dist/index.js'

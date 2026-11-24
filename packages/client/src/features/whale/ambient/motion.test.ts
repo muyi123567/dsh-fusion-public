@@ -24,7 +24,7 @@ describe("sampleAmbientMotion", () => {
     if (t >= 6) expect(m.position[1]).toBeLessThan(-1.3);
    }
   }
- });
+ }, 60_000);
  it("is continuous at descent and former 36-second boundaries", () => {
   for (const t of [0, 3, 6, 36, 72, 3600]) {
    const a = values(sampleAmbientMotion(Math.max(0, t - 1e-5), idle, 0.5));

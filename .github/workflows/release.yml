@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @dsh-fusion/core build
+      - run: pnpm --filter @dsh-fusion/config build
+      - run: pnpm --filter @dsh-fusion/host build
+      - name: check tag matches package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          package="$(node -p "require('./packages/plugin/package.json').version")"
+          test "$tag" = "$package"
+      - run: pnpm --filter dsh-fusion test
+      - name: pack tarball
+        working-directory: packages/plugin
+        run: pnpm pack --pack-destination "$GITHUB_WORKSPACE/release"
+      - name: write checksums
+        working-directory: release
+        run: |
+          sha256sum dsh-fusion-*.tgz > SHA256SUMS
+          sha256sum SHA256SUMS >> SHA256SUMS
+          cat SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            release/dsh-fusion-*.tgz
+            release/SHA256SUMS
+            PUBLIC_SOURCE_MANIFEST.json

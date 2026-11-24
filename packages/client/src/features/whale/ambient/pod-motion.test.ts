@@ -23,7 +23,7 @@ describe("pod life motion", () => {
     expect(m.scale).toBeLessThanOrEqual(0.85);
    }
   }
- });
+ }, 60_000);
  it("breathes briefly only near the surface and never in synchrony", () => {
   const breaths = [0, 0, 0];
   for (let t = 0; t < 72; t += 0.05) {

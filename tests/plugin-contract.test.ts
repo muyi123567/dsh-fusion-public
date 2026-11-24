@@ -21,7 +21,7 @@ describe("DSH plugin contract", () => {
     expect(() => assertDshInstallable(resolveDshCompatibility({
       configuredVersion: "0.2.0-rc.2",
     }))).not.toThrow();
-    const latest = resolveDshCompatibility({ configuredVersion: "0.2.2-rc.3" });
+    const latest = resolveDshCompatibility({ configuredVersion: "0.2.2-rc.5" });
     expect(latest.state).toBe("verified");
     expect(() => assertDshInstallable(latest)).not.toThrow();
     const untested = resolveDshCompatibility({ configuredVersion: "0.2.1-rc.5" });
