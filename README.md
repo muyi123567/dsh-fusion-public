@@ -11,7 +11,7 @@
 与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
 beta.15 新增云盘连接器（读取与批准导出）、通知适配器、远端信任表、预设/热备、
 环境对齐执行与统一状态诊断；安装包 SHA-256：
-`bff5d147100834c01bb3fcbc86aab610a808878e3c98ed7417f0d44c36b82ec8`。
+`46f2f5c4910a77b128b361fd287be5bb549c9ba27f8ec194cf35d4bfce35a298`。
 beta.14 的 UI/来源记录保留为历史，不用旧包摘要代替 beta.15 验收。
 
 ## 原生右栏面板
@@ -214,6 +214,7 @@ dsh plugin --profile web add ./dsh-fusion-0.2.0-beta.15.tgz
 verified 仅限实际启动、MCP 与环境采集范围，不覆盖真实模型、双机或全部原生 UI。
 包包含已构建的 host、客户端和类型声明，运行依赖仍需网络或已有缓存。
 安装范围不等于所有组合已经通过业务验收；缺少原生面板服务时会提示升级宿主。
+第一次使用请按[五分钟快速开始](docs/quickstart.md)完成安装、MCP、Skill、加入包与自检。
 
 ## 验证边界
 

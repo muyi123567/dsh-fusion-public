@@ -33,6 +33,10 @@ const INSTALLED_REQUIRED_FILES = [
   "cordis.patch.yml",
   "compatibility.json",
   "release.json",
+  "presets/skills/whale-fleet-ops/SKILL.md",
+  "scripts/fleet-mcp-token.mjs",
+  "scripts/fleet-trust.mjs",
+  "scripts/fleet-join.mjs",
 ];
 
 function usage() {
@@ -313,7 +317,17 @@ function verifyInstall(contract, options, profileDir) {
   } catch (error) {
     add("composed-config", false, error instanceof Error ? error.message : String(error));
   }
-  return { ok: checks.every((entry) => entry.ok), checks };
+  const ok = checks.every((entry) => entry.ok);
+  return {
+    ok,
+    checks,
+    nextActions: ok ? [
+      `打开面板：dsh --profile ${options.profile}`,
+      `发放 MCP 令牌：node node_modules/dsh-fusion/scripts/fleet-mcp-token.mjs --name <agent>`,
+      "在“预设与热备”安装 whale-fleet-ops 并创建第一份配置快照",
+      "多机场景导出/导入“主机加入包”，再运行 whale_status / whale_doctor 自检",
+    ] : [],
+  };
 }
 
 function installedPackageVersion(profileDir, name) {

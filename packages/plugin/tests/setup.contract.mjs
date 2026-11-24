@@ -27,7 +27,7 @@ function copyInstalledPackage(target) {
   for (const name of ["package.json", "release.json", "compatibility.json", "cordis.patch.yml"]) {
     cpSync(join(pluginRoot, name), join(target, name));
   }
-  for (const name of ["dist", "vendor", "scripts"]) {
+  for (const name of ["dist", "vendor", "scripts", "presets"]) {
     cpSync(join(pluginRoot, name), join(target, name), { recursive: true });
   }
 }
@@ -127,7 +127,7 @@ if (packageName !== "dsh-fusion") {
   for (const name of ["package.json", "release.json", "compatibility.json", "cordis.patch.yml"]) {
     writeFileSync(join(packageDir, name), readFileSync(join(source, name)));
   }
-  for (const name of ["dist", "vendor", "scripts"]) {
+  for (const name of ["dist", "vendor", "scripts", "presets"]) {
     cpSync(join(source, name), join(packageDir, name), { recursive: true });
   }
 }
