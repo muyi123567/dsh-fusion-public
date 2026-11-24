@@ -54,6 +54,41 @@ describe("fleet presets", () => {
     expect(codeOf(() => service.uninstallSkill("whale-fleet-ops"))).toBe("preset/foreign");
     expect(readFileSync(join(skills, "whale-fleet-ops", "notes.txt"), "utf8")).toBe("keep");
   });
+
+  it("documents every shipped tool and the approval boundary in the skill", () => {
+    const service = createFleetPresetService({ skillsDirectory: join(root(), "skills") });
+    const installed = service.installSkill("whale-fleet-ops");
+    const text = readFileSync(join(installed.path, "SKILL.md"), "utf8");
+    for (const tool of [
+      "whale_status",
+      "whale_list_hosts",
+      "whale_host_manifest",
+      "whale_environment_diff",
+      "whale_environment_plan",
+      "whale_doctor",
+      "whale_receipt",
+      "whale_host_trust",
+      "whale_host_bundle",
+      "whale_import_bundle",
+      "whale_presets",
+      "whale_backups",
+      "whale_alignment",
+      "whale_alignment_plan",
+      "whale_request_alignment",
+      "whale_approve_alignment",
+      "whale_connectors",
+      "whale_cloud_list",
+      "whale_cloud_pull",
+      "whale_cloud_upload",
+      "whale_notifications",
+      "whale_notify_test",
+      "whale_request_dispatch",
+    ]) {
+      expect(text, `skill missing ${tool}`).toContain(tool);
+    }
+    expect(text).toMatch(/approve/u);
+    expect(text).toMatch(/never (?:claim|self-approve)/iu);
+  });
 });
 
 function codeOf(run: () => unknown): string | undefined {

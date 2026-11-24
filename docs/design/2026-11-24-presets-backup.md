@@ -15,8 +15,11 @@
 ## Skill 预设
 
 内置 `whale-fleet-ops`，内容是鲸群工具的安全使用顺序：
-`whale_list_hosts → diff → plan → request → human approve → receipt`，
-并说明云盘、通知、信任表与“不得泄露令牌”的边界。
+`whale_status → list_hosts → diff → plan → request → human approve → receipt`。
+Skill 逐个覆盖全部 22 个 MCP 工具（主机与漂移、加入包、对齐审批、预设/热备、
+云盘拉取与批准导出、通知回执），并写明 `approve` scope 属于人工操作者、
+不得自行审批与“不得泄露令牌”的边界；`fleet-presets.test.ts` 会校验工具清单，
+避免文档与工具集不同步。
 
 安装位置：
 

@@ -8,6 +8,23 @@
 [beta.15 发布说明](../releases/2026-11-24-beta15.md)。
 安装包 SHA-256 与 `SHA256SUMS` 在打包后写入发布证据目录。
 
+### beta.15 r2 重新打包与全新 profile 验收（2026-11-24）
+
+`whale-fleet-ops` Skill 原先只覆盖早期 7 个工具，本轮补齐为全部 22 个 MCP 工具
+（状态、加入包、对齐审批、预设/热备、云盘拉取与批准导出、通知），并由
+`fleet-presets.test.ts` 固定工具清单，防止文档与工具集漂移。
+
+重新打包后候选 SHA-256 为
+`86eaf82e65e6f1fb0e8ffbee0c7493c8eea1a906f8d6b0796746fbdb7fd65376`。在全新
+`DSH_HOME`、DSH `0.2.3-alpha.2` 默认 `web` profile 中复验：22 个工具、
+`whale_status` 六子系统、2 份自动快照、`setup.mjs --verify` 全通过；
+`/fleet/presets/skills/install` 返回 200 且状态 `installed`，安装后的 `SKILL.md`
+含 23 处工具名。无令牌 / 跨站 Origin / GET 分别 401 / 403 / 401。
+证据：`/data/openlet/evidence/dsh-fusion-release-beta15-r2-20261124/`。
+
+安全复核（威胁模型、权限分离、路径与网络控制、本轮修复与残余风险）见
+[beta.15 安全复核](../security/2026-11-24-plugin-security-review.md)。
+
 ## 同类调研与离线复核校验（2026-11-22）
 
 公开检索到 5 个 DSH 多机插件：dsh-fleet、Constellation、WispOps、dsh-anywhere、dsh-cow。
