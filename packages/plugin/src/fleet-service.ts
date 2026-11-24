@@ -10,6 +10,13 @@ import {
 } from "./fleet-environment.js";
 import type { FleetDoctorReport } from "./fleet-doctor.js";
 import { planFleetAlignment, type FleetPlanReport } from "./fleet-plan.js";
+import {
+  FleetTrustError,
+  type FleetTrustEntry,
+  type FleetTrustSource,
+  type FleetTrustStore,
+  type FleetTrustVerification,
+} from "./fleet-trust.js";
 
 export interface FleetHostSummary {
   hostId: string;
@@ -19,6 +26,8 @@ export interface FleetHostSummary {
   overall: "match" | "drift" | "unknown";
   stale: boolean;
   signed: boolean;
+  verified: boolean;
+  trust: FleetTrustVerification["state"] | "unknown";
 }
 
 export interface FleetPanelView {
@@ -31,6 +40,8 @@ export interface FleetPanelView {
   reason?: string;
   stale: boolean;
   signed: boolean;
+  verified?: boolean;
+  trust?: FleetTrustVerification["state"] | "unknown";
   items: FleetDriftItem[];
   counts: { block: number; warn: number; info: number };
 }
@@ -45,7 +56,23 @@ export interface WhaleFleetServiceV1 {
   doctor?(): Promise<FleetDoctorReport>;
   plan(hostId: string, expectedDigest?: string): Promise<FleetPlanReport>;
   saveExpected(hostId: string): Promise<{ hostId: string; digest: string; path: string }>;
+  trust?(hostId: string, publicKeyPem?: string, replace?: boolean): Promise<FleetTrustEntry>;
+  revokeTrust?(hostId: string): Promise<boolean>;
+  trustReport?(): Promise<FleetTrustReport>;
   subscribe(listener: (event: { hostId: string; digest: string }) => void): () => void;
+}
+
+export interface FleetTrustReport {
+  mode: FleetTrustSource;
+  entries: FleetTrustEntry[];
+  hosts: Array<{
+    hostId: string;
+    displayName: string;
+    trust: FleetTrustVerification["state"] | "unknown";
+    verified: boolean;
+    trusted: boolean;
+    candidateKeyAvailable: boolean;
+  }>;
 }
 
 export class FleetServiceError extends Error {
@@ -70,6 +97,9 @@ export interface FleetServiceOptions {
   readFile?: (path: string) => string;
   readdir?: (path: string) => string[];
   verifyManifest?: (manifest: FleetHostManifest) => boolean | undefined;
+  trust?: FleetTrustStore;
+  trustMode?: FleetTrustSource;
+  readPublicKey?: (hostId: string) => string | undefined;
   doctor?: () => Promise<FleetDoctorReport>;
 }
 
@@ -136,8 +166,17 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
         items: [],
       };
     }
+    const verification = verifyFor(observed, local.hostId);
+    if (verification.verified === false) {
+      return unknownWithReason(
+        observed,
+        expectedDigest ?? loadExpected()?.manifest?.environmentDigest ?? null,
+        trustFailureReason(verification.trust),
+        false,
+      );
+    }
     const expected = loadExpected();
-    const verified = verifyOne(observed);
+    const verified = verification.verified;
     const expectedDigestValue = expectedDigest ?? expected?.digest;
     if (expected?.manifest === undefined && expectedDigestValue === undefined) {
       return unknown(observed, expectedDigest ?? null, "未配置期望环境，无法判断漂移", verified);
@@ -192,6 +231,7 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     const summaries: FleetHostSummary[] = [];
     for (const candidate of unique) {
       const report = await diff(candidate.hostId);
+      const verification = verifyFor(candidate, local.hostId);
       summaries.push({
         hostId: candidate.hostId,
         displayName: candidate.displayName,
@@ -200,6 +240,8 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
         overall: report.overall,
         stale: isStale(candidate),
         signed: candidate.signature.alg === "ed25519",
+        verified: verification.verified === true,
+        trust: verification.trust,
       });
     }
     return summaries.sort((left, right) =>
@@ -225,7 +267,14 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
   const saveExpected = async (hostId: string) => {
     const observed = await host(hostId);
     if (observed === undefined) throw new FleetServiceError("whale/host-unknown", "未知主机：" + hostId);
-    if (verifyOne(observed) === false) throw new FleetServiceError("whale/signature-invalid", "清单签名未通过");
+    const local = await manifest();
+    const verification = verifyFor(observed, local.hostId);
+    if (verification.verified === false) {
+      if (observed.hostId !== local.hostId && options.trust !== undefined) {
+        throw new FleetServiceError("whale/trust-required", "远端清单未受信任");
+      }
+      throw new FleetServiceError("whale/signature-invalid", "清单签名未通过");
+    }
     const path = options.expectedManifestPath ?? join(options.directory, "expected-manifest.json");
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     const temporary = `${path}.${process.pid}.tmp`;
@@ -238,6 +287,7 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
   const panelView = async (): Promise<FleetPanelView> => {
     const local = await manifest();
     const report = await diff(local.hostId);
+    const verification = verifyFor(local, local.hostId);
     const counts = { block: 0, warn: 0, info: 0 };
     for (const item of report.items) counts[item.severity] += 1;
     return {
@@ -250,6 +300,8 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
       ...(report.reason === undefined ? {} : { reason: report.reason }),
       stale: report.stale === true,
       signed: local.signature.alg === "ed25519",
+      verified: verification.verified === true,
+      trust: verification.trust,
       items: report.items,
       counts,
     };
@@ -333,6 +385,95 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     }
   };
 
+  const verifyFor = (
+    candidate: FleetHostManifest,
+    localHostId: string,
+  ): { verified: boolean | undefined; trust: FleetTrustVerification["state"] | "unknown" } => {
+    if (candidate.hostId === localHostId) {
+      const verified = verifyOne(candidate);
+      return {
+        verified,
+        trust: verified === false ? "invalid" : verified === true ? "verified" : "unknown",
+      };
+    }
+    if (options.trust !== undefined) {
+      let candidateKey: string | undefined;
+      try {
+        candidateKey = options.readPublicKey?.(candidate.hostId);
+      } catch {
+        candidateKey = undefined;
+      }
+      const result = options.trust.verify(candidate, {
+        mode: options.trustMode ?? "manual",
+        ...(candidateKey === undefined || candidateKey.trim() === "" ? {} : { candidatePublicKeyPem: candidateKey }),
+      });
+      return { verified: result.state === "verified", trust: result.state };
+    }
+    const verified = verifyOne(candidate);
+    return {
+      verified,
+      trust: verified === false ? "invalid" : verified === true ? "verified" : "unknown",
+    };
+  };
+
+  const trust = async (hostId: string, publicKeyPem?: string, replace = false): Promise<FleetTrustEntry> => {
+    if (options.trust === undefined) throw new FleetServiceError("whale/trust-unavailable", "信任表未配置");
+    if (!HOST_ID.test(hostId)) throw new FleetServiceError("whale/invalid-input", "hostId 无效");
+    let key = publicKeyPem?.trim();
+    if (key === undefined || key === "") {
+      try {
+        key = options.readPublicKey?.(hostId)?.trim();
+      } catch {
+        key = undefined;
+      }
+    }
+    if (key === undefined || key === "") {
+      throw new FleetServiceError("whale/trust-key-required", "缺少可信任的公钥");
+    }
+    try {
+      return options.trust.trust(hostId, key, "manual", replace);
+    } catch (error) {
+      if (error instanceof FleetTrustError) throw new FleetServiceError(error.code, error.message);
+      throw error;
+    }
+  };
+
+  const revokeTrust = async (hostId: string): Promise<boolean> => {
+    if (options.trust === undefined) throw new FleetServiceError("whale/trust-unavailable", "信任表未配置");
+    if (!HOST_ID.test(hostId)) throw new FleetServiceError("whale/invalid-input", "hostId 无效");
+    return options.trust.revoke(hostId);
+  };
+
+  const trustReport = async (): Promise<FleetTrustReport> => {
+    if (options.trust === undefined) throw new FleetServiceError("whale/trust-unavailable", "信任表未配置");
+    const trustStore = options.trust;
+    const local = await manifest();
+    const candidates = [local, ...readCachedHosts()];
+    const seen = new Set<string>();
+    const hosts = candidates.filter(candidate => {
+      if (seen.has(candidate.hostId)) return false;
+      seen.add(candidate.hostId);
+      return true;
+    }).map(candidate => {
+      const verification = verifyFor(candidate, local.hostId);
+      let candidateKeyAvailable = false;
+      try {
+        candidateKeyAvailable = options.readPublicKey?.(candidate.hostId)?.trim() !== undefined;
+      } catch {
+        candidateKeyAvailable = false;
+      }
+      return {
+        hostId: candidate.hostId,
+        displayName: candidate.displayName,
+        trust: verification.trust,
+        verified: verification.verified === true,
+        trusted: trustStore.get(candidate.hostId) !== undefined,
+        candidateKeyAvailable,
+      };
+    });
+    return { mode: options.trustMode ?? "manual", entries: trustStore.list(), hosts };
+  };
+
   return Object.freeze({
     contractVersion: 1 as const,
     manifest,
@@ -342,6 +483,7 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
     panelView,
     plan,
     saveExpected,
+    ...(options.trust === undefined ? {} : { trust, revokeTrust, trustReport }),
     ...(options.doctor === undefined ? {} : { doctor: options.doctor }),
     subscribe,
   });
@@ -363,4 +505,25 @@ function unknown(
     reason: signatureVerified === false ? "清单签名未验证" : reason,
     items: [],
   };
+}
+
+function unknownWithReason(
+  observed: FleetHostManifest,
+  expectedDigest: string | null,
+  reason: string,
+  signatureVerified?: boolean,
+): FleetDriftReport {
+  return {
+    ...unknown(observed, expectedDigest, reason, signatureVerified),
+    reason,
+  };
+}
+
+function trustFailureReason(state: FleetTrustVerification["state"] | "unknown"): string {
+  switch (state) {
+    case "untrusted": return "远端清单未受信任";
+    case "key-mismatch": return "远端公钥与 hostId 不匹配";
+    case "invalid": return "远端清单签名无效";
+    default: return "清单签名未验证";
+  }
 }

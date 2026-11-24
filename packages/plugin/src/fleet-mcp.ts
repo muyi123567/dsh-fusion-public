@@ -165,6 +165,12 @@ const NOTIFICATION_TOOLS = [
   },
 ] as const;
 
+const TRUST_TOOL = {
+  name: "whale_host_trust",
+  description: "Read the remote-host trust table and each cached host's verification state.",
+  inputSchema: { type: "object", properties: {} },
+} as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -261,6 +267,10 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
         return { receipts: await options.notifications.test(optional(args, "adapterId")) };
       }
+      case "whale_host_trust": {
+        if (options.service.trustReport === undefined) throw new ToolError("whale/trust-unavailable", "信任表未配置");
+        return await options.service.trustReport();
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -313,6 +323,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             ...TOOLS,
             ...(options.connectors === undefined ? [] : CONNECTOR_TOOLS),
             ...(options.notifications === undefined ? [] : NOTIFICATION_TOOLS),
+            ...(options.service.trustReport === undefined ? [] : [TRUST_TOOL]),
             ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
           ],
         };

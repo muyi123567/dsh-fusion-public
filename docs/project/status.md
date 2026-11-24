@@ -87,6 +87,23 @@ dsh-im 渠道尚未发送验证。
 
 设计：[开放通知适配器](../design/2026-11-23-notification-adapters.md)。
 
+### 远端主机信任表（2026-11-24）
+
+远端缓存清单不再默认可信：新增 `trusted-hosts.json`，hostId 绑定 Ed25519 公钥；
+未信任、签名无效、公钥与 hostId 不匹配一律 `unknown`，且不能保存为期望环境。
+默认 `manual` 模式；可选 `tofu` 仅在 sidecar 公钥验签通过后固定。密钥轮换产生新
+hostId，旧条目需撤销，不自动迁移。
+
+新增 `GET/POST /fleet/trust`、`POST /fleet/trust/revoke`、只读 MCP 工具
+`whale_host_trust`、面板“主机信任”与 `scripts/fleet-trust.mjs`
+（`--list` / `--host` / `--revoke`）。信任表 0600 原子写入，只存公钥。
+
+验证：插件 478 项、原生面板 71 项通过。真实 Ed25519 双钥测试覆盖未信任阻断、
+显式信任后匹配、保存期望拒绝、篡改清单、sidecar TOFU、公钥不匹配与撤销。
+
+设计：[远端主机信任表](../design/2026-11-24-remote-trust.md)。
+证据：`/data/openlet/evidence/dsh-fusion-trust-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

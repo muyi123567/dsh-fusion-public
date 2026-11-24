@@ -27,7 +27,10 @@ function service(overrides: Partial<WhaleFleetServiceV1> = {}): WhaleFleetServic
       providers: [], mcpServers: [], secrets: { present: ["DEEPSEEK_API_KEY"] }, environmentDigest: SHA,
       signature: { alg: "ed25519" as const, keyId: "host:test", value: `${"A".repeat(86)}==` },
     })),
-    listHosts: vi.fn(async () => [{ hostId: SHA, displayName: "host", observedAt: "2026-11-22T10:00:00.000Z", digest: SHA, overall: "match" as const, stale: false, signed: true }]),
+    listHosts: vi.fn(async () => [{
+      hostId: SHA, displayName: "host", observedAt: "2026-11-22T10:00:00.000Z", digest: SHA,
+      overall: "match" as const, stale: false, signed: true, verified: true, trust: "verified" as const,
+    }]),
     diff: vi.fn(async () => ({
       contractVersion: 1 as const, hostId: SHA, expectedDigest: SHA, observedDigest: SHA,
       checkedAt: "2026-11-22T10:00:00.000Z", overall: "match" as const, items: [],
@@ -216,6 +219,32 @@ describe("fleet MCP server", () => {
     }));
     expect(await tested.json()).toMatchObject({
       result: { structuredContent: { receipts: [{ adapterId: "ops", status: "delivered" }] } },
+    });
+  });
+
+  it("exposes the host trust report when a trust table is configured", async () => {
+    const trustReport = vi.fn(async () => ({
+      mode: "manual" as const,
+      entries: [{
+        hostId: SHA,
+        publicKeyPem: "-----BEGIN PUBLIC KEY-----\nAA==\n-----END PUBLIC KEY-----",
+        fingerprint: `sha256:${"b".repeat(64)}`, source: "manual" as const,
+        addedAt: "2026-11-23T12:00:00.000Z", updatedAt: "2026-11-23T12:00:00.000Z",
+      }],
+      hosts: [{
+        hostId: SHA, displayName: "host", trust: "verified" as const, verified: true,
+        trusted: true, candidateKeyAvailable: true,
+      }],
+    }));
+    const { url, token } = await start({ service: service({ trustReport }) });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toContain("whale_host_trust");
+    const called = await post(url, token, rpc(3, "tools/call", {
+      name: "whale_host_trust", arguments: {},
+    }));
+    expect(await called.json()).toMatchObject({
+      result: { structuredContent: { mode: "manual", entries: [{ hostId: SHA }] } },
     });
   });
 

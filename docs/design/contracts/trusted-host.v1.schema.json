@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muyi123567/dsh-fusion-public/docs/design/contracts/trusted-host.v1.schema.json",
+  "title": "Whale trusted host v1",
+  "type": "object",
+  "required": ["version", "hosts"],
+  "properties": {
+    "version": { "const": 1 },
+    "hosts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["hostId", "publicKeyPem", "fingerprint", "source", "addedAt", "updatedAt"],
+        "properties": {
+          "hostId": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "displayName": { "type": "string" },
+          "publicKeyPem": { "type": "string", "pattern": "BEGIN PUBLIC KEY" },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "source": { "enum": ["manual", "tofu"] },
+          "addedAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

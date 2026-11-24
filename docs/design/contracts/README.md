@@ -1,12 +1,13 @@
 # Fleet contracts v1
 
-这五份 Schema 是鲸群对外开放的机器可读契约：
+这六份 Schema 是鲸群对外开放的机器可读契约：
 
 - `fleet-manifest.v1.schema.json`：单台主机的公开环境事实。
 - `drift-report.v1.schema.json`：期望环境与观测环境的确定性比较。
 - `task-envelope.v1.schema.json`：一次跨机派发意图。
 - `cloud-connector.v1.schema.json`：云盘 provider 目录、实例状态、文件条目与拉取回执。
 - `notification-adapter.v1.schema.json`：通知适配器目录、实例状态与投递回执。
+- `trusted-host.v1.schema.json`：远端主机公钥信任表。
 
 ## 版本规则
 

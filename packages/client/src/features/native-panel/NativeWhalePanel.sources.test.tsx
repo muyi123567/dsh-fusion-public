@@ -56,6 +56,7 @@ it("keeps a failed refresh of an empty snapshot distinct from a live empty sourc
  const fetcher = vi.fn(async (input: string | URL | Request) => {
   if (String(input).includes("/connectors")) return response({catalog: [], instances: []});
   if (String(input).includes("/notifications")) return response({catalog: [], adapters: [], receipts: []});
+  if (String(input).includes("/trust")) return response({mode: "manual", entries: [], hosts: []});
   reads += 1;
   if (reads === 1) return response({...snapshot, sources: {...snapshot.sources, nodes: "live"}});
   throw new Error("offline");

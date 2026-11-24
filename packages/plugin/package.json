@@ -46,6 +46,7 @@
     "scripts/installer.mjs",
     "scripts/release-contract.mjs",
     "scripts/fleet-mcp-token.mjs",
+    "scripts/fleet-trust.mjs",
     "compatibility.json",
     "vendor/README.md",
     "vendor/dsh-agent-team-room-0.7.0.tgz",

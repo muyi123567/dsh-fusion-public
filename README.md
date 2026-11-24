@@ -63,6 +63,8 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
     fleetEnvironment:
       directory: /var/lib/dsh-fusion/fleet
       expectedManifestPath: /var/lib/dsh-fusion/fleet/expected-manifest.json
+      trustFile: /var/lib/dsh-fusion/fleet/trusted-hosts.json
+      trustMode: manual
       staleAfterSeconds: 900
       secretNames: [DEEPSEEK_API_KEY]
     fleetMcp:
@@ -116,6 +118,13 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
 主机密钥；远端清单从 `directory/hosts/*.json` 只读加载，过期或无法验签一律显示为
 “环境未知”，不会当作匹配。
 
+远端主机默认必须**显式信任**：`trusted-hosts.json` 保存 hostId 绑定的公钥，
+未信任、签名无效或公钥不匹配都返回 `unknown`，不能保存为期望环境。把对方的
+`host-public.pem` 放到 `directory/hosts/<hostId>.pub.pem` 后，面板“主机信任”可一键信任；
+也可用 `scripts/fleet-trust.mjs` 或 `POST /plugins/dsh-fusion/fleet/trust`。
+`trustMode: tofu` 是可选的首见即信任模式，只应在受控网络使用；密钥轮换是新的 hostId，
+旧条目需撤销。
+
 `fleetMcp` 默认关闭，只监听 `127.0.0.1`；浏览器 Origin 请求和非本机 Host 一律 403。
 插件会给同 profile 的 `mcpManager` 注册内部只读客户端，DS-Bot Bot 因此能看到
 `mcp__whale-fleet__whale_list_hosts` 等工具。给 Claude、Codex 或脚本发放独立令牌：
@@ -149,6 +158,7 @@ Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
 [开放多机产品设计](docs/design/2026-11-22-open-fleet-product.md) ·
 [开放云盘连接器](docs/design/2026-11-23-cloud-connectors.md) ·
 [开放通知适配器](docs/design/2026-11-23-notification-adapters.md) ·
+[远端主机信任表](docs/design/2026-11-24-remote-trust.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级

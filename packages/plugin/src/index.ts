@@ -1,4 +1,5 @@
 import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import {
   FUSION_PLUGIN_VERSION,
@@ -99,8 +100,16 @@ import {
 import { registerBuiltinCloudConnectors } from "./cloud-providers.js";
 import { createFleetConnectorRoutes } from "./fleet-connector-routes.js";
 import { createFleetNotificationRoutes } from "./fleet-notification-routes.js";
+import { FleetTrustStore } from "./fleet-trust.js";
+import { createFleetTrustRoutes } from "./fleet-trust-routes.js";
 
-export { FLEET_CONTRACT_VERSION } from "./fleet-environment.js";
+export {
+  FLEET_CONTRACT_VERSION,
+  computeEnvironmentDigest,
+  finalizeFleetManifest,
+  hostIdFromPublicKey,
+  verifyFleetManifest,
+} from "./fleet-environment.js";
 export type {
   FleetBundle,
   FleetDriftItem,
@@ -143,6 +152,14 @@ export {
   createFleetNotificationService,
   registerBuiltinNotificationAdapters,
 } from "./fleet-notification-adapters.js";
+export { FleetTrustError, FleetTrustStore } from "./fleet-trust.js";
+export type {
+  FleetTrustEntry,
+  FleetTrustSource,
+  FleetTrustVerification,
+  FleetTrustVerificationState,
+} from "./fleet-trust.js";
+export type { FleetTrustReport } from "./fleet-service.js";
 export type {
   DshImNotifier,
   FleetDeliveryReceipt,
@@ -286,6 +303,8 @@ export interface FusionHostConfig {
   fleetEnvironment?: {
     directory?: string;
     expectedManifestPath?: string;
+    trustFile?: string;
+    trustMode?: "manual" | "tofu";
     staleAfterSeconds?: number;
     secretNames?: string[];
     displayName?: string;
@@ -1312,6 +1331,27 @@ export async function apply(
       ?? env("FUSION_FLEET_EXPECTED_MANIFEST");
     const fleetStaleAfterSeconds = fleetEnvironmentConfig?.staleAfterSeconds
       ?? Number(env("FUSION_FLEET_STALE_SECONDS") ?? "");
+    const fleetTrustMode = fleetEnvironmentConfig?.trustMode
+      ?? (env("FUSION_FLEET_TRUST_MODE") === "tofu" ? "tofu" : "manual");
+    const fleetTrust = new FleetTrustStore({
+      path: fleetEnvironmentConfig?.trustFile ?? join(fleetDirectory, "trusted-hosts.json"),
+    });
+    const readRemotePublicKey = (hostId: string): string | undefined => {
+      const candidates = [
+        join(fleetDirectory, "hosts", `${hostId}.pub.pem`),
+        join(fleetDirectory, "hosts", `${hostId.slice(7)}.pub.pem`),
+        join(fleetDirectory, "hosts", `${hostId}.public.pem`),
+        join(fleetDirectory, "hosts", `${hostId.slice(7)}.public.pem`),
+      ];
+      for (const candidate of candidates) {
+        try {
+          return readFileSync(candidate, "utf8");
+        } catch {
+          continue;
+        }
+      }
+      return undefined;
+    };
     let fleetPublicKeyPem: string | undefined;
     const fleetService = createWhaleFleetService({
       collect: async () => {
@@ -1333,6 +1373,9 @@ export async function apply(
       ...(Number.isFinite(fleetStaleAfterSeconds) && fleetStaleAfterSeconds > 0
         ? { staleAfterSeconds: fleetStaleAfterSeconds }
         : {}),
+      trust: fleetTrust,
+      trustMode: fleetTrustMode,
+      readPublicKey: readRemotePublicKey,
       verifyManifest: (manifest) => {
         if (fleetPublicKeyPem === undefined) return undefined;
         return manifest.hostId === hostIdFromPublicKey(fleetPublicKeyPem)
@@ -2537,6 +2580,13 @@ export async function apply(
         },
       }), "dsh-fusion: state route");
       for (const route of createFleetRoutes({
+        service: fleetService,
+        authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+        readBody: readJsonBody,
+      })) {
+        effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
+      for (const route of createFleetTrustRoutes({
         service: fleetService,
         authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
         readBody: readJsonBody,
