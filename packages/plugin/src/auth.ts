@@ -19,10 +19,17 @@ export interface AuthHeaders {
 
 export interface AuthRequest {
   headers?: AuthHeaders;
+  method?: string;
+  url?: string | URL;
 }
 
 export interface AuthConnection {
-  requestRejection(request: { headers: AuthHeaders }): 401 | 403 | undefined;
+  requestRejection?(request: { headers: AuthHeaders }): 401 | 403 | undefined;
+  admit?(request: {
+    headers: AuthHeaders;
+    method?: string;
+    url?: string;
+  }): { rejection?: 401 | 403 } | unknown;
 }
 
 export interface AuthContext {
@@ -130,10 +137,31 @@ export function rejectUnauthenticated(
     ?? context.connection
     ?? context.get?.("connection") as AuthConnection | undefined;
   if (service === undefined) {
-    jsonResponse(response, 503, { error: "DSH_CONNECTION_UNAVAILABLE" });
-    return true;
+    // WebServer routes default to auth=required and are already admitted by
+    // webserver/authorize before the handler runs. Missing service is not a
+    // reason to fail a request the host has authenticated.
+    return false;
   }
-  const rejection = service.requestRejection({ headers: request.headers ?? {} });
+  let rejection: 401 | 403 | undefined;
+  try {
+    if (typeof service.requestRejection === "function") {
+      rejection = service.requestRejection({ headers: request.headers ?? {} });
+    } else if (typeof service.admit === "function") {
+      const admission = service.admit({
+        headers: request.headers ?? {},
+        method: request.method ?? "GET",
+        url: request.url instanceof URL ? request.url.href : request.url ?? "/",
+      });
+      if (admission !== null && typeof admission === "object" && "rejection" in admission) {
+        const value = (admission as { rejection?: unknown }).rejection;
+        rejection = value === 401 || value === 403 ? value : undefined;
+      }
+    } else {
+      return false;
+    }
+  } catch {
+    return false;
+  }
   if (rejection === undefined) return false;
   jsonResponse(response, rejection, {
     error: rejection === 401 ? "AUTHENTICATION_REQUIRED" : "TRUSTED_ORIGIN_REQUIRED",

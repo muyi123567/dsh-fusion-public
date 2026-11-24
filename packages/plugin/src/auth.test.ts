@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   forwardedWebBaseUrl,
   headerValue,
@@ -151,13 +151,10 @@ describe("rejectUnauthenticated", () => {
     requestRejection: () => rejection,
   });
 
-  it("reports that the DSH connection service is unavailable", () => {
+  it("defers to host admission when the DSH connection service is unavailable", () => {
     const { calls, response } = recorder();
-    expect(rejectUnauthenticated({}, undefined, { headers: {} }, response)).toBe(true);
-    expect(calls[0]?.status).toBe(503);
-    expect(JSON.parse(calls[0]?.body ?? "{}")).toEqual({
-      error: "DSH_CONNECTION_UNAVAILABLE",
-    });
+    expect(rejectUnauthenticated({}, undefined, { headers: {} }, response)).toBe(false);
+    expect(calls).toHaveLength(0);
   });
 
   it("reports an authentication failure", () => {
@@ -208,6 +205,36 @@ describe("rejectUnauthenticated", () => {
       response,
     )).toBe(true);
     expect(calls[0]?.status).toBe(401);
+  });
+
+  it("supports the alpha connection.admit contract", () => {
+    const { calls, response } = recorder();
+    const admitted = {
+      admit: vi.fn(() => ({ rejection: 403 })),
+    } as AuthConnection;
+    expect(rejectUnauthenticated({}, admitted, {
+      headers: { host: "127.0.0.1:3080" }, method: "GET", url: "/plugins/dsh-fusion/state",
+    }, response)).toBe(true);
+    expect(calls[0]?.status).toBe(403);
+    expect(admitted.admit).toHaveBeenCalledWith({
+      headers: { host: "127.0.0.1:3080" },
+      method: "GET",
+      url: "/plugins/dsh-fusion/state",
+    });
+
+    const allowed = {
+      admit: () => ({ peer: {} }),
+    } as AuthConnection;
+    expect(rejectUnauthenticated({}, allowed, { headers: {} }, response)).toBe(false);
+  });
+
+  it("defers to host admission when connection.admit throws", () => {
+    const { calls, response } = recorder();
+    const broken = {
+      admit: () => { throw new Error("boom"); },
+    } as AuthConnection;
+    expect(rejectUnauthenticated({}, broken, { headers: {} }, response)).toBe(false);
+    expect(calls).toHaveLength(0);
   });
 });
 
