@@ -49,6 +49,7 @@ export interface FleetPanelView {
 export interface WhaleFleetServiceV1 {
   readonly contractVersion: 1;
   manifest(): Promise<FleetHostManifest>;
+  refresh?(): Promise<FleetHostManifest>;
   host(hostId: string): Promise<FleetHostManifest | undefined>;
   listHosts(): Promise<FleetHostSummary[]>;
   diff(hostId: string, expectedDigest?: string): Promise<FleetDriftReport>;
@@ -477,6 +478,10 @@ export function createWhaleFleetService(options: FleetServiceOptions): WhaleFlee
   return Object.freeze({
     contractVersion: 1 as const,
     manifest,
+    refresh: async () => {
+      cached = undefined;
+      return await manifest();
+    },
     host,
     listHosts,
     diff,

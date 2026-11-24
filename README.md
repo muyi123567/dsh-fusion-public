@@ -67,6 +67,12 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
       trustMode: manual
       staleAfterSeconds: 900
       secretNames: [DEEPSEEK_API_KEY]
+    fleetPresets:
+      skillsDirectory: /home/me/.dsh/skills
+    fleetBackup:
+      directory: /var/lib/dsh-fusion/fleet/backups
+      retention: 10
+      auto: true
     fleetMcp:
       enabled: true
       port: 8797
@@ -125,6 +131,12 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
 `trustMode: tofu` 是可选的首见即信任模式，只应在受控网络使用；密钥轮换是新的 hostId，
 旧条目需撤销。
 
+`fleetPresets` 提供内置 DSH Skill 与配置模板：面板“预设与热备”可安装
+`whale-fleet-ops`（多机运维安全顺序），并查看云端材料、Chief 审批、严格信任和热门
+插件清单。`fleetBackup` 对 profile/cordis/lock 与鲸群状态做快照，明确排除
+`host-key.pem` 和凭据；`auto: true` 会在清单摘要变化时最多每分钟快照一次。
+备份校验、恢复演练与显式恢复见 [预设与热备](docs/design/2026-11-24-presets-backup.md)。
+
 `fleetMcp` 默认关闭，只监听 `127.0.0.1`；浏览器 Origin 请求和非本机 Host 一律 403。
 插件会给同 profile 的 `mcpManager` 注册内部只读客户端，DS-Bot Bot 因此能看到
 `mcp__whale-fleet__whale_list_hosts` 等工具。给 Claude、Codex 或脚本发放独立令牌：
@@ -159,6 +171,7 @@ Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
 [开放云盘连接器](docs/design/2026-11-23-cloud-connectors.md) ·
 [开放通知适配器](docs/design/2026-11-23-notification-adapters.md) ·
 [远端主机信任表](docs/design/2026-11-24-remote-trust.md) ·
+[预设与配置热备](docs/design/2026-11-24-presets-backup.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级

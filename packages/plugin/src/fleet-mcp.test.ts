@@ -62,6 +62,8 @@ async function start(options: {
   requests?: unknown;
   connectors?: unknown;
   notifications?: unknown;
+  presets?: unknown;
+  backups?: unknown;
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
@@ -73,6 +75,8 @@ async function start(options: {
     ...(options.requests === undefined ? {} : { requests: options.requests as never }),
     ...(options.connectors === undefined ? {} : { connectors: options.connectors as never }),
     ...(options.notifications === undefined ? {} : { notifications: options.notifications as never }),
+    ...(options.presets === undefined ? {} : { presets: options.presets as never }),
+    ...(options.backups === undefined ? {} : { backups: options.backups as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -246,6 +250,39 @@ describe("fleet MCP server", () => {
     expect(await called.json()).toMatchObject({
       result: { structuredContent: { mode: "manual", entries: [{ hostId: SHA }] } },
     });
+  });
+
+  it("exposes preset and backup status without write actions", async () => {
+    const presets = {
+      contractVersion: 1 as const,
+      list: () => [{
+        id: "whale-fleet-ops", kind: "skill" as const, title: "Skill", description: "skill", tags: ["skill"],
+        status: { state: "installed" as const, path: "/tmp/skills/whale-fleet-ops" },
+      }],
+      get: () => undefined,
+      installSkill: vi.fn(),
+      uninstallSkill: vi.fn(),
+    };
+    const backups = {
+      contractVersion: 1 as const,
+      snapshot: vi.fn(),
+      list: () => [{ id: "20261124T060000Z-aaaaaaaa", createdAt: "2026-11-24T06:00:00.000Z", reason: "startup", files: 4, bytes: 100 }],
+      verify: vi.fn(() => ({ id: "20261124T060000Z-aaaaaaaa", ok: true, files: [] })),
+      restorePlan: vi.fn(),
+      restore: vi.fn(),
+    };
+    const { url, token } = await start({ presets, backups });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toEqual(expect.arrayContaining(["whale_presets", "whale_backups"]));
+    const presetResult = await post(url, token, rpc(3, "tools/call", { name: "whale_presets", arguments: {} }));
+    expect(await presetResult.json()).toMatchObject({
+      result: { structuredContent: { presets: [{ id: "whale-fleet-ops" }] } },
+    });
+    const verifyResult = await post(url, token, rpc(4, "tools/call", {
+      name: "whale_backups", arguments: { id: "20261124T060000Z-aaaaaaaa" },
+    }));
+    expect(await verifyResult.json()).toMatchObject({ result: { structuredContent: { ok: true } } });
   });
 
   it("rejects browser Origins, non-loopback Hosts, wrong tokens and GET", async () => {

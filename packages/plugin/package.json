@@ -48,6 +48,7 @@
     "scripts/fleet-mcp-token.mjs",
     "scripts/fleet-trust.mjs",
     "compatibility.json",
+    "presets",
     "vendor/README.md",
     "vendor/dsh-agent-team-room-0.7.0.tgz",
     "vendor/nanmicoder-dsh-agent-teams-0.1.30.tgz",

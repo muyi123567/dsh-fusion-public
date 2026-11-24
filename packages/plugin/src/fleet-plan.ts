@@ -8,6 +8,7 @@ export interface FleetPlanStep {
   id: string;
   action: FleetPlanAction;
   target: string;
+  spec?: string;
   risk: "low" | "medium" | "high";
   requiresRestart: boolean;
   reason: string;
@@ -51,14 +52,24 @@ export function planFleetAlignment(
   for (const item of drift.items) {
     const target = /\[([^\]]+)\]/u.exec(item.path)?.[1] ?? item.path;
     switch (item.code) {
-      case "bundle.missing":
-        add({ action: "install", target, risk: "medium", requiresRestart: true,
-          reason: `安装 ${target}${expectedBundle(target)?.version === undefined ? "" : `@${expectedBundle(target)!.version}`}` });
+      case "bundle.missing": {
+        const spec = installSpec(expectedBundle(target));
+        add({
+          action: "install", target, risk: "medium", requiresRestart: true,
+          ...(spec === undefined ? {} : { spec }),
+          reason: `安装 ${target}${expectedBundle(target)?.version === undefined ? "" : `@${expectedBundle(target)!.version}`}`,
+        });
         break;
-      case "bundle.version":
-        add({ action: "update", target, risk: "medium", requiresRestart: true,
-          reason: `更新到 ${String(item.expected ?? "锁定版本")}` });
+      }
+      case "bundle.version": {
+        const spec = installSpec(expectedBundle(target));
+        add({
+          action: "update", target, risk: "medium", requiresRestart: true,
+          ...(spec === undefined ? {} : { spec }),
+          reason: `更新到 ${String(item.expected ?? "锁定版本")}`,
+        });
         break;
+      }
       case "bundle.enabled":
         add({ action: "enable", target, risk: "low", requiresRestart: true, reason: "在 profile 中启用该 bundle" });
         break;
@@ -111,4 +122,14 @@ export function planFleetAlignment(
     contractVersion: 1, hostId: observed.hostId, expectedDigest: expected.environmentDigest,
     observedDigest: observed.environmentDigest, overall: steps.length === 0 ? "unknown" : "plan", steps,
   };
+}
+
+function installSpec(bundle: FleetHostManifest["bundles"][number] | undefined): string | undefined {
+  if (bundle === undefined) return undefined;
+  const source = bundle.source?.trim();
+  if (source !== undefined && source !== ""
+    && /^(file:|link:|https?:\/\/|git\+|github:)/u.test(source)) {
+    return source;
+  }
+  return bundle.version === undefined || bundle.version === "" ? undefined : `${bundle.name}@${bundle.version}`;
 }

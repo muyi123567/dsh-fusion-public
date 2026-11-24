@@ -102,6 +102,10 @@ import { createFleetConnectorRoutes } from "./fleet-connector-routes.js";
 import { createFleetNotificationRoutes } from "./fleet-notification-routes.js";
 import { FleetTrustStore } from "./fleet-trust.js";
 import { createFleetTrustRoutes } from "./fleet-trust-routes.js";
+import { createFleetPresetService, type WhalePresetServiceV1 } from "./fleet-presets.js";
+import { createFleetBackupService, type WhaleBackupServiceV1 } from "./fleet-backup.js";
+import { createFleetPresetRoutes } from "./fleet-preset-routes.js";
+import { createFleetBackupRoutes } from "./fleet-backup-routes.js";
 
 export {
   FLEET_CONTRACT_VERSION,
@@ -160,6 +164,25 @@ export type {
   FleetTrustVerificationState,
 } from "./fleet-trust.js";
 export type { FleetTrustReport } from "./fleet-service.js";
+export { PresetError, createFleetPresetService } from "./fleet-presets.js";
+export type {
+  FleetPreset,
+  PresetInstallResult,
+  PresetKind,
+  PresetSkillStatus,
+  PresetStatus,
+  WhalePresetServiceV1,
+} from "./fleet-presets.js";
+export { BackupError, createFleetBackupService } from "./fleet-backup.js";
+export type {
+  BackupFile,
+  BackupManifest,
+  BackupRestorePlan,
+  BackupSource,
+  BackupSummary,
+  BackupVerifyResult,
+  WhaleBackupServiceV1,
+} from "./fleet-backup.js";
 export type {
   DshImNotifier,
   FleetDeliveryReceipt,
@@ -333,6 +356,16 @@ export interface FusionHostConfig {
     directory?: string;
     maxBytes?: number;
     connectors?: CloudConnectorInstanceConfig[];
+  };
+  fleetPresets?: {
+    skillsDirectory?: string;
+  };
+  fleetBackup?: {
+    directory?: string;
+    retention?: number;
+    maxFileBytes?: number;
+    auto?: boolean;
+    files?: string[];
   };
   modelTaskCommands?: string[];
   /**
@@ -1427,6 +1460,65 @@ export async function apply(
     } catch (error) {
       ctx.logger?.warn?.(`dsh-fusion: cloud connectors disabled: ${error instanceof Error ? error.message : String(error)}`);
     }
+    let presetService: WhalePresetServiceV1 | undefined;
+    try {
+      presetService = createFleetPresetService({
+        skillsDirectory: config.fleetPresets?.skillsDirectory ?? join(homedir(), ".dsh", "skills"),
+      });
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-fusion: presets disabled: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    let backupService: WhaleBackupServiceV1 | undefined;
+    try {
+      let profileContext: { dir?: string; home?: string } | undefined;
+      try {
+        profileContext = ctx.get?.("profileContext") as { dir?: string; home?: string } | undefined;
+      } catch {
+        profileContext = undefined;
+      }
+      const backupSources: Array<{ label: string; path: string }> = [];
+      const addSource = (label: string, path: string | undefined) => {
+        if (path !== undefined && path !== "") backupSources.push({ label, path });
+      };
+      if (profileContext?.dir !== undefined) {
+        for (const name of ["package.json", "cordis.yml", "cordis.patch.yml", "pnpm-lock.yaml", "pnpm-workspace.yaml", "compatibility.json"]) {
+          addSource("profile", join(profileContext.dir, name));
+        }
+      }
+      if (profileContext?.home !== undefined) addSource("home", join(profileContext.home, "cordis.patch.yml"));
+      for (const name of [
+        "expected-manifest.json", "fleet.lock.json", "trusted-hosts.json", "mcp.json",
+        "dispatch-requests.json", "notification-receipts.json", "alignment-requests.json",
+      ]) {
+        addSource("fleet", join(fleetDirectory, name));
+      }
+      for (const path of config.fleetBackup?.files ?? []) addSource("custom", path);
+      backupService = createFleetBackupService({
+        directory: config.fleetBackup?.directory ?? join(fleetDirectory, "backups"),
+        sources: backupSources,
+        ...(config.fleetBackup?.retention === undefined ? {} : { retention: config.fleetBackup.retention }),
+        ...(config.fleetBackup?.maxFileBytes === undefined ? {} : { maxFileBytes: config.fleetBackup.maxFileBytes }),
+      });
+      if (config.fleetBackup?.auto === true) {
+        let lastBackup = 0;
+        if (backupService.list().length === 0) {
+          lastBackup = Date.now();
+          void backupService.snapshot("startup").catch((error: unknown) => {
+            ctx.logger?.warn?.(`dsh-fusion: backup failed: ${error instanceof Error ? error.message : String(error)}`);
+          });
+        }
+        fleetService.subscribe(() => {
+          const at = Date.now();
+          if (at - lastBackup < 60_000) return;
+          lastBackup = at;
+          void backupService?.snapshot("manifest-change").catch((error: unknown) => {
+            ctx.logger?.warn?.(`dsh-fusion: backup failed: ${error instanceof Error ? error.message : String(error)}`);
+          });
+        });
+      }
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-fusion: backups disabled: ${error instanceof Error ? error.message : String(error)}`);
+    }
     if (typeof ctx.provide === "function") {
       try {
         ctx.provide("whaleFleet", fleetService);
@@ -1438,6 +1530,20 @@ export async function apply(
           ctx.provide("whaleConnectors", whaleConnectorService);
         } catch (error) {
           ctx.logger?.warn?.(`dsh-fusion: whaleConnectors service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      if (presetService !== undefined) {
+        try {
+          ctx.provide("whalePresets", presetService);
+        } catch (error) {
+          ctx.logger?.warn?.(`dsh-fusion: whalePresets service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      if (backupService !== undefined) {
+        try {
+          ctx.provide("whaleBackup", backupService);
+        } catch (error) {
+          ctx.logger?.warn?.(`dsh-fusion: whaleBackup service unavailable: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     } else {
@@ -1548,6 +1654,8 @@ export async function apply(
             ...(dispatchRequests === undefined ? {} : { requests: dispatchRequests }),
             ...(whaleConnectorService === undefined ? {} : { connectors: whaleConnectorService }),
             ...(notificationService === undefined ? {} : { notifications: notificationService }),
+            ...(presetService === undefined ? {} : { presets: presetService }),
+            ...(backupService === undefined ? {} : { backups: backupService }),
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -2592,6 +2700,24 @@ export async function apply(
         readBody: readJsonBody,
       })) {
         effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+      }
+      if (presetService !== undefined) {
+        for (const route of createFleetPresetRoutes({
+          service: presetService,
+          authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+          readBody: readJsonBody,
+        })) {
+          effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+        }
+      }
+      if (backupService !== undefined) {
+        for (const route of createFleetBackupRoutes({
+          service: backupService,
+          authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+          readBody: readJsonBody,
+        })) {
+          effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+        }
       }
       if (whaleConnectorService !== undefined) {
         for (const route of createFleetConnectorRoutes({

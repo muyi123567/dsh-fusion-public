@@ -57,6 +57,8 @@ it("keeps a failed refresh of an empty snapshot distinct from a live empty sourc
   if (String(input).includes("/connectors")) return response({catalog: [], instances: []});
   if (String(input).includes("/notifications")) return response({catalog: [], adapters: [], receipts: []});
   if (String(input).includes("/trust")) return response({mode: "manual", entries: [], hosts: []});
+  if (String(input).includes("/presets")) return response({presets: []});
+  if (String(input).includes("/backups")) return response({backups: []});
   reads += 1;
   if (reads === 1) return response({...snapshot, sources: {...snapshot.sources, nodes: "live"}});
   throw new Error("offline");

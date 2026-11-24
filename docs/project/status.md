@@ -104,6 +104,22 @@ hostId，旧条目需撤销，不自动迁移。
 设计：[远端主机信任表](../design/2026-11-24-remote-trust.md)。
 证据：`/data/openlet/evidence/dsh-fusion-trust-20261124/`。
 
+### 预设中心与配置热备（2026-11-24）
+
+新增内置 DSH Skill `whale-fleet-ops`（多机运维安全顺序）、严格信任/Chief 审批/
+云盘材料/热备配置模板，以及热门插件清单（dsh-im、QQBot、Modlens、AgentTeams）。
+Skill 安装到 `~/.dsh/skills` 或配置目录，带文件哈希、幂等安装、篡改检测与安全卸载。
+
+新增配置热备：profile 配置、锁文件与鲸群状态按 allowlist 快照，明确排除
+`host-key.pem` 与凭据；默认保留 10 份，支持校验、恢复演练、显式批准恢复与
+pre-restore 快照。`auto: true` 在清单摘要变化时最多每分钟快照一次。
+
+接入：`GET/POST /fleet/presets`、`/fleet/backups`，MCP `whale_presets`、
+`whale_backups`，面板“预设与热备”。验证：插件 487 项、原生面板 72 项通过。
+
+设计：[预设与热备](../design/2026-11-24-presets-backup.md)。
+证据：`/data/openlet/evidence/dsh-fusion-presets-backup-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

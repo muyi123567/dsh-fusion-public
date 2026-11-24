@@ -59,6 +59,18 @@ describe("fleet alignment plan", () => {
     ]));
   });
 
+  it("adds an exact install spec only when the expected bundle pins it", () => {
+    const expected = manifest({
+      bundles: [{ name: "missing", version: "1.2.3", enabled: true, availability: "profile", rows: [] }],
+    });
+    const report = planFleetAlignment(expected, manifest(), drift([
+      { code: "bundle.missing", severity: "block", path: "bundles[missing]" },
+    ]));
+    expect(report.steps).toEqual([
+      expect.objectContaining({ action: "install", target: "missing", spec: "missing@1.2.3" }),
+    ]);
+  });
+
   it("never turns unknown into a ready plan", () => {
     const report = planFleetAlignment(manifest(), manifest(), drift([], "unknown"));
     expect(report.overall).toBe("unknown");

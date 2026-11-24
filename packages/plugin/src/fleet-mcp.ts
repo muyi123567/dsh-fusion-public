@@ -8,6 +8,8 @@ import type { FleetDispatchRequestService } from "./fleet-dispatch-requests.js";
 import { DispatchRequestError } from "./fleet-dispatch-requests.js";
 import type { WhaleConnectorServiceV1 } from "./cloud-connectors.js";
 import type { WhaleNotificationServiceV1 } from "./fleet-notification-adapters.js";
+import type { WhaleBackupServiceV1 } from "./fleet-backup.js";
+import type { WhalePresetServiceV1 } from "./fleet-presets.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -30,6 +32,8 @@ export interface FleetMcpServerOptions {
   requests?: FleetDispatchRequestService;
   connectors?: WhaleConnectorServiceV1;
   notifications?: WhaleNotificationServiceV1;
+  presets?: WhalePresetServiceV1;
+  backups?: WhaleBackupServiceV1;
   autoApproveDispatch?: boolean;
   version?: string;
 }
@@ -171,6 +175,19 @@ const TRUST_TOOL = {
   inputSchema: { type: "object", properties: {} },
 } as const;
 
+const PRESET_BACKUP_TOOLS = [
+  {
+    name: "whale_presets",
+    description: "List bundled DSH Skill, plugin and configuration presets with install status.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "whale_backups",
+    description: "List config snapshots, or verify one snapshot when id is provided.",
+    inputSchema: { type: "object", properties: { id: { type: "string" } } },
+  },
+] as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -271,6 +288,15 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         if (options.service.trustReport === undefined) throw new ToolError("whale/trust-unavailable", "信任表未配置");
         return await options.service.trustReport();
       }
+      case "whale_presets": {
+        if (options.presets === undefined) throw new ToolError("whale/presets-unavailable", "预设服务未配置");
+        return { presets: options.presets.list() };
+      }
+      case "whale_backups": {
+        if (options.backups === undefined) throw new ToolError("whale/backups-unavailable", "备份服务未配置");
+        const id = optional(args, "id");
+        return id === undefined ? { backups: options.backups.list() } : options.backups.verify(id);
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -324,6 +350,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             ...(options.connectors === undefined ? [] : CONNECTOR_TOOLS),
             ...(options.notifications === undefined ? [] : NOTIFICATION_TOOLS),
             ...(options.service.trustReport === undefined ? [] : [TRUST_TOOL]),
+            ...(options.presets === undefined && options.backups === undefined ? [] : PRESET_BACKUP_TOOLS),
             ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
           ],
         };
