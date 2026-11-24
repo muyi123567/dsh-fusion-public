@@ -181,7 +181,7 @@ scope）或 `scripts/fleet-join.mjs` 一次导入：缓存远端 manifest、固�
 加入包校验自身摘要、公钥与 hostId 绑定、清单签名，不包含私钥或密钥值。
 
 接入：`GET /fleet/bundle`、`POST /fleet/bundle/import`、面板/CLI 导入。
-验证：插件 516 项、原生面板 74 项通过；真实 Ed25519 导出/导入、篡改三类拒绝、
+验证：插件 516 项、原生面板 75 项通过；真实 Ed25519 导出/导入、篡改三类拒绝、
 0600 文件；MCP approve scope 测试。
 
 跨真实主机验收（2026-11-24）：Host B 在 Instabox `muse-instabox-2`、DSH `0.2.0-rc.2`

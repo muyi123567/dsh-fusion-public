@@ -12,6 +12,7 @@ import { NativeHostTrust } from "./NativeHostTrust.js";
 import { NativePresetsBackup } from "./NativePresetsBackup.js";
 import { NativeAlignment } from "./NativeAlignment.js";
 import { NativeHostBundle } from "./NativeHostBundle.js";
+import { NativeFleetStatus } from "./NativeFleetStatus.js";
 import { nativeTaskLabel, nativeTaskStatus } from "./native-task-status.js";
 import { useNativeData } from "./use-native-data.js";
 import type { NativePanelSelection, NativeWhalePanelProps } from "./types.js";
@@ -143,6 +144,7 @@ export function NativeWhalePanel({ snapshotUrl = "/plugins/dsh-fusion/state", vi
     }
   }}>
     <NativeEnvironmentStrip {...(data.environment === undefined ? {} : { environment: data.environment })} />
+    <NativeFleetStatus visible={visible} />
     <NativeCloudConnectors visible={visible} />
     <NativeNotificationAdapters visible={visible} />
     <NativeHostTrust visible={visible} />
