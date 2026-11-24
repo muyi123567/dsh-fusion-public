@@ -10,7 +10,7 @@ export interface FleetMcpClient {
   createdAt: string;
 }
 
-export type FleetMcpScope = "read" | "request";
+export type FleetMcpScope = "read" | "request" | "approve";
 
 export interface FleetMcpFile {
   version: 1;
@@ -165,7 +165,7 @@ function sha256(value: string): string {
 function normalizeScopes(value: FleetMcpScope[]): FleetMcpScope[] {
   const scopes = [...new Set(value)];
   if (scopes.length === 0 || !scopes.includes("read")
-    || scopes.some(scope => scope !== "read" && scope !== "request")) {
+    || scopes.some(scope => scope !== "read" && scope !== "request" && scope !== "approve")) {
     throw new Error("FLEET_MCP_SCOPES_INVALID");
   }
   return scopes;

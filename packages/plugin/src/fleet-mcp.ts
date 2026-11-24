@@ -10,6 +10,7 @@ import type { WhaleConnectorServiceV1 } from "./cloud-connectors.js";
 import type { WhaleNotificationServiceV1 } from "./fleet-notification-adapters.js";
 import type { WhaleBackupServiceV1 } from "./fleet-backup.js";
 import type { WhalePresetServiceV1 } from "./fleet-presets.js";
+import type { WhaleAlignmentServiceV1 } from "./fleet-alignment.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -34,6 +35,7 @@ export interface FleetMcpServerOptions {
   notifications?: WhaleNotificationServiceV1;
   presets?: WhalePresetServiceV1;
   backups?: WhaleBackupServiceV1;
+  alignment?: WhaleAlignmentServiceV1;
   autoApproveDispatch?: boolean;
   version?: string;
 }
@@ -188,6 +190,41 @@ const PRESET_BACKUP_TOOLS = [
   },
 ] as const;
 
+const ALIGNMENT_TOOLS = [
+  {
+    name: "whale_alignment",
+    description: "List alignment requests, or read one request when id is provided.",
+    inputSchema: { type: "object", properties: { id: { type: "string" } } },
+  },
+  {
+    name: "whale_alignment_plan",
+    description: "Build a local-host alignment plan with auto/manual execution classification.",
+    inputSchema: {
+      type: "object",
+      properties: { hostId: { type: "string" }, expectedDigest: { type: "string" } },
+      required: ["hostId"],
+    },
+  },
+  {
+    name: "whale_request_alignment",
+    description: "Create a pending local alignment request. A human must approve it in the Whale panel.",
+    inputSchema: {
+      type: "object",
+      properties: { hostId: { type: "string" }, expectedDigest: { type: "string" } },
+      required: ["hostId"],
+    },
+  },
+  {
+    name: "whale_approve_alignment",
+    description: "Approve and execute one pending alignment request. Requires the approve scope and an operator-issued token.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+  },
+] as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -297,6 +334,36 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         const id = optional(args, "id");
         return id === undefined ? { backups: options.backups.list() } : options.backups.verify(id);
       }
+      case "whale_alignment": {
+        if (options.alignment === undefined) throw new ToolError("whale/alignment-unavailable", "对齐服务未配置");
+        const id = optional(args, "id");
+        if (id === undefined) return { requests: options.alignment.list() };
+        const request = options.alignment.get(id);
+        if (request === undefined) throw new ToolError("whale/alignment-not-found", "对齐请求不存在");
+        return request;
+      }
+      case "whale_alignment_plan": {
+        if (options.alignment === undefined) throw new ToolError("whale/alignment-unavailable", "对齐服务未配置");
+        return await options.alignment.plan(required(args, "hostId"), optional(args, "expectedDigest"));
+      }
+      case "whale_request_alignment": {
+        if (options.alignment === undefined) throw new ToolError("whale/alignment-unavailable", "对齐服务未配置");
+        if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
+        const expectedDigest = optional(args, "expectedDigest");
+        return {
+          request: await options.alignment.create({
+            hostId: required(args, "hostId"),
+            ...(expectedDigest === undefined ? {} : { expectedDigest }),
+            requestedBy: client.name,
+            source: `mcp:${client.id}`,
+          }),
+        };
+      }
+      case "whale_approve_alignment": {
+        if (options.alignment === undefined) throw new ToolError("whale/alignment-unavailable", "对齐服务未配置");
+        if (!client.scopes.includes("approve")) throw new ToolError("whale/scope-required", "客户端没有 approve scope");
+        return { request: await options.alignment.approve(required(args, "id"), `mcp:${client.name}`) };
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -351,6 +418,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             ...(options.notifications === undefined ? [] : NOTIFICATION_TOOLS),
             ...(options.service.trustReport === undefined ? [] : [TRUST_TOOL]),
             ...(options.presets === undefined && options.backups === undefined ? [] : PRESET_BACKUP_TOOLS),
+            ...(options.alignment === undefined ? [] : ALIGNMENT_TOOLS),
             ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
           ],
         };

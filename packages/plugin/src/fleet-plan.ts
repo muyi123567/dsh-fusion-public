@@ -1,4 +1,4 @@
-import type { FleetDriftReport, FleetHostManifest } from "./fleet-environment.js";
+import { canonicalJson, type FleetDriftReport, type FleetHostManifest } from "./fleet-environment.js";
 
 export type FleetPlanAction =
   | "install" | "update" | "enable" | "restore-patch" | "checkout" | "clean"
@@ -9,6 +9,7 @@ export interface FleetPlanStep {
   action: FleetPlanAction;
   target: string;
   spec?: string;
+  expectedVersion?: string;
   risk: "low" | "medium" | "high";
   requiresRestart: boolean;
   reason: string;
@@ -48,6 +49,16 @@ export function planFleetAlignment(
     steps.push({ ...step, id: key });
   };
   const expectedBundle = (name: string) => expected.bundles.find(bundle => bundle.name === name);
+  const sameExceptEnabled = (name: string): boolean => {
+    const expectedValue = expected.bundles.find(bundle => bundle.name === name);
+    const observedValue = observed.bundles.find(bundle => bundle.name === name);
+    if (expectedValue === undefined || observedValue === undefined) return false;
+    const normalized = (bundle: FleetHostManifest["bundles"][number]) => {
+      const { enabled: _enabled, digest: _digest, ...rest } = bundle;
+      return canonicalJson(rest);
+    };
+    return normalized(expectedValue) === normalized(observedValue);
+  };
 
   for (const item of drift.items) {
     const target = /\[([^\]]+)\]/u.exec(item.path)?.[1] ?? item.path;
@@ -57,6 +68,7 @@ export function planFleetAlignment(
         add({
           action: "install", target, risk: "medium", requiresRestart: true,
           ...(spec === undefined ? {} : { spec }),
+          ...(expectedBundle(target)?.version === undefined ? {} : { expectedVersion: expectedBundle(target)!.version }),
           reason: `安装 ${target}${expectedBundle(target)?.version === undefined ? "" : `@${expectedBundle(target)!.version}`}`,
         });
         break;
@@ -66,6 +78,7 @@ export function planFleetAlignment(
         add({
           action: "update", target, risk: "medium", requiresRestart: true,
           ...(spec === undefined ? {} : { spec }),
+          ...(expectedBundle(target)?.version === undefined ? {} : { expectedVersion: expectedBundle(target)!.version }),
           reason: `更新到 ${String(item.expected ?? "锁定版本")}`,
         });
         break;
@@ -77,6 +90,7 @@ export function planFleetAlignment(
         add({ action: "install", target, risk: "medium", requiresRestart: true, reason: "重新安装不可读的 bundle" });
         break;
       case "bundle.digest":
+        if (sameExceptEnabled(target)) break;
         add({ action: "review", target, risk: "high", requiresRestart: false, reason: "bundle 内容与期望摘要不一致" });
         break;
       case "patch.missing":

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muyi123567/dsh-fusion-public/docs/design/contracts/alignment-request.v1.schema.json",
+  "title": "Whale alignment request v1",
+  "type": "object",
+  "required": ["contractVersion", "id", "hostId", "requestedBy", "source", "createdAt", "updatedAt", "status", "planDigest", "plan", "steps"],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "hostId": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "requestedBy": { "type": "string" },
+    "source": { "type": "string" },
+    "approvedBy": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "finishedAt": { "type": "string", "format": "date-time" },
+    "status": {
+      "enum": ["pending", "running", "succeeded", "partial", "failed", "manual-required", "cancelled"]
+    },
+    "planDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "plan": { "type": "object" },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "action", "target", "risk", "requiresRestart", "reason", "exec"],
+        "properties": {
+          "id": { "type": "string" },
+          "action": { "type": "string" },
+          "target": { "type": "string" },
+          "spec": { "type": "string" },
+          "expectedVersion": { "type": "string" },
+          "risk": { "enum": ["low", "medium", "high"] },
+          "requiresRestart": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "exec": { "enum": ["auto", "manual"] },
+          "manualReason": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "beforeDigest": { "type": "string" },
+    "afterDigest": { "type": "string" },
+    "after": { "type": "object" },
+    "results": { "type": "array" },
+    "rollback": { "type": "array" },
+    "error": { "type": "string" }
+  },
+  "additionalProperties": false
+}

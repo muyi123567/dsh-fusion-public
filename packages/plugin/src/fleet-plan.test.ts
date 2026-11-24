@@ -71,6 +71,22 @@ describe("fleet alignment plan", () => {
     ]);
   });
 
+  it("does not add a digest review when only the enabled flag differs", () => {
+    const expected = manifest({
+      bundles: [{ name: "existing", version: "1.0.0", enabled: true, availability: "profile", rows: [], digest: "sha256:enabled" }],
+    });
+    const observed = manifest({
+      bundles: [{ name: "existing", version: "1.0.0", enabled: false, availability: "profile", rows: [], digest: "sha256:disabled" }],
+    });
+    const report = planFleetAlignment(expected, observed, drift([
+      { code: "bundle.enabled", severity: "block", path: "bundles[existing].enabled", expected: true, actual: false },
+      { code: "bundle.digest", severity: "block", path: "bundles[existing].digest", expected: "sha256:enabled", actual: "sha256:disabled" },
+    ]));
+    expect(report.steps).toEqual([
+      expect.objectContaining({ action: "enable", target: "existing" }),
+    ]);
+  });
+
   it("never turns unknown into a ready plan", () => {
     const report = planFleetAlignment(manifest(), manifest(), drift([], "unknown"));
     expect(report.overall).toBe("unknown");

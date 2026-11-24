@@ -120,6 +120,26 @@ pre-restore 快照。`auto: true` 在清单摘要变化时最多每分钟快照�
 设计：[预设与热备](../design/2026-11-24-presets-backup.md)。
 证据：`/data/openlet/evidence/dsh-fusion-presets-backup-20261124/`。
 
+### 环境对齐执行（2026-11-24）
+
+新增本机环境对齐执行：只自动处理 `install/update/enable`，其余步骤保持人工。
+请求必须先进入 pending，批准时重新计算 planDigest，环境变化则
+`alignment/plan-changed` 拒绝执行。执行前记录 bundle 快照，失败逆序回滚
+（enable 恢复禁用、install 重新禁用、update 重装旧版本），随后强制重采集并重新 diff。
+状态区分 `succeeded / partial / manual-required / failed / cancelled`。
+
+接入：`GET/POST /fleet/alignment`，MCP `whale_alignment`、
+`whale_alignment_plan`、`whale_request_alignment`、带 `approve` scope 的
+`whale_approve_alignment`，面板“环境对齐”。修复“仅 enabled 不同却额外生成
+digest 审核”的假失败。
+
+验证：插件 499 项、原生面板 73 项通过。`0.2.3-alpha.2` 隔离 profile 安装无害
+fixture 后禁用，计划生成 `enable:dsh-align-fixture`；批准执行后 fixture 启用，
+重采集 `after=match`，afterDigest 与期望一致，状态 `succeeded`；同一运行中还验证了
+计划变化被拒绝。证据：`/data/openlet/evidence/dsh-fusion-alignment-20261124/`。
+
+设计：[环境对齐执行](../design/2026-11-24-alignment-execution.md)。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

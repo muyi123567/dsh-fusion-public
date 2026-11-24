@@ -55,7 +55,9 @@ M1/M2 只读切片已实现：`whaleFleet` 服务（`contractVersion: 1`）、
 后续 diff、门禁和对齐计划直接使用，不再需要手写期望文件。
 M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业时再增加
 `whale_request_dispatch`：Bot 只能创建待审批意图，必须在面板“待审批派发”批准后才执行。
-只有带 `--request` 的外部令牌才拥有该 scope；自动对齐仍是后续工作。
+只有带 `--request` 的外部令牌才拥有该 scope。环境对齐执行只允许本机，自动执行
+`install/update/enable`，必须由面板或带 `approve` scope 的运维令牌批准；失败逆序回滚，
+执行后强制重采集并重新 diff，`patch/checkout/clean/credential` 仍保持人工。
 
 ```yaml
 - id: dsh-fusion
@@ -172,6 +174,7 @@ Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
 [开放通知适配器](docs/design/2026-11-23-notification-adapters.md) ·
 [远端主机信任表](docs/design/2026-11-24-remote-trust.md) ·
 [预设与配置热备](docs/design/2026-11-24-presets-backup.md) ·
+[环境对齐执行](docs/design/2026-11-24-alignment-execution.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级

@@ -64,6 +64,7 @@ async function start(options: {
   notifications?: unknown;
   presets?: unknown;
   backups?: unknown;
+  alignment?: unknown;
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
@@ -77,6 +78,7 @@ async function start(options: {
     ...(options.notifications === undefined ? {} : { notifications: options.notifications as never }),
     ...(options.presets === undefined ? {} : { presets: options.presets as never }),
     ...(options.backups === undefined ? {} : { backups: options.backups as never }),
+    ...(options.alignment === undefined ? {} : { alignment: options.alignment as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -283,6 +285,54 @@ describe("fleet MCP server", () => {
       name: "whale_backups", arguments: { id: "20261124T060000Z-aaaaaaaa" },
     }));
     expect(await verifyResult.json()).toMatchObject({ result: { structuredContent: { ok: true } } });
+  });
+
+  it("separates request and approve scopes for alignment execution", async () => {
+    const alignment = {
+      contractVersion: 1 as const,
+      plan: vi.fn(async () => ({
+        contractVersion: 1 as const, hostId: SHA, planDigest: `sha256:${"c".repeat(64)}`,
+        plan: {
+          contractVersion: 1 as const, hostId: SHA, expectedDigest: SHA, observedDigest: SHA,
+          overall: "ready" as const, steps: [],
+        },
+        steps: [],
+      })),
+      create: vi.fn(async () => ({
+        contractVersion: 1 as const, id: "align-1", hostId: SHA, requestedBy: "test", source: "mcp",
+        createdAt: "2026-11-24T06:00:00.000Z", updatedAt: "2026-11-24T06:00:00.000Z",
+        status: "pending" as const, planDigest: `sha256:${"c".repeat(64)}`,
+        plan: {
+          contractVersion: 1 as const, hostId: SHA, expectedDigest: SHA, observedDigest: SHA,
+          overall: "ready" as const, steps: [],
+        },
+        steps: [],
+      })),
+      approve: vi.fn(async () => ({ id: "align-1", status: "succeeded" })),
+      cancel: vi.fn(),
+      list: () => [],
+      get: () => undefined,
+    };
+    const { url, token, store } = await start({ alignment });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toEqual(expect.arrayContaining([
+      "whale_alignment", "whale_alignment_plan", "whale_request_alignment", "whale_approve_alignment",
+    ]));
+
+    const denied = await post(url, token, rpc(3, "tools/call", {
+      name: "whale_approve_alignment", arguments: { id: "align-1" },
+    }));
+    expect(await denied.json()).toMatchObject({ result: { isError: true, content: [{ text: "whale/scope-required" }] } });
+
+    const approver = store.createClient({ name: "operator", scopes: ["read", "approve"] }).token;
+    const approved = await post(url, approver, rpc(4, "tools/call", {
+      name: "whale_approve_alignment", arguments: { id: "align-1" },
+    }));
+    expect(await approved.json()).toMatchObject({
+      result: { structuredContent: { request: { id: "align-1", status: "succeeded" } } },
+    });
+    expect(alignment.approve).toHaveBeenCalledWith("align-1", "mcp:operator");
   });
 
   it("rejects browser Origins, non-loopback Hosts, wrong tokens and GET", async () => {

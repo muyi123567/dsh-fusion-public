@@ -106,12 +106,21 @@ import { createFleetPresetService, type WhalePresetServiceV1 } from "./fleet-pre
 import { createFleetBackupService, type WhaleBackupServiceV1 } from "./fleet-backup.js";
 import { createFleetPresetRoutes } from "./fleet-preset-routes.js";
 import { createFleetBackupRoutes } from "./fleet-backup-routes.js";
+import {
+  createFleetAlignmentService,
+  type AlignmentPluginManager,
+  type WhaleAlignmentServiceV1,
+} from "./fleet-alignment.js";
+import { createFleetAlignmentRoutes } from "./fleet-alignment-routes.js";
 
 export {
   FLEET_CONTRACT_VERSION,
   computeEnvironmentDigest,
+  computeSecretPresenceDigest,
+  canonicalJson,
   finalizeFleetManifest,
   hostIdFromPublicKey,
+  sha256Hex,
   verifyFleetManifest,
 } from "./fleet-environment.js";
 export type {
@@ -183,6 +192,20 @@ export type {
   BackupVerifyResult,
   WhaleBackupServiceV1,
 } from "./fleet-backup.js";
+export {
+  AlignmentError,
+  createFleetAlignmentService,
+} from "./fleet-alignment.js";
+export type {
+  AlignmentBundle,
+  AlignmentPluginManager,
+  AlignmentStatus,
+  AlignmentStepPlan,
+  AlignmentStepResult,
+  FleetAlignmentPlan,
+  FleetAlignmentRequest,
+  WhaleAlignmentServiceV1,
+} from "./fleet-alignment.js";
 export type {
   DshImNotifier,
   FleetDeliveryReceipt,
@@ -1519,6 +1542,22 @@ export async function apply(
     } catch (error) {
       ctx.logger?.warn?.(`dsh-fusion: backups disabled: ${error instanceof Error ? error.message : String(error)}`);
     }
+    let alignmentService: WhaleAlignmentServiceV1 | undefined;
+    try {
+      alignmentService = createFleetAlignmentService({
+        path: join(fleetDirectory, "alignment-requests.json"),
+        fleet: fleetService,
+        manager: () => {
+          try {
+            return ctx.get?.("pluginManager") as AlignmentPluginManager | undefined;
+          } catch {
+            return undefined;
+          }
+        },
+      });
+    } catch (error) {
+      ctx.logger?.warn?.(`dsh-fusion: alignment disabled: ${error instanceof Error ? error.message : String(error)}`);
+    }
     if (typeof ctx.provide === "function") {
       try {
         ctx.provide("whaleFleet", fleetService);
@@ -1544,6 +1583,13 @@ export async function apply(
           ctx.provide("whaleBackup", backupService);
         } catch (error) {
           ctx.logger?.warn?.(`dsh-fusion: whaleBackup service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      if (alignmentService !== undefined) {
+        try {
+          ctx.provide("whaleAlignment", alignmentService);
+        } catch (error) {
+          ctx.logger?.warn?.(`dsh-fusion: whaleAlignment service unavailable: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     } else {
@@ -1656,6 +1702,7 @@ export async function apply(
             ...(notificationService === undefined ? {} : { notifications: notificationService }),
             ...(presetService === undefined ? {} : { presets: presetService }),
             ...(backupService === undefined ? {} : { backups: backupService }),
+            ...(alignmentService === undefined ? {} : { alignment: alignmentService }),
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -2713,6 +2760,15 @@ export async function apply(
       if (backupService !== undefined) {
         for (const route of createFleetBackupRoutes({
           service: backupService,
+          authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+          readBody: readJsonBody,
+        })) {
+          effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
+        }
+      }
+      if (alignmentService !== undefined) {
+        for (const route of createFleetAlignmentRoutes({
+          service: alignmentService,
           authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
           readBody: readJsonBody,
         })) {
