@@ -64,6 +64,7 @@ export function createFleetConnectorRoutes<T extends Request>(options: {
 
   return [
     get(BASE, async () => ({ catalog: options.service.catalog(), instances: options.service.instances() })),
+    get(`${BASE}/imports`, async () => ({ imports: options.service.imports() })),
     get(`${BASE}/list`, async (url) => {
       const id = url.searchParams.get("id");
       if (id === null || id === "") throw new CloudConnectorError("connector/config", "id 必填");

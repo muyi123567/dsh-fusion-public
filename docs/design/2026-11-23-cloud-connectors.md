@@ -88,6 +88,8 @@ fleetConnectors:
 - `whale_cloud_pull`：`id` + `path`，需要 `request` scope；只写私有 imports 目录。
 - `whale_cloud_upload`：`id` + `path` + `sourcePath`，需要 `approve` scope；只上传
   allowlist 根目录内的文件，覆盖必须显式。
+- 面板“云盘连接器”在浏览后加载 `GET /fleet/connectors/imports`，列出 imports
+  本地材料；点击“导出”调用 `/upload`，默认目标 `exports/<name>`，覆盖需勾选。
 
 ### HTTP
 

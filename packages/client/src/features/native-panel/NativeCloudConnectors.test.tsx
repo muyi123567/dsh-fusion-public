@@ -19,19 +19,35 @@ it("browses a cloud connector and pulls one file into the imports directory", as
       ],
     }), { status: 200 }))
     .mockResolvedValueOnce(new Response(JSON.stringify({
+      imports: [{ name: "a.txt", path: "/home/u/.dsh-fusion/fleet/imports/a.txt", bytes: 3 }],
+    }), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({
       name: "a.txt", localPath: "/home/u/.dsh-fusion/fleet/imports/a.txt",
       bytes: 3, sha256: "a".repeat(64),
+    }), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({
+      imports: [{ name: "a.txt", path: "/home/u/.dsh-fusion/fleet/imports/a.txt", bytes: 3 }],
+    }), { status: 200 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({
+      name: "a.txt", path: "exports/a.txt", bytes: 3, sha256: "b".repeat(64),
     }), { status: 200 }));
   vi.stubGlobal("fetch", fetcher);
 
   render(<NativeCloudConnectors />);
   expect(await screen.findByText(/云盘连接器 · 1/u)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "浏览" }));
-  expect(await screen.findByText("a.txt")).toBeVisible();
+  expect(await screen.findAllByText("a.txt")).not.toHaveLength(0);
   expect(screen.getByText("notes")).toBeVisible();
 
   await user.click(screen.getByRole("button", { name: "拉取" }));
   await waitFor(() => expect(screen.getByText(/已保存 a\.txt · 3 B · sha256 a{12}…/u)).toBeVisible());
-  expect(fetcher.mock.calls[2]?.[0]).toContain("/connectors/pull");
-  expect(JSON.parse(fetcher.mock.calls[2]?.[1].body)).toEqual({ id: "gd", path: "a.txt" });
+  expect(fetcher.mock.calls[3]?.[0]).toContain("/connectors/pull");
+  expect(JSON.parse(fetcher.mock.calls[3]?.[1].body)).toEqual({ id: "gd", path: "a.txt" });
+
+  await user.click(screen.getByRole("button", { name: "导出" }));
+  await waitFor(() => expect(screen.getByText(/已导出 a\.txt → exports\/a\.txt/u)).toBeVisible());
+  expect(fetcher.mock.calls[5]?.[0]).toContain("/connectors/upload");
+  expect(JSON.parse(fetcher.mock.calls[5]?.[1].body)).toEqual({
+    id: "gd", path: "exports/a.txt", sourcePath: "/home/u/.dsh-fusion/fleet/imports/a.txt", overwrite: false,
+  });
 });

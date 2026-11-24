@@ -33,6 +33,7 @@ function service(): WhaleConnectorServiceV1 {
       connectorId: id, kind: "gdrive", path: input.path, name: "a.txt",
       localPath: input.sourcePath, bytes: 3, sha256: "a".repeat(64), uploadedAt: "2026-11-24T06:00:00.000Z",
     }),
+    imports: () => [{ name: "a.txt", path: "/tmp/imports/a.txt", bytes: 3, modifiedAt: "2026-11-24T06:00:00.000Z" }],
     register: () => () => {},
   };
 }
@@ -78,6 +79,8 @@ describe("fleet connector routes", () => {
     expect((await exchange(routes, "/plugins/dsh-fusion/fleet/connectors/list", {
       url: "/plugins/dsh-fusion/fleet/connectors/list?id=missing",
     })).status).toBe(404);
+    expect((await exchange(routes, "/plugins/dsh-fusion/fleet/connectors/imports")).json)
+      .toEqual({ imports: [{ name: "a.txt", path: "/tmp/imports/a.txt", bytes: 3, modifiedAt: "2026-11-24T06:00:00.000Z" }] });
   });
 
   it("pulls with same-origin JSON checks and maps connector errors", async () => {

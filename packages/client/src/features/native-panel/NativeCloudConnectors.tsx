@@ -21,11 +21,19 @@ interface CloudEntry {
   modifiedAt?: string;
 }
 
+interface LocalImport {
+  name: string;
+  path: string;
+  bytes: number;
+}
+
 export function NativeCloudConnectors({ visible = true }: { visible?: boolean }) {
   const [instances, setInstances] = useState<ConnectorInstance[]>([]);
   const [active, setActive] = useState<ConnectorInstance>();
   const [path, setPath] = useState("");
   const [entries, setEntries] = useState<CloudEntry[]>([]);
+  const [imports, setImports] = useState<LocalImport[]>([]);
+  const [overwrite, setOverwrite] = useState(false);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState<string>();
 
@@ -73,10 +81,27 @@ export function NativeCloudConnectors({ visible = true }: { visible?: boolean })
         row !== null && typeof row === "object"
         && typeof row.name === "string" && typeof row.path === "string"
         && (row.kind === "file" || row.kind === "folder")));
+      await loadImports();
     } catch {
       setNotice("读取结果未确认，请重试。");
     } finally {
       setBusy(undefined);
+    }
+  };
+
+  const loadImports = async () => {
+    try {
+      const response = await fetch(fusionBrowserUrl(`${PATH}/imports`));
+      if (!response.ok) return;
+      const value = await response.json() as { imports?: unknown };
+      if (Array.isArray(value.imports)) {
+        setImports(value.imports.filter((row): row is LocalImport =>
+          row !== null && typeof row === "object"
+          && typeof row.name === "string" && typeof row.path === "string"
+          && typeof row.bytes === "number"));
+      }
+    } catch {
+      // Optional surface.
     }
   };
 
@@ -100,8 +125,39 @@ export function NativeCloudConnectors({ visible = true }: { visible?: boolean })
       const bytes = typeof value.bytes === "number" ? value.bytes : 0;
       const sha = typeof value.sha256 === "string" ? value.sha256.slice(0, 12) : "unknown";
       setNotice(`已保存 ${name} · ${bytes} B · sha256 ${sha}…`);
+      await loadImports();
     } catch {
       setNotice("拉取结果未确认，请重试。");
+    } finally {
+      setBusy(undefined);
+    }
+  };
+
+  const upload = async (file: LocalImport) => {
+    if (active === undefined) return;
+    setBusy(file.path);
+    setNotice("");
+    try {
+      const remotePath = `exports/${file.name}`;
+      const response = await fetch(fusionBrowserUrl(`${PATH}/upload`), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          id: active.id,
+          path: remotePath,
+          sourcePath: file.path,
+          overwrite,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => undefined) as { error?: unknown } | undefined;
+        setNotice(typeof body?.error === "string" ? `导出失败：${body.error}` : "导出失败。");
+        return;
+      }
+      const value = await response.json() as { name?: unknown; path?: unknown; bytes?: unknown; sha256?: unknown };
+      setNotice(`已导出 ${String(value.name ?? file.name)} → ${String(value.path ?? remotePath)} · ${String(value.bytes ?? file.bytes)} B · sha256 ${String(value.sha256 ?? "").slice(0, 12)}…`);
+    } catch {
+      setNotice("导出结果未确认，请重试。");
     } finally {
       setBusy(undefined);
     }
@@ -139,6 +195,19 @@ export function NativeCloudConnectors({ visible = true }: { visible?: boolean })
               : <button type="button" disabled={busy !== undefined} onClick={() => void pull(entry)}>拉取</button>}
           </li>)}
         </ul>}
+      {imports.length > 0 && <div className={styles.cloudBrowser}>
+        <div className={styles.cloudHeader}>
+          <strong>本地材料 · {imports.length}</strong>
+          <label><input type="checkbox" checked={overwrite} onChange={event => setOverwrite(event.target.checked)} /> 覆盖同名</label>
+        </div>
+        <ul className={styles.cloudList}>
+          {imports.map(file => <li key={file.path}>
+            <span>{file.name}</span>
+            <small>{file.bytes} B</small>
+            <button type="button" disabled={busy !== undefined} onClick={() => void upload(file)}>导出</button>
+          </li>)}
+        </ul>
+      </div>}
     </div>}
   </section>;
 }

@@ -206,6 +206,10 @@ beta.15，MCP 22 工具、`whale_status` 与真实面板通过；全部插件 AP
 稳定版 `requestRejection` 与 alpha `admit` 双契约均通过。证据：
 `/data/openlet/evidence/dsh-fusion-stable15-ui-20261124/`。
 
+云盘面板导出（2026-11-24）：面板列出 imports 本地材料并支持“导出”；真实 Playwright
+点击后 `/connectors/upload` 200，mock WebDAV 收到 `exports/a-1.txt`，3 B、
+sha256 与本地一致。证据：`/data/openlet/evidence/dsh-fusion-ui-export-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

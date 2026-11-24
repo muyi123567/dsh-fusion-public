@@ -456,4 +456,28 @@ describe("cloud connector service", () => {
     await expect(service.upload("mem", { path: "out/x", sourcePath: outside })).rejects.toMatchObject({ code: "connector/path" });
     await expect(service.upload("mem", { path: "out/x", sourcePath: inside, maxBytes: 2 })).rejects.toMatchObject({ code: "connector/limit" });
   });
+
+  it("lists only regular files in the imports directory", () => {
+    const root = tempRoot();
+    const imports = join(root, "imports");
+    mkdirSync(imports, { recursive: true });
+    writeFileSync(join(imports, "a.txt"), "abc");
+    mkdirSync(join(imports, "nested"));
+    writeFileSync(join(imports, ".hidden"), "x");
+    const registry = new CloudConnectorRegistry();
+    registry.register(definition("acme/memory"), () => ({
+      async list() { return []; },
+      async pull() { return { name: "x" }; },
+      upload: async () => ({ name: "x", path: "x", bytes: 0 }),
+    }) as never);
+    const service = createCloudConnectorService({
+      registry,
+      connectors: [],
+      importsDirectory: imports,
+      env: {},
+    });
+    expect(service.imports()).toEqual([
+      expect.objectContaining({ name: "a.txt", bytes: 3, path: join(imports, "a.txt") }),
+    ]);
+  });
 });

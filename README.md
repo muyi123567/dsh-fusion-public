@@ -11,7 +11,7 @@
 与 [预构建包](https://github.com/muyi123567/dsh-fusion-public/releases/tag/v0.2.0-beta.13)保留。
 beta.15 新增云盘连接器（读取与批准导出）、通知适配器、远端信任表、预设/热备、
 环境对齐执行与统一状态诊断；安装包 SHA-256：
-`b7b31e1ce49146f6f2f4afb37ced4b187af046b3fa7793de3c97b06e83fde594`。
+`c8970eae9feb435db47c0862dc0ff03bd38abfba5f10a2ae5969571c0759c43c`。
 beta.14 的 UI/来源记录保留为历史，不用旧包摘要代替 beta.15 验收。
 
 ## 原生右栏面板
@@ -172,6 +172,7 @@ Dropbox 和 WebDAV/Nextcloud。凭据只写环境变量名；拉取文件进入�
 （默认 `fleet/imports`，0700/0600）。`whale_cloud_pull` 需要 `request` scope；
 `whale_cloud_upload` 需要 operator-only `approve` scope，源文件必须在
 `uploadRoots`（默认 imports）内，覆盖必须显式 `overwrite: true`，并返回 sha256。
+面板“云盘连接器”会列出 imports 本地材料，点击“导出”即可上传到 `exports/<name>`。
 删除和任意命令执行仍不开放。第三方插件可通过
 `ctx.get("whaleConnectors").register(definition, factory)` 注册 provider。
 

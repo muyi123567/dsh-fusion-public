@@ -2,7 +2,9 @@ import { createHash, randomBytes } from "node:crypto";
 import {
   chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   renameSync,
@@ -151,6 +153,13 @@ export interface CloudUploadResult {
   webUrl?: string;
 }
 
+export interface CloudImportEntry {
+  name: string;
+  path: string;
+  bytes: number;
+  modifiedAt: string;
+}
+
 export interface WhaleConnectorServiceV1 {
   readonly contractVersion: 1;
   catalog(): CloudConnectorDefinition[];
@@ -158,6 +167,7 @@ export interface WhaleConnectorServiceV1 {
   list(id: string, input: CloudListInput): Promise<CloudConnectorEntry[]>;
   pull(id: string, input: CloudPullInput): Promise<CloudPullResult>;
   upload(id: string, input: CloudUploadInput & { sourcePath: string }): Promise<CloudUploadResult>;
+  imports(): CloudImportEntry[];
   register(definition: CloudConnectorDefinition, factory: CloudConnectorFactory): () => void;
 }
 
@@ -417,6 +427,32 @@ export function createCloudConnectorService(options: CloudConnectorServiceOption
         uploadedAt: new Date(now()).toISOString(),
         ...(uploaded.webUrl === undefined ? {} : { webUrl: uploaded.webUrl }),
       };
+    },
+    imports() {
+      let names: string[];
+      try {
+        names = readdirSync(importsDirectory).sort();
+      } catch {
+        return [];
+      }
+      const entries: CloudImportEntry[] = [];
+      for (const name of names) {
+        if (name.startsWith(".")) continue;
+        const path = join(importsDirectory, name);
+        try {
+          const info = lstatSync(path);
+          if (!info.isFile() || info.isSymbolicLink()) continue;
+          entries.push({
+            name,
+            path,
+            bytes: info.size,
+            modifiedAt: info.mtime.toISOString(),
+          });
+        } catch {
+          continue;
+        }
+      }
+      return entries.sort((left, right) => right.modifiedAt.localeCompare(left.modifiedAt)).slice(0, 100);
     },
     register(definition, factory) {
       return options.registry.register(definition, factory);

@@ -157,6 +157,7 @@ describe("fleet MCP server", () => {
         connectorId: "gd", kind: "gdrive", path: "out/a.txt", name: "a.txt",
         localPath: "/tmp/imports/a.txt", bytes: 3, sha256: "a".repeat(64), uploadedAt: "2026-11-24T06:00:00.000Z",
       })),
+      imports: () => [],
       register: () => () => {},
     };
     const { url, token, store } = await start({ connectors });
