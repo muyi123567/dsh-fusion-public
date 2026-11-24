@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/muyi123567/dsh-fusion-public/docs/design/contracts/fleet-status.v1.schema.json",
+  "title": "Whale fleet status v1",
+  "type": "object",
+  "required": ["contractVersion", "checkedAt", "host", "hosts", "pending", "systems", "nextActions"],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "checkedAt": { "type": "string", "format": "date-time" },
+    "host": {
+      "type": "object",
+      "required": ["hostId", "displayName", "digest", "overall", "stale", "signed", "verified", "trust"],
+      "properties": {
+        "hostId": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "displayName": { "type": "string" },
+        "digest": { "type": "string" },
+        "overall": { "type": "string" },
+        "stale": { "type": "boolean" },
+        "signed": { "type": "boolean" },
+        "verified": { "type": "boolean" },
+        "trust": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "hosts": {
+      "type": "object",
+      "required": ["total", "drift", "unknown", "stale", "untrusted"],
+      "properties": {
+        "total": { "type": "number", "minimum": 0 },
+        "drift": { "type": "number", "minimum": 0 },
+        "unknown": { "type": "number", "minimum": 0 },
+        "stale": { "type": "number", "minimum": 0 },
+        "untrusted": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "pending": {
+      "type": "object",
+      "required": ["dispatch", "alignment"],
+      "properties": {
+        "dispatch": { "type": "number", "minimum": 0 },
+        "alignment": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "systems": {
+      "type": "object",
+      "required": ["connectors", "notifications", "presets", "backups", "trust", "alignment"],
+      "properties": {
+        "connectors": { "type": "object" },
+        "notifications": { "type": "object" },
+        "presets": { "type": "object" },
+        "backups": { "type": "object" },
+        "trust": { "type": "object" },
+        "alignment": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "nextActions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

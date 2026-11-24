@@ -112,6 +112,8 @@ import {
   type WhaleAlignmentServiceV1,
 } from "./fleet-alignment.js";
 import { createFleetAlignmentRoutes } from "./fleet-alignment-routes.js";
+import { createFleetStatusService, type WhaleStatusServiceV1 } from "./fleet-status.js";
+import { createFleetStatusRoutes } from "./fleet-status-routes.js";
 
 export {
   FLEET_CONTRACT_VERSION,
@@ -206,6 +208,12 @@ export type {
   FleetAlignmentRequest,
   WhaleAlignmentServiceV1,
 } from "./fleet-alignment.js";
+export { createFleetStatusService } from "./fleet-status.js";
+export type {
+  FleetStatusReport,
+  FleetStatusServiceOptions,
+  WhaleStatusServiceV1,
+} from "./fleet-status.js";
 export type {
   DshImNotifier,
   FleetDeliveryReceipt,
@@ -1663,6 +1671,22 @@ export async function apply(
       dispatch: async (input) => await executionService.start(input),
       onEvent: notifyFleet,
     });
+    const statusService = createFleetStatusService({
+      fleet: fleetService,
+      ...(whaleConnectorService === undefined ? {} : { connectors: whaleConnectorService }),
+      ...(notificationService === undefined ? {} : { notifications: notificationService }),
+      ...(presetService === undefined ? {} : { presets: presetService }),
+      ...(backupService === undefined ? {} : { backups: backupService }),
+      ...(alignmentService === undefined ? {} : { alignment: alignmentService }),
+      ...(dispatchRequests === undefined ? {} : { requests: dispatchRequests }),
+    });
+    if (typeof ctx.provide === "function") {
+      try {
+        ctx.provide("whaleStatus", statusService);
+      } catch (error) {
+        ctx.logger?.warn?.(`dsh-fusion: whaleStatus service unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     const fleetMcpConfig = config.fleetMcp;
     let fleetMcpStore: FleetMcpStore | undefined;
     try {
@@ -1703,6 +1727,7 @@ export async function apply(
             ...(presetService === undefined ? {} : { presets: presetService }),
             ...(backupService === undefined ? {} : { backups: backupService }),
             ...(alignmentService === undefined ? {} : { alignment: alignmentService }),
+            status: statusService,
             version: FUSION_PLUGIN_VERSION,
           });
           const started = await server.start();
@@ -1779,6 +1804,75 @@ export async function apply(
       }
       const state = dshCompatibility.state === "verified" || dshCompatibility.state === "unsupported"
         || dshCompatibility.state === "untested" ? dshCompatibility.state : "unknown";
+      const safe = <T>(run: () => T): T | undefined => {
+        try {
+          return run();
+        } catch {
+          return undefined;
+        }
+      };
+      const safeAsync = async <T>(run: () => Promise<T>): Promise<T | undefined> => {
+        try {
+          return await run();
+        } catch {
+          return undefined;
+        }
+      };
+      const connectorInstances = safe(() => whaleConnectorService?.instances()) ?? [];
+      const notificationAdapters = safe(() => notificationService?.adapters()) ?? [];
+      const notificationReceipts = safe(() => notificationService?.receipts().slice(-50)) ?? [];
+      const presetList = safe(() => presetService?.list()) ?? [];
+      const backupList = safe(() => backupService?.list()) ?? [];
+      const alignmentList = safe(() => alignmentService?.list()) ?? [];
+      const trustReportValue = await safeAsync(async () => await fleetService.trustReport?.());
+      const dispatchList = await safeAsync(async () => await dispatchRequests?.list()) ?? [];
+      const subsystems = {
+        ...(whaleConnectorService === undefined ? {} : {
+          connectors: {
+            providers: safe(() => whaleConnectorService?.catalog().length) ?? 0,
+            configured: connectorInstances.filter(instance => instance.state === "configured").length,
+            invalid: connectorInstances.filter(instance => instance.state === "invalid").length,
+          },
+        }),
+        ...(notificationService === undefined ? {} : {
+          notifications: {
+            adapters: notificationAdapters.length,
+            invalid: notificationAdapters.filter(adapter => adapter.state === "invalid").length,
+            failed: notificationReceipts.filter(receipt => receipt.status === "failed").length,
+            unknown: notificationReceipts.filter(receipt => receipt.status === "unknown").length,
+          },
+        }),
+        ...(presetService === undefined ? {} : {
+          presets: {
+            total: presetList.length,
+            installed: presetList.filter(preset => preset.status?.state === "installed").length,
+          },
+        }),
+        ...(backupService === undefined ? {} : {
+          backups: {
+            count: backupList.length,
+            ...(backupList[0]?.createdAt === undefined ? {} : { latestAt: backupList[0].createdAt }),
+          },
+        }),
+        ...(trustReportValue === undefined ? {} : {
+          trust: {
+            entries: trustReportValue.entries.length,
+            untrusted: trustReportValue.hosts.filter(host => host.trust === "untrusted").length,
+            invalid: trustReportValue.hosts.filter(host => host.trust === "invalid" || host.trust === "key-mismatch").length,
+            mode: trustReportValue.mode,
+          },
+        }),
+        ...(alignmentService === undefined ? {} : {
+          alignment: {
+            pending: alignmentList.filter(request => request.status === "pending").length,
+            manual: alignmentList.filter(request => request.status === "manual-required" || request.status === "partial").length,
+            failed: alignmentList.filter(request => request.status === "failed").length,
+          },
+        }),
+        ...(dispatchRequests === undefined ? {} : {
+          dispatch: { pending: dispatchList.filter(request => request.status === "pending").length },
+        }),
+      };
       return buildFleetDoctorReport({
         dsh: { version: dshCompatibility.version ?? version, state },
         environment,
@@ -1797,6 +1891,7 @@ export async function apply(
           directoryConfigured: executionDirectory !== undefined,
         },
         bundles,
+        ...(Object.keys(subsystems).length === 0 ? {} : { subsystems }),
       });
     };
     const dispatchPreview = fleetRouter === undefined ? undefined : createDispatchPreviewService({
@@ -2756,6 +2851,12 @@ export async function apply(
         })) {
           effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
         }
+      }
+      for (const route of createFleetStatusRoutes({
+        service: statusService,
+        authenticate: (request, response) => rejectUnauthenticated(ctx, connection, request, response),
+      })) {
+        effectScope.effect?.(() => webServer.register(route), `dsh-fusion: ${route.path}`);
       }
       if (backupService !== undefined) {
         for (const route of createFleetBackupRoutes({

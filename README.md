@@ -141,7 +141,9 @@ M3 后已在执行启动中接入环境门禁与 v3 回执；配置执行作业�
 
 `fleetMcp` 默认关闭，只监听 `127.0.0.1`；浏览器 Origin 请求和非本机 Host 一律 403。
 插件会给同 profile 的 `mcpManager` 注册内部只读客户端，DS-Bot Bot 因此能看到
-`mcp__whale-fleet__whale_list_hosts` 等工具。给 Claude、Codex 或脚本发放独立令牌：
+`mcp__whale-fleet__whale_list_hosts` 等工具。新客户端先调用 `whale_status` 一次拿到
+本机环境、漂移、信任、待审批、云盘、通知、预设、热备和对齐摘要，再按需展开；诊断
+`whale_doctor` 会同时检查这些子系统。给 Claude、Codex 或脚本发放独立令牌：
 
 ```sh
 node packages/plugin/scripts/fleet-mcp-token.mjs --file /var/lib/dsh-fusion/fleet/mcp.json --name chief
@@ -175,6 +177,7 @@ Bot 通过 `whale_connectors`、`whale_cloud_list` 和需要 `request` scope 的
 [远端主机信任表](docs/design/2026-11-24-remote-trust.md) ·
 [预设与配置热备](docs/design/2026-11-24-presets-backup.md) ·
 [环境对齐执行](docs/design/2026-11-24-alignment-execution.md) ·
+[统一状态与诊断](docs/design/2026-11-24-unified-status.md) ·
 [契约说明](docs/design/contracts/README.md)。
 
 ## 安装与升级

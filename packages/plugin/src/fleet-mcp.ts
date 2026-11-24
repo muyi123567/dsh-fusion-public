@@ -11,6 +11,7 @@ import type { WhaleNotificationServiceV1 } from "./fleet-notification-adapters.j
 import type { WhaleBackupServiceV1 } from "./fleet-backup.js";
 import type { WhalePresetServiceV1 } from "./fleet-presets.js";
 import type { WhaleAlignmentServiceV1 } from "./fleet-alignment.js";
+import type { WhaleStatusServiceV1 } from "./fleet-status.js";
 
 const PROTOCOL = "2025-06-18";
 const MAX_BODY = 1 << 20;
@@ -36,6 +37,7 @@ export interface FleetMcpServerOptions {
   presets?: WhalePresetServiceV1;
   backups?: WhaleBackupServiceV1;
   alignment?: WhaleAlignmentServiceV1;
+  status?: WhaleStatusServiceV1;
   autoApproveDispatch?: boolean;
   version?: string;
 }
@@ -225,6 +227,12 @@ const ALIGNMENT_TOOLS = [
   },
 ] as const;
 
+const STATUS_TOOL = {
+  name: "whale_status",
+  description: "One-call fleet summary: local environment, drift, trust, pending approvals, connectors, notifications, presets, backups and alignment.",
+  inputSchema: { type: "object", properties: {} },
+} as const;
+
 class ToolError extends Error {
   constructor(readonly code: string, message: string) {
     super(message);
@@ -364,6 +372,10 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
         if (!client.scopes.includes("approve")) throw new ToolError("whale/scope-required", "客户端没有 approve scope");
         return { request: await options.alignment.approve(required(args, "id"), `mcp:${client.name}`) };
       }
+      case "whale_status": {
+        if (options.status === undefined) throw new ToolError("whale/status-unavailable", "状态汇总未配置");
+        return await options.status.status();
+      }
       case "whale_request_dispatch": {
         if (options.requests === undefined) throw new ToolError("whale/dispatch-unavailable", "派发审批未配置");
         if (!client.scopes.includes("request")) throw new ToolError("whale/scope-required", "客户端没有 request scope");
@@ -406,7 +418,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             : PROTOCOL,
           capabilities: { tools: {} },
           serverInfo: { name: "whale-fleet", version: options.version ?? "0.2.0-beta.14" },
-          instructions: "Read-only multi-host environment and execution receipts. Call whale_list_hosts first.",
+          instructions: "Whale fleet MCP. Start with whale_status, then whale_list_hosts and whale_environment_diff. Read tools cover trust, cloud materials, notifications, presets, backups and alignment. request_* tools create pending requests (request scope); approving requires the operator-only approve scope. Never claim approval or success without reading a receipt.",
         };
       case "ping":
         return {};
@@ -419,6 +431,7 @@ export function createFleetMcpServer(options: FleetMcpServerOptions): FleetMcpSe
             ...(options.service.trustReport === undefined ? [] : [TRUST_TOOL]),
             ...(options.presets === undefined && options.backups === undefined ? [] : PRESET_BACKUP_TOOLS),
             ...(options.alignment === undefined ? [] : ALIGNMENT_TOOLS),
+            ...(options.status === undefined ? [] : [STATUS_TOOL]),
             ...(options.requests === undefined ? [] : [REQUEST_TOOL]),
           ],
         };

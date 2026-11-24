@@ -65,6 +65,7 @@ async function start(options: {
   presets?: unknown;
   backups?: unknown;
   alignment?: unknown;
+  status?: unknown;
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "fleet-mcp-"));
   const store = new FleetMcpStore({ path: join(dir, "mcp.json"), defaultPort: 0 });
@@ -79,6 +80,7 @@ async function start(options: {
     ...(options.presets === undefined ? {} : { presets: options.presets as never }),
     ...(options.backups === undefined ? {} : { backups: options.backups as never }),
     ...(options.alignment === undefined ? {} : { alignment: options.alignment as never }),
+    ...(options.status === undefined ? {} : { status: options.status as never }),
   });
   const { port } = await running.start();
   return { port, token, store, url: `http://127.0.0.1:${port}/mcp` };
@@ -333,6 +335,42 @@ describe("fleet MCP server", () => {
       result: { structuredContent: { request: { id: "align-1", status: "succeeded" } } },
     });
     expect(alignment.approve).toHaveBeenCalledWith("align-1", "mcp:operator");
+  });
+
+  it("offers a one-call status summary and guidance in initialize", async () => {
+    const status = {
+      contractVersion: 1 as const,
+      status: vi.fn(async () => ({
+        contractVersion: 1 as const, checkedAt: "2026-11-24T06:00:00.000Z",
+        host: {
+          hostId: SHA, displayName: "host", digest: SHA, overall: "match", stale: false,
+          signed: true, verified: true, trust: "verified",
+        },
+        hosts: { total: 1, drift: 0, unknown: 0, stale: 0, untrusted: 0 },
+        pending: { dispatch: 0, alignment: 0 },
+        systems: {
+          connectors: { providers: 4, configured: 1, invalid: 0 },
+          notifications: { adapters: 1, invalid: 0, failed: 0, unknown: 0 },
+          presets: { total: 6, installed: 1 },
+          backups: { count: 1 },
+          trust: { entries: 1, untrusted: 0, invalid: 0, mode: "manual" },
+          alignment: { pending: 0, manual: 0, failed: 0 },
+        },
+        nextActions: [],
+      })),
+    };
+    const { url, token } = await start({ status });
+    const init = await post(url, token, rpc(1, "initialize", { protocolVersion: "2025-06-18" }));
+    expect(await init.json()).toMatchObject({
+      result: { instructions: expect.stringContaining("whale_status") },
+    });
+    const listed = await post(url, token, rpc(2, "tools/list"));
+    const body = await listed.json() as { result: { tools: Array<{ name: string }> } };
+    expect(body.result.tools.map(tool => tool.name)).toContain("whale_status");
+    const called = await post(url, token, rpc(3, "tools/call", { name: "whale_status", arguments: {} }));
+    expect(await called.json()).toMatchObject({
+      result: { structuredContent: { host: { hostId: SHA, trust: "verified" } } },
+    });
   });
 
   it("rejects browser Origins, non-loopback Hosts, wrong tokens and GET", async () => {

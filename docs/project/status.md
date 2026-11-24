@@ -140,6 +140,19 @@ fixture 后禁用，计划生成 `enable:dsh-align-fixture`；批准执行后 fi
 
 设计：[环境对齐执行](../design/2026-11-24-alignment-execution.md)。
 
+### 统一状态与诊断（2026-11-24）
+
+新增 `whale_status` 单次汇总：本机环境、drift/unknown/stale、未信任主机、待审批
+派发与对齐、云盘、通知、Skill 预设、热备、信任与对齐状态，并给出 `nextActions`。
+`whale_doctor` 同步扩展 `connectors/notifications/presets/backups/trust/alignment/dispatch`
+检查；MCP initialize 指引改为先调用 `whale_status` 再按需展开。
+
+接入：`GET /fleet/status`、`whale_status`、`ctx.get("whaleStatus")`。
+验证：插件 502 项、原生面板 73 项通过。
+
+设计：[统一状态与诊断](../design/2026-11-24-unified-status.md)。
+证据：`/data/openlet/evidence/dsh-fusion-status-20261124/`。
+
 ### 生态诊断与热门插件检测（2026-11-23）
 
 新增 `whale_doctor` 只读工具、`GET /plugins/dsh-fusion/fleet/doctor` 与面板“诊断”按钮，

@@ -60,6 +60,15 @@ export interface FleetDoctorInput {
     directoryConfigured: boolean;
   };
   bundles: FleetDoctorBundle[];
+  subsystems?: {
+    connectors?: { providers: number; configured: number; invalid: number };
+    notifications?: { adapters: number; invalid: number; failed: number; unknown: number };
+    presets?: { total: number; installed: number };
+    backups?: { count: number; latestAt?: string };
+    trust?: { entries: number; untrusted: number; invalid: number; mode: string };
+    alignment?: { pending: number; manual: number; failed: number };
+    dispatch?: { pending: number };
+  };
 }
 
 const INTEGRATIONS = [
@@ -67,6 +76,7 @@ const INTEGRATIONS = [
   { id: "dsh-im", package: "@xmanrui/dsh-im", transport: "mcp" as const },
   { id: "dsh-qqbot", package: "@tencent-connect/dsh-qqbot", transport: "mcp" as const },
   { id: "modlens", package: "@liustack/modlens", transport: "none" as const },
+  { id: "agent-teams", package: "@nanmicoder/dsh-agent-teams", transport: "none" as const },
 ] as const;
 
 export function buildFleetDoctorReport(input: FleetDoctorInput, now = new Date()): FleetDoctorReport {
@@ -197,6 +207,94 @@ export function buildFleetDoctorReport(input: FleetDoctorInput, now = new Date()
         });
   }
   checks.push({ id: "service.whaleFleet", status: "ok", summary: "whaleFleet v1 服务已提供" });
+
+  const subsystems = input.subsystems;
+  if (subsystems?.connectors !== undefined) {
+    const value = subsystems.connectors;
+    checks.push(value.invalid > 0
+      ? {
+          id: "connectors.instances", status: "warn",
+          summary: `${value.invalid} 个云盘连接器配置无效`,
+          remedy: "检查凭据环境变量、URL 与 provider 字段",
+        }
+      : value.configured > 0
+        ? { id: "connectors.instances", status: "ok", summary: `${value.configured} 个云盘连接器就绪（${value.providers} 个 provider）` }
+        : {
+            id: "connectors.instances", status: "warn", summary: "未配置云盘连接器",
+            remedy: "在 fleetConnectors.connectors 中配置 Google Drive、OneDrive、Dropbox 或 WebDAV",
+          });
+  }
+  if (subsystems?.notifications !== undefined) {
+    const value = subsystems.notifications;
+    checks.push(value.invalid > 0 || value.failed > 0
+      ? {
+          id: "notifications.adapters", status: "warn",
+          summary: `${value.invalid} 个无效、${value.failed} 条失败、${value.unknown} 条未知通知`,
+          remedy: "在面板测试通知适配器并检查地址/凭据；unknown 不要自动重试",
+        }
+      : value.adapters > 0
+        ? { id: "notifications.adapters", status: "ok", summary: `${value.adapters} 个通知适配器` }
+        : {
+            id: "notifications.adapters", status: "warn", summary: "未配置通知适配器",
+            remedy: "配置 dsh-im、Slack、飞书、钉钉、Telegram、Discord 或 webhook",
+          });
+  }
+  if (subsystems?.presets !== undefined) {
+    const value = subsystems.presets;
+    checks.push(value.installed > 0
+      ? { id: "presets.skills", status: "ok", summary: `已安装 ${value.installed} 个 Skill 预设` }
+      : {
+          id: "presets.skills", status: "warn", summary: "未安装鲸群 Skill 预设",
+          remedy: "在面板“预设与热备”安装 whale-fleet-ops",
+        });
+  }
+  if (subsystems?.backups !== undefined) {
+    const value = subsystems.backups;
+    checks.push(value.count > 0
+      ? { id: "backup.snapshots", status: "ok", summary: `${value.count} 份配置快照${value.latestAt === undefined ? "" : `，最近 ${value.latestAt}`}` }
+      : {
+          id: "backup.snapshots", status: "warn", summary: "没有配置快照",
+          remedy: "在面板“预设与热备”创建快照，或开启 fleetBackup.auto",
+        });
+  }
+  if (subsystems?.trust !== undefined) {
+    const value = subsystems.trust;
+    checks.push(value.untrusted > 0 || value.invalid > 0
+      ? {
+          id: "trust.hosts", status: "warn",
+          summary: `${value.untrusted} 台未信任、${value.invalid} 台签名异常（${value.mode}）`,
+          remedy: "在面板“主机信任”核对公钥；不要接受 key-mismatch",
+        }
+      : value.entries > 0
+        ? { id: "trust.hosts", status: "ok", summary: `${value.entries} 台远端主机已信任（${value.mode}）` }
+        : {
+            id: "trust.hosts", status: "warn", summary: `尚无远端信任条目（${value.mode}）`,
+            remedy: "把远端 host-public.pem 放到 fleet/hosts/<hostId>.pub.pem 后信任",
+          });
+  }
+  if (subsystems?.alignment !== undefined) {
+    const value = subsystems.alignment;
+    checks.push(value.failed > 0
+      ? {
+          id: "alignment.requests", status: "warn",
+          summary: `${value.failed} 个对齐请求失败`,
+          remedy: "查看 failed 请求的 results/rollback",
+        }
+      : value.pending > 0 || value.manual > 0
+        ? {
+            id: "alignment.requests", status: "warn",
+            summary: `${value.pending} 个待批准、${value.manual} 个需人工`,
+            remedy: "在面板“环境对齐”批准或处理人工步骤",
+          }
+        : { id: "alignment.requests", status: "ok", summary: "没有待处理对齐请求" });
+  }
+  if (subsystems?.dispatch !== undefined && subsystems.dispatch.pending > 0) {
+    checks.push({
+      id: "dispatch.pending", status: "warn",
+      summary: `${subsystems.dispatch.pending} 个待审批派发`,
+      remedy: "在面板“待审批派发”批准或拒绝",
+    });
+  }
 
   const overall: FleetDoctorStatus = checks.some(check => check.status === "fail") ? "fail"
     : checks.some(check => check.status === "warn") ? "warn" : "ok";

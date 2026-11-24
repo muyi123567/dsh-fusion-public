@@ -72,4 +72,47 @@ describe("fleet doctor", () => {
       expect.objectContaining({ id: "execution.jobs", status: "warn" }),
     ]));
   });
+
+  it("reports healthy and unhealthy optional subsystems", () => {
+    const healthy = buildFleetDoctorReport(input({
+      subsystems: {
+        connectors: { providers: 4, configured: 1, invalid: 0 },
+        notifications: { adapters: 2, invalid: 0, failed: 0, unknown: 0 },
+        presets: { total: 6, installed: 1 },
+        backups: { count: 2, latestAt: "2026-11-24T06:00:00.000Z" },
+        trust: { entries: 1, untrusted: 0, invalid: 0, mode: "manual" },
+        alignment: { pending: 0, manual: 0, failed: 0 },
+        dispatch: { pending: 0 },
+      },
+    }), new Date("2026-11-24T06:00:00Z"));
+    expect(healthy.overall).toBe("ok");
+    expect(healthy.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "connectors.instances", status: "ok" }),
+      expect.objectContaining({ id: "notifications.adapters", status: "ok" }),
+      expect.objectContaining({ id: "trust.hosts", status: "ok" }),
+      expect.objectContaining({ id: "alignment.requests", status: "ok" }),
+    ]));
+
+    const broken = buildFleetDoctorReport(input({
+      subsystems: {
+        connectors: { providers: 4, configured: 0, invalid: 1 },
+        notifications: { adapters: 1, invalid: 1, failed: 2, unknown: 1 },
+        presets: { total: 6, installed: 0 },
+        backups: { count: 0 },
+        trust: { entries: 0, untrusted: 2, invalid: 1, mode: "manual" },
+        alignment: { pending: 1, manual: 1, failed: 1 },
+        dispatch: { pending: 2 },
+      },
+    }), new Date("2026-11-24T06:00:00Z"));
+    expect(broken.overall).toBe("warn");
+    expect(broken.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "connectors.instances", status: "warn" }),
+      expect.objectContaining({ id: "notifications.adapters", status: "warn" }),
+      expect.objectContaining({ id: "presets.skills", status: "warn" }),
+      expect.objectContaining({ id: "backup.snapshots", status: "warn" }),
+      expect.objectContaining({ id: "trust.hosts", status: "warn" }),
+      expect.objectContaining({ id: "alignment.requests", status: "warn" }),
+      expect.objectContaining({ id: "dispatch.pending", status: "warn" }),
+    ]));
+  });
 });
